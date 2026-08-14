@@ -2,7 +2,6 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <!-- ⬇️ iOSで「本物のアプリ」として認識させ、データを保持させるための専用タグ ⬇️ -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="学習管理">
@@ -354,7 +353,7 @@
 
         .batsu-list-container { flex: 1; padding: 16px; overflow-y: auto; max-width: 900px; margin: 0 auto; width: 100%; }
         .batsu-card-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
-        .batsu-card { background: var(--card-bg); border: 1px solid #fda4af; border-left: 5px solid #fb7185; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.15s; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .batsu-card { background: var(--card-bg); border: 1px solid #cbd5e1; border-left: 5px solid #9ca3af; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.15s; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .batsu-card:hover { background: #f8fafc; }
         .batsu-info { display: flex; flex-direction: column; gap: 4px; }
         .batsu-q-title { font-size: 0.95rem; font-weight: bold; color: var(--text-color); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -496,6 +495,14 @@
                     <h1 style="color: #4f46e5;">🎓 東大理系 過去問・模試管理</h1>
                 </div>
                 <div style="display: flex; gap: 6px;">
+                    <!-- ▼ 科目ごとに表示が切り替わる検索ボタン群 ▼ -->
+                    <div id="peFilterButtons" style="display: flex; gap: 6px;">
+                        <button class="btn" id="btnMathFilter" style="background-color: #0ea5e9; display: none;" onclick="openPEMathFilterModal()">🔍 数学条件検索</button>
+                        <button class="btn" id="btnPhysFilter" style="background-color: #8b5cf6; display: none;" onclick="openPEPhysFilterModal()">🔍 物理条件検索</button>
+                        <button class="btn" id="btnChemFilter" style="background-color: #10b981; display: none;" onclick="openPEChemFilterModal()">🔍 化学条件検索</button>
+                        <button class="btn" id="btnDefaultFilter" style="background-color: #64748b; display: none;" onclick="openPEDefaultFilterModal()">🔍 条件検索</button>
+                    </div>
+                    
                     <button class="btn" style="background-color: #e11d48;" onclick="showPEBatsuListScreen()">📌 要復習</button>
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
                 </div>
@@ -528,6 +535,27 @@
                 <span id="peBatsuCountBadge" style="font-size: 0.8rem; background: #ffe4e6; color: #be123c; padding: 2px 8px; border-radius: 12px; font-weight: bold;">0問</span>
             </div>
             <div class="batsu-card-grid" id="peBatsuCardGrid"></div>
+        </div>
+    </div>
+
+    <!-- ==============================
+         画面X: 過去問 検索結果リスト画面
+         ============================== -->
+    <div id="peFilterListScreen" class="view-screen">
+        <header>
+            <div class="header-top">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="btn btn-outline" onclick="showPastExamScreen()">← 表に戻る</button>
+                    <h1 id="peFilterBookTitle" style="color: #0ea5e9;">過去問 - 検索結果</h1>
+                </div>
+            </div>
+        </header>
+        <div class="batsu-list-container">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="font-size: 0.9rem; color: #334155;">該当する問題の一覧</h2>
+                <span id="peFilterCountBadge" style="font-size: 0.8rem; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: bold;">0問</span>
+            </div>
+            <div class="batsu-card-grid" id="peFilterCardGrid"></div>
         </div>
     </div>
 
@@ -653,6 +681,125 @@
     <!-- ==============================
          ここから下は モーダル (ポップアップ)
          ============================== -->
+
+    <!-- 数学専用 検索条件入力モーダル -->
+    <div class="modal-overlay" id="peMathFilterModal">
+        <div class="modal-content">
+            <div class="modal-header" style="color:#0ea5e9;">数学の条件検索</div>
+            <div class="form-group">
+                <label class="form-label" for="mathSearchText">分野・キーワード</label>
+                <input type="text" class="modal-input" id="mathSearchText" placeholder="例: 微分、軌跡、確率">
+            </div>
+            <div class="form-group">
+                <label class="form-label">難易度 (複数選択可)</label>
+                <div class="star-filter-box" style="flex-wrap: wrap; gap: 10px;">
+                    <label class="star-filter-item" style="color:#0f172a;"><input type="checkbox" class="math-diff-chk" value="none" checked>なし</label>
+                    <label class="star-filter-item" style="color:#0f172a;"><input type="checkbox" class="math-diff-chk" value="A" checked>A</label>
+                    <label class="star-filter-item" style="color:#0f172a;"><input type="checkbox" class="math-diff-chk" value="B" checked>B</label>
+                    <label class="star-filter-item" style="color:#0f172a;"><input type="checkbox" class="math-diff-chk" value="C" checked>C</label>
+                    <label class="star-filter-item" style="color:#0f172a;"><input type="checkbox" class="math-diff-chk" value="D" checked>D</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="mathStatusFilter">解答状態</label>
+                <select id="mathStatusFilter" class="modal-input">
+                    <option value="">すべて</option>
+                    <option value="unanswered">未解答</option>
+                    <option value="batsu">×・△・要定着 (赤/黄)</option>
+                    <option value="maru">一発〇 (青)</option>
+                </select>
+            </div>
+            <div class="modal-actions" style="margin-top: 12px;">
+                <button type="button" class="btn btn-outline" onclick="closePEMathFilterModal()">キャンセル</button>
+                <button type="button" class="btn" style="background-color: var(--primary-color); color: white;" onclick="executePEFilter()">検索する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 物理専用 検索条件入力モーダル -->
+    <div class="modal-overlay" id="pePhysFilterModal">
+        <div class="modal-content">
+            <div class="modal-header" style="color:#8b5cf6;">物理の条件検索</div>
+            <div class="form-group">
+                <label class="form-label" for="physSearchText">分野・テーマ (キーワード)</label>
+                <input type="text" class="modal-input" id="physSearchText" placeholder="例: 力学、電磁気、単振動">
+            </div>
+            <!-- 物理はデフォルトで難易度フィールドを持たせていないため、キーワードと状態のみ -->
+            <div class="form-group">
+                <label class="form-label" for="physStatusFilter">解答状態</label>
+                <select id="physStatusFilter" class="modal-input">
+                    <option value="">すべて</option>
+                    <option value="unanswered">未解答</option>
+                    <option value="batsu">×・△・要定着 (赤/黄)</option>
+                    <option value="maru">一発〇 (青)</option>
+                </select>
+            </div>
+            <div class="modal-actions" style="margin-top: 12px;">
+                <button type="button" class="btn btn-outline" onclick="closePEPhysFilterModal()">キャンセル</button>
+                <button type="button" class="btn" style="background-color: #8b5cf6; color: white;" onclick="executePEFilter()">検索する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 化学専用 検索条件入力モーダル -->
+    <div class="modal-overlay" id="peChemFilterModal">
+        <div class="modal-content">
+            <div class="modal-header" style="color:#10b981;">化学の条件検索</div>
+            <div class="form-group">
+                <label class="form-label" for="chemSearchText">テーマ (キーワード)</label>
+                <input type="text" class="modal-input" id="chemSearchText" placeholder="例: 構造決定、滴定、平衡">
+            </div>
+            <div class="form-group">
+                <label class="form-label">難易度 (複数選択可)</label>
+                <div class="star-filter-box" style="flex-wrap: wrap; gap: 10px;">
+                    <label class="star-filter-item" style="color:#0f172a;"><input type="checkbox" class="chem-diff-chk" value="none" checked>なし</label>
+                    <label class="star-filter-item" style="color:#0f172a;"><input type="checkbox" class="chem-diff-chk" value="易" checked>易</label>
+                    <label class="star-filter-item" style="color:#0f172a;"><input type="checkbox" class="chem-diff-chk" value="やや易" checked>やや易</label>
+                    <label class="star-filter-item" style="color:#0f172a;"><input type="checkbox" class="chem-diff-chk" value="標準" checked>標準</label>
+                    <label class="star-filter-item" style="color:#0f172a;"><input type="checkbox" class="chem-diff-chk" value="やや難" checked>やや難</label>
+                    <label class="star-filter-item" style="color:#0f172a;"><input type="checkbox" class="chem-diff-chk" value="難" checked>難</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="chemStatusFilter">解答状態</label>
+                <select id="chemStatusFilter" class="modal-input">
+                    <option value="">すべて</option>
+                    <option value="unanswered">未解答</option>
+                    <option value="batsu">×・△・要定着 (赤/黄)</option>
+                    <option value="maru">一発〇 (青)</option>
+                </select>
+            </div>
+            <div class="modal-actions" style="margin-top: 12px;">
+                <button type="button" class="btn btn-outline" onclick="closePEChemFilterModal()">キャンセル</button>
+                <button type="button" class="btn" style="background-color: #10b981; color: white;" onclick="executePEFilter()">検索する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- その他(英語・国語等) 汎用検索条件入力モーダル -->
+    <div class="modal-overlay" id="peDefaultFilterModal">
+        <div class="modal-content">
+            <div class="modal-header" style="color:#64748b;">条件検索</div>
+            <div class="form-group">
+                <label class="form-label" for="defaultSearchText">分野・キーワード</label>
+                <input type="text" class="modal-input" id="defaultSearchText" placeholder="例: 要約、英作">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="defaultStatusFilter">解答状態</label>
+                <select id="defaultStatusFilter" class="modal-input">
+                    <option value="">すべて</option>
+                    <option value="unanswered">未解答</option>
+                    <option value="batsu">×・△・要定着 (赤/黄)</option>
+                    <option value="maru">一発〇 (青)</option>
+                </select>
+            </div>
+            <div class="modal-actions" style="margin-top: 12px;">
+                <button type="button" class="btn btn-outline" onclick="closePEDefaultFilterModal()">キャンセル</button>
+                <button type="button" class="btn" style="background-color: #64748b; color: white;" onclick="executePEFilter()">検索する</button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- 問題集 進捗入力モーダル -->
     <div class="modal-overlay" id="inputModal">
@@ -932,7 +1079,7 @@
             "book_std_math12ab": { id: "book_std_math12ab", title: "新数学スタンダード演習 (ⅠAⅡB)", subject: "数学", sections: [ { id: 1, name: "数と式", count: 14 }, { id: 2, name: "方程式・不等式", count: 16 }, { id: 3, name: "集合と論証・命題", count: 12 }, { id: 4, name: "関数（1次・2次）", count: 10 }, { id: 5, name: "行列", count: 19 }, { id: 6, name: "場合の数", count: 19 }, { id: 7, name: "確率（数A）", count: 19 }, { id: 8, name: "整数", count: 21 }, { id: 9, name: "座標", count: 17 }, { id: 10, name: "平面のベクトル", count: 14 }, { id: 11, name: "空間のベクトル", count: 12 }, { id: 12, name: "三角・指数・対数関数", count: 19 }, { id: 13, name: "図形", count: 29 }, { id: 14, name: "微分法", count: 11 }, { id: 15, name: "積分法", count: 14 }, { id: 16, name: "データの分析・確率推測", count: 12 }, { id: 17, name: "総合演習（整式）", count: 25 }, { id: 18, name: "総合演習（図形）", count: 24 } ], data: {} },
             "book_std_math3c": { id: "book_std_math3c", title: "数学ⅢCスタンダード演習", subject: "数学", sections: [ { id: 1, name: "複素数平面", count: 18 }, { id: 2, name: "式と曲線", count: 15 }, { id: 3, name: "数列の極限・関数と極限", count: 16 }, { id: 4, name: "微分法（導関数と応用）", count: 20 }, { id: 5, name: "積分法（計算と定積分）", count: 18 }, { id: 6, name: "積分法の応用（面積・体積）", count: 22 }, { id: 7, name: "ベクトル（空間・位置）", count: 14 }, { id: 8, name: "総合演習（ⅢC）", count: 12 } ], data: {} },
             "book_chem_shinenshu": { id: "book_chem_shinenshu", title: "化学の新演習", subject: "化学", sections: [ { id: 1, name: "物質の構造", count: 45 }, { id: 2, name: "物質の状態", count: 48 }, { id: 3, name: "物質の変化", count: 66 }, { id: 4, name: "無機物質", count: 52 }, { id: 5, name: "有機化学", count: 70 }, { id: 6, name: "高分子化合物", count: 50 } ], data: {} },
-            "book_ukarukakuritsu": { id: "book_ukarukakuritsu", title: "合格る確率", subject: "数学", sections: [ { id: 1, name: "原理原則編", count: 17 }, { id: 2, name: "典型手法編", count: 13 }, { id: 3, name: "入試実戦編", count: 36 }, { id: 4, name: "実戦融合問題編", count: 25 }, { id: 5, name: "超高難度有名問題編", count: 9 } ], data: {} }
+            "book_ukarukakuritsu": { id: "book_ukarukakuritsu", title: "合格る確率", subject: "数学", sections: [ { id: 1, name: "原理原則編", count: 17 }, { id: 2, name: "典型手法編", count: 13 }, { id: 3, name: "入試実戦編", count: 36 }, { id: 4, name: "実戦融合問題編", count: 25 }, { id: 5, name: "超高難度有名問題編", count: 9 } ], data: { "1_1_note": "数え上げ", "1_2_note": "順列", "1_3_note": "重複順列", "1_4_note": "数える順序", "1_5_note": "場合分け", "1_6_note": "補集合の利用", "1_7_note": "組合せ", "1_8_note": "同じものを含む順列", "1_9_note": "円順列", "1_10_note": "場合の数の比", "1_11_note": "乗法定理（独立試行）", "1_12_note": "等確率", "1_13_note": "同基準", "1_14_note": "独立反復試行", "1_15_note": "独立でない試行（非復元抽出）", "1_16_note": "起こりやすさの割合", "1_17_note": "余事象の利用", "2_1_note": "隣り合う、隣り合わない（その1）", "2_2_note": "組合せ→順列", "2_3_note": "順序が指定されているとき", "2_4_note": "対称性の活用", "2_5_note": "包除原理", "2_6_note": "最短経路", "2_7_note": "◯を | で仕切る（その1）", "2_8_note": "◯を | で仕切る（その2）", "2_9_note": "組分け", "2_10_note": "円順列と数珠順列", "2_11_note": "注目すべきことのみに集中", "2_12_note": "一方を固定して", "2_13_note": "独立反復試行（回数指定）", "3_1_note": "書き出しか？ 法則か？", "3_2_note": "辞書式配列", "3_3_note": "〜〜を含む列", "3_4_note": "隣り合う、隣り合わない（その2）", "3_5_note": "最短経路（通れない点）", "3_6_note": "最短経路\"的\"な", "3_7_note": "座標の変化", "3_8_note": "◯を | で仕切る→整数解の個数", "3_9_note": "◯を | で仕切る→増加列", "3_10_note": "◯を | で仕切る→「連」", "3_11_note": "◯を | で仕切る→アラカルト", "3_12_note": "ボールと箱（相互関係1）", "3_13_note": "ボールと箱（相互関係2）", "3_14_note": "ボールと箱（相互関係3）", "3_15_note": "トーナメント", "3_16_note": "じゃんけん", "3_17_note": "番号と色（その1）", "3_18_note": "番号と色（その2）", "3_19_note": "円順列と確率", "3_20_note": "立方体の塗り方", "3_21_note": "独立反復試行：各回3事象", "3_22_note": "独立反復試行：〜勝したら終了", "3_23_note": "独立反復試行：〜勝リードで終了", "3_24_note": "独立反復試行：デュース", "3_25_note": "積が2、6の倍数", "3_26_note": "積が4、12の倍数", "3_27_note": "最大値", "3_28_note": "最大値、最小値", "3_29_note": "第◯回に△度目の（反復試行）", "3_30_note": "第◯回に△度目の（非復元）", "3_31_note": "条件付き確率（単なる割合）", "3_32_note": "条件付き確率（時の流れ）", "3_33_note": "条件付き確率（原因の確率）", "3_34_note": "条件付き確率（応用）", "3_35_note": "条件付き確率（抽象的）", "3_36_note": "事象の独立（数学B）", "4_1_note": "確率の最大化", "4_2_note": "正多角形", "4_3_note": "2変数の条件", "4_4_note": "独立反復試行：2連続で終了", "4_5_note": "「まで」から「ちょうど」へ", "4_6_note": "一定方向への推移", "4_7_note": "確率漸化式（各回2状態）", "4_8_note": "確率漸化式（対称的でない）", "4_9_note": "確率漸化式（1-P_nでよい？）", "4_10_note": "確率漸化式（\"束ねる\"）", "4_11_note": "確率漸化式（偶奇分け）", "4_12_note": "確率漸化式（各回3状態：対称性あり）", "4_13_note": "確率漸化式（各回3状態：対称性なし）", "4_14_note": "確率漸化式（ちょうど〜になる）", "4_15_note": "すごろく", "4_16_note": "確率漸化式（連続しない）", "4_17_note": "領域の分割", "4_18_note": "確率漸化式？", "4_19_note": "漸化式と条件付き確率", "4_20_note": "数列Σと条件付き確率", "4_21_note": "区分求積法との融合（数学Ⅲ）", "4_22_note": "eに収束（数学Ⅲ）", "4_23_note": "期待値", "4_24_note": "期待値と二項係数", "4_25_note": "良問", "5_1_note": "巴戦（数学Ⅲ）", "5_2_note": "ランダムウォーク（反射壁）", "5_3_note": "破産の確率", "5_4_note": "カタラン数", "5_5_note": "ポイヤの壺", "5_6_note": "包除原理（一般）", "5_7_note": "乱列", "5_8_note": "期待値の加法性（数学B）", "5_9_note": "クーポンコレクター（数学B、数学Ⅲ）" } }
         };
 
         const colsMath = [];
@@ -945,10 +1092,116 @@
         for(let y = 2026; y >= 1993; y--) { colsDefault.push({ id: `y${y}`, name: `${y}年度`, type: 'year' }); }
 
         const mathDefaultRecords = {};
+        const mathRaw = {
+            // ▼ 今回更新分：1993年〜2001年（追加画像データ反映）
+            1993: ["D,20,代幾・基解／空間座標(四面体)、極限", "B,20,基解／数列(漸化式と整数)", "D,40,代幾／2次曲線(双曲線)", "B,20,基解／微分法(積分の計算)", "D,30,確統／確率と整数", "C,30,微積／微分法(速度・加速度)"],
+            1994: ["C,30,基解／微分法(不等式、方程式)", "C,30,基解／3角関数、数学的帰納法", "C,30,微積／積分法(体積、微分方程式)", "D,30,確統／確率・計算", "C,30,数Ⅰ・確統／関数、確率", "D,40,基解・数Ⅰ／対数、関数"],
+            1995: ["B,20,数Ⅰ・微積／不等式、微分法の応用", "C,20,微積／微積分総合", "B,20,数列・確率／漸化式、場合の数", "C,30,数Ⅰ／関数、整数", "C,20,確率／和・積の法則", "B,30,代幾・微積／2次曲線、微分法の応用"],
+            1996: ["B,20,代・Ⅰ／1次変換(回転・拡大)", "C,30,Ⅰ(A)／2次方程式、不等式", "D,30,立体図形", "C,20,確率(B・Ⅲ)／確率(期待値)、極限", "B,20,微(Ⅲ)／積分の応用(体積)", "C,30,代・(C)／行列(2次曲線、微分法)"],
+            1997: ["B,20,Ⅱ(Ⅰ)／座標(領域)", "D,40,B(代)・Ⅰ／複素数平面、1次変換", "C,30,B(代)・Ⅲ(微)／空間座標、極限", "C,30,Ⅲ(微)／3角比(面積)", "C,30,Ⅲ(微)／微積分(共通接線、面積)", "B,30,B(代)／数と式(実数、整数)"],
+            1998: ["B,20,Ⅱ／微積分（極値）", "C,30,B・A／空間座標、数列（和）", "D,40,A・Ⅲ／数列（漸化式）、極限", "D,30,A・Ⅱ／数列、微分法", "D,40,B・Ⅲ／ベクトル（内積）、極限", "C,30,Ⅱ・A／図形と座標、積分法（体積）"],
+            1999: ["A,20,Ⅱ／三角関数（加法定理）", "C,30,Ⅱ・Ⅰ／複素数、方程式と極限", "B,30,Ⅰ／確率（立体図形）", "C,40,Ⅲ／積分法（定積分、評価）", "D,#,A／整数（2項係数の評価）", "D,40,B／複素数平面（整数がらみ）"],
+            2000: ["B,20,C・Ⅱ／2次曲線、微分法", "D,40,B／複素数平面（直線と円）", "B,20,Ⅲ／数列の極限（漸化式）", "C,40,Ⅱ・Ⅲ／座標、微分法", "C,20,Ⅰ／個数の処理", "C,30,C・Ⅲ／行列（積）、積分法（体積）"],
+            2001: ["B,20,Ⅰ／幾何図形（四面体）", "C,40,Ⅲ／積分法（積分方程式）", "B,30,Ⅲ／微積分（面積、関数の変化）", "C,30,B／複素数平面（円）", "D,40,Ⅰ・A／個数の処理、漸化式", "D,50,Ⅱ／微分法（最大・最小）"],
+            // ▼ 前々回更新分：2002年〜2007年
+            2002: ["A,10,Ⅱ／座標（放物線）、三角関数", "B,20,A／数列（漸化式）、整数", "C,30,B／空間座標（点と平面の距離）", "A,10,Ⅲ／微分法（法線）", "B,20,Ⅲ／極限（区分求積法）", "C,30,A／整数（剰余）"],
+            2003: ["B,20,Ⅰ・Ⅱ／2次関数、積分", "C,30,B／複素数平面（偏角、円）", "C,30,Ⅲ／積分法（体積）", "C,30,A／数列（漸化式、整数）", "C,30,Ⅰ・Ⅲ／確率（さいころ）、極限", "B,20,Ⅰ／図形（円周率）"],
+            2004: ["C,30,Ⅱ／座標（放物線と正三角形）", "C,30,A／整数（平方数）", "C,60,Ⅲ／積分（面積、ハイポサイクロイド）", "C,20,Ⅲ／微分法、合成関数", "C,30,Ⅲ／積分（体積、解の近似）", "C,30,Ⅰ・A／確率、漸化式"],
+            2005: ["C,30,Ⅲ・A／微分法、数列（漸化式）", "D,40,B・A／複素数平面、論証", "B,20,Ⅲ／極限、微分法", "C,20,A／整数（約数の個数）", "C,30,Ⅰ・A／確率（復元抽出、有利不利）", "C,30,Ⅲ／積分法（立体の体積）"],
+            2006: ["B,20,Ⅱ・B／座標、ベクトル", "B,10,A／確率", "C,30,Ⅱ／座標（対称移動）、三角関数", "B,20,Ⅰ／整数（不定方程式）", "C,40,B・Ⅲ／数列（漸化式）、極限", "C,30,Ⅲ／微積分総合"],
+            2007: ["C,20,Ⅰ／多項式", "B,25,Ⅰ・B・Ⅲ／図形、数列、極限", "C,40,Ⅱ／座標（領域）", "C,30,C／行列（積）", "B,20,Ⅰ／確率", "C,30,Ⅲ／積分法（不等式）"],
+            // ▼ 過去の更新分：2008年〜2016年
+            2008: ["C,30,Ⅱ・B／座標（軌跡）、数列（漸化式）", "C,30,A／確率", "C,30,Ⅲ／立体図形、体積", "B,20,Ⅲ／座標、最小値", "C,30,A／整数（約数・倍数）", "C,30,Ⅲ・C／パラメータ表示、積分法（面積）"],
+            2009: ["D,30,A・Ⅰ／二項係数、整数（約数・倍数）", "C,30,C・Ⅲ／行列（n乗）、極限", "B,25,A／確率", "C,30,Ⅲ／積分法（体積）、極限", "C,30,Ⅲ／微分法（不等式）", "D,40,B・Ⅱ／ベクトル、三角関数"],
+            2010: ["C,30,Ⅱ／図形、微分法（領域）", "C,30,Ⅲ・B／積分法（不等式）、数列（和）", "C,30,AB／確率、数列（漸化式）", "C,30,Ⅲ／積分法（面積）", "C,30,A／図形、整数", "C,40,B／ベクトル（空間図形）"],
+            2011: ["B,25,Ⅱ・Ⅲ／座標、微分法（最小）", "C,30,A・B／整数（小数部分）、数列", "D,40,Ⅲ／積分法、極限", "B,30,Ⅱ／座標（軌跡）", "C,30,B／組の個数", "D,40,Ⅰ・Ⅲ／関数、不等式、体積"],
+            2012: ["B,25,Ⅱ・Ⅲ／座標、微分法（最大値）", "C,30,AB／確率", "B,25,Ⅲ／積分法（体積）", "D,30,A／整数", "B,30,C／行列", "C,40,C・Ⅱ／行列、三角関数、不等式"],
+            2013: ["B,25,C／点の移動", "C,30,Ⅲ／微分法", "C,40,AB・Ⅲ／確率、数列（和）、極限", "C,30,B／平面ベクトル（角度、長さ）", "D,30,A／整数", "C,50,B・Ⅲ／空間座標、積分法（面積、体積）"],
+            2014: ["B,25,Ⅱ／空間図形、3角関数", "B,20,AB・Ⅲ／確率、極限", "C,30,Ⅲ／積分法", "C,30,Ⅲ／微分法（不等式）、極限、方程式", "C,30,AB／整数（余り）、数列（漸化式）", "C,30,Ⅱ／座標（通過範囲）"],
+            2015: ["B,20,Ⅱ・Ⅲ／座標（通過領域）", "C,30,AB／確率", "B,30,Ⅲ／微分（グラフ）、積分（体積）", "B,30,B／数列（漸化式）", "C,30,A／整数（二項係数）", "C,30,Ⅲ／極限"],
+            2016: ["B,25,Ⅲ／微分法（不等式）", "B,30,AB／確率、数列", "B,20,B・Ⅲ／空間図形、微分法（最小）", "C,30,Ⅲ／複素数平面", "C,30,A／整数", "C,30,Ⅲ／積分法（体積）"],
+            // ▼ 最も新しい更新分：2017年〜2026年
+            2017: ["A,15,Ⅱ・Ⅰ／三角関数、最小", "B,20,A／確率", "C,30,Ⅲ／複素数平面（軌跡）", "B,20,AB／整数（最大公約数）、数列", "B,30,Ⅱ／座標（共通接線）", "C,30,Ⅲ／積分法（体積）"],
+            2018: ["B,15,Ⅲ／微分法、極限", "C,30,AB／整数、数列", "B,30,B・Ⅲ／ベクトル、積分法、極限", "B,15,Ⅱ／方程式、微分法", "D,40,Ⅲ／複素数平面", "C,40,B・Ⅲ／空間座標、積分法（体積）"],
+            2019: ["B,20,Ⅲ／積分法（定積分）", "B,25,Ⅱ／平面図形、最大最小", "C,40,AB／立体図形、空間座標", "C,30,A／整数", "C,30,Ⅲ／極限", "C,50,Ⅲ・Ⅱ／方程式、複素数平面"],
+            2020: ["B,25,Ⅰ／2次不等式", "B,25,A／平面図形", "B,30,Ⅲ／微分法、積分法（面積）", "C,40,B・Ⅱ／数列、多項式", "C,30,B・Ⅲ／空間図形、積分法（体積）", "C,40,Ⅲ／三角関数、曲線（楕円）"],
+            2021: ["B,25,Ⅱ／座標（通過領域）", "C,30,Ⅲ／複素数平面", "B,30,Ⅲ／微分法、積分法", "D,40,A／整数（二項係数）", "C,30,Ⅲ／微分法", "C,30,Ⅰ・Ⅱ／多項式、方程式"],
+            2022: ["B,25,Ⅲ／微分法、積分法（定積分関数）", "C,30,AB／整数、数列", "B,30,Ⅱ／座標平面", "C,40,Ⅱ／方程式、微分法", "C,30,Ⅲ／積分法（体積）", "D,40,AB／確率、ベクトル"],
+            2023: ["C,30,Ⅲ／積分法、極限", "C,30,A／確率", "C,40,Ⅱ／座標、微分法", "B,30,B／ベクトル、空間座標", "C,30,Ⅱ／多項式（割り算）", "D,40,Ⅲ／空間座標、積分法（体積）"],
+            2024: ["B,20,B・Ⅲ／座標、曲線", "C,30,Ⅲ／微積分（定積分関数）", "C,40,AB／確率、数列", "B,40,Ⅱ／座標平面、方程式", "B,30,Ⅲ／積分法（体積）", "D,50,A／整数（素数）"],
+            2025: ["C,25,C／複素数平面", "B,25,Ⅱ／座標、微分法", "C,30,Ⅰ／図形と計量、数列", "C,30,A／整数", "C,30,AB／確率、数列", "D,40,Ⅲ／積分法、微分法"],
+            2026: ["D,40,Ⅲ／微分法・積分法（不等式）", "B,25,A／確率", "C,30,C・Ⅱ／空間座標（軌跡・通過領域）", "C,40,Ⅱ／微分法・三角関数", "C,30,C／複素数平面", "D,40,A／整数（約数・余り）"]
+        };
+        for(let y = 1993; y <= 2026; y++) {
+            if(mathRaw[y]) {
+                for(let i=0; i<6; i++) {
+                    let parts = mathRaw[y][i].split(",");
+                    mathDefaultRecords[`y${y}_${i+1}`] = { diff: parts[0], targetTime: parts[1]==="#" ? "無制限" : parts[1], topic: parts[2] || "", history: [] };
+                }
+            }
+        }
+
         const physDefaultRecords = {};
+        const physRaw = { 
+            2026: [ "力学|円運動する一輪車|16|20", "電磁気|回転する導体棒を含む回路|18|20", "波動|レンズによって生じる像とボケ|10|18" ],
+            2025: [ "力学|床の上におかれた物体にはたらく力と運動|16|20", "電磁気|磁場中を等速運動するコイル|15|17", "熱力学|理想気体をバネとした跳ね返り運動|14|20" ],
+            2024: [ "力学|摩擦のあるベルトコンベア上での運動|12|16", "電磁気|多極板コンデンサーのエネルギー論|12|16", "波動|振動数が時間変化する一次元ドップラー効果|12|16" ],
+            2023: [ "力学|電場中で分裂する原子核の軌道|9|13", "電磁気|ワット天秤の動作原理|10|14", "熱力学|風船の膜張力|9|14" ],
+            2022: [ "力学|潮汐力|12|14", "電磁気|磁場中を動く台車のエネルギー|12|16", "熱力学|混合気体の状態変化|14|16" ],
+            2021: [ "力学|ブランコのエネルギー論|11|16", "電磁気|帯電した極板を挟んだLC共振回路|12|17", "波動|光ピンセット|12|14" ],
+            2020: [ "力学|中心力場での粒子の運動|12|14", "電磁気|動く導体棒の力学的及び回路学的考察|11|16", "熱力学|定圧変化と断熱変化からなるp-V図|14|16" ],
+            2019: [ "力学|動く台車上の質点の相対運動|10|14", "電磁気|抵抗とコンデンサーによる梯子形回路|12|16", "波動|屈折の法則を用いた像の位置の導出|13|17" ],
+            2018: [ "力学|水平面上を動く台上の振り子運動|11|16", "電磁気|多極板コンデンサーの極板の単振動|9|12", "熱力学|容器内を動ける液体に接触した気体の熱力学|14|17" ],
+            2017: [ "力学|積木に作用する摩擦力と単振動|14|16", "電磁気|磁場中に吊るされた導体棒の微小振動|11|14", "熱力学|2室に分けられた気体の熱|14|16" ],
+            2016: [ "力学|2つの小球と床の逐次衝突|12|16", "電磁気|共振|12|14", "波動|水面波の反射・屈折・干渉|12|16" ],
+            2015: [ "力学|重心からみた回転運動|11|17", "電磁気|梯子型回路の電磁誘導|12|14", "熱力学|浮沈子|12|15" ],
+            2014: [ "力学|斜面から飛び出す小球の到達距離|12|17", "電磁気|太陽電池を含む回路|10|14", "波動|回折レンズ|13|16" ],
+            2013: [ "力学|ばねに繋がれた2物体の単振動|14|17", "電磁気|電磁レンズ|12|16", "波動|超音波による探傷装置|12|15" ],
+            2012: [ "力学|小球の弾性衝突|9|14", "電磁気|磁場領域に斜めに正方形コイルを導入|14|17", "波動|空気の屈折率の測定|15|18" ],
+            2011: [ "力学|棒で繋がれた2物体の運動|11|14", "電磁気|コッククロフト・ウォルトン回路|12|16", "熱力学|液体を押す気体の状態変化|14|17" ],
+            2010: [ "力学|宙返りするジェットコースター|15|18", "電磁気|電磁誘導を絡めた抵抗回路|14|16", "波動|管の共鳴とドップラー効果|12|16" ],
+            2009: [ "力学|対称性のある運動|12|16", "電磁気|磁場中のコイルの落下|16|18", "熱力学|相転移を含む水の状態変化|13|17" ],
+            2008: [ "力学|仕事の最小値|11|16", "電磁気|ネオンランプ（コンデンサー回路）|13|17", "熱力学|分子密度の微分方程式|12|15" ]
+        };
+        for(let y = 2008; y <= 2026; y++) {
+            if(physRaw[y]) {
+                for(let i=0; i<3; i++) {
+                    let parts = physRaw[y][i].split("|");
+                    physDefaultRecords[`y${y}_${i+1}`] = { physField: parts[0], physTheme: parts[1], physTarget12: parts[2], physTarget3: parts[3], history: [] };
+                }
+            }
+        }
+
         const chemDefaultRecords = {};
-        
-        // (デフォルト過去問の長文は省略せずに裏で機能します)
+        const chemRaw = { 
+            2026: [ "易|理論化学小問集合", "やや難|ゼオライト", "やや難|有機化合物の沸点・立体化学" ],
+            2025: [ "やや難|物質の三態と状態図", "やや難|火山ガスの化学・複合体形成の駆動力", "難|ペプチドの検出・決定・合成・精製" ],
+            2024: [ "標準 / 難|I: ディーン・スターク装置を用いたエステル化実験\nII: 糖類の異性化と立体異性体・フィッシャー投影式", "易 / 易|I: 両性およびCr・Mnの反応\nII: 金と銀の性質", "やや難 / 標準|I: 種々の状況下におけるヘンリーの法則の適用\nII: リン酸緩衝液のpH" ],
+            2023: [ "難 / やや難|I: デオキシシコニンの構造決定\nII: 配座異性体と安定性", "標準 / 標準|I: フッ化水素の性質・反応・酸性\nII: AlとTiの精錬・最密充填面", "やや難 / 難|I: ハーバー・ボッシュ法における触媒の反応機構\nII: Fe(OH)3コロイドの半径と浸透圧の関係" ],
+            2022: [ "やや易 / 易|I: オゾン分解による油脂の構造決定\nII: マルコフニコフ則・ザイツェフ則を用いた構造決定", "やや易 / やや易|I: アンモニアの製造工程における二酸化炭素排出\nII: プルシアンブルー", "やや易 / 標準|I: 海洋への二酸化炭素の貯蔵\nII: 抗体によるサイトカインの不活性化" ],
+            2021: [ "難 / やや難|I: 不斉炭素原子を活用したC6H12Oの構造決定\nII: 窒素原子を含む有機化学反応の同位体を用いた追跡", "標準 / 標準|I: 水素吸蔵の平衡と気体の計算\nII: アミノ酸の滴定曲線・酵素と反応速度", "やや難 / 難|I: モール法によるCl-の定量実験\nII: 水素吸蔵合金の結晶構造・すき間" ],
+            2020: [ "標準 / 難|I: 糖誘導体の構造決定\nII: レブリン酸のヨードホルム反応", "標準 / 標準|I: レイリーとラムゼーによるアルゴンの単離\nII: 電子式からの形状決定・二酸化炭素の結晶構造", "標準 / やや易|I: トロナ鉱石の組成と緩衝溶液\nII: マグマや火山ガスでの反応" ],
+            2019: [ "やや難|フェノールからの合成経路・フェノール樹脂の合成", "やや易 / 標準|I: リン化合物の構造と反応・燃料電池\nII: 金属イオンの分離", "標準 / 標準|I: 酸化還元滴定による硫化水素の定量\nII: ペロブスカイト型イオン結晶構造" ],
+            2018: [ "標準|ジケトピペラジン類の構造決定", "やや易|金属酸化物の性質", "やや難 / 易|I: アンモニアの電離平衡と緩衝溶液\nII: メタノールの工業的製法" ],
+            2017: [ "易|合成高分子化合物の構造決定・吸水性ポリマー", "易 / 易|I: 陽イオン系統分析\nII: 窒素化合物の性質・製法", "易 / 易|I: 鉛蓄電池を用いた電気分解\nII: 平衡の移動と圧平衡定数" ],
+            2016: [ "標準 / 標準|I: 固体の溶解度曲線と再結晶\nII: 3成分からなる混合気体の冷却と蒸気圧曲線", "標準 / やや難|I: 14族元素の単体および化合物とその性質\nII: アルカリ金属元素の性質とクラウンエーテル", "難 / やや難|I: 還元性を持つ芳香族エステルの構造決定実験\nII: アドレナリン受容体に対する阻害剤の作用機序" ],
+            2015: [ "やや易 / 易|I: CO2の状態図の読み取り・ヘンリーの法則\nII: 酢酸の中和反応とpH計算", "標準 / やや易|I: 酸化銅混合物の定量分析\nII: ハロゲンの酸化還元反応・電気分解による水分の定量", "やや難 / やや易|I: 分子内脱水と酸化開裂による有機化合物の変換\nII: アゾ化合物の性質とその合成" ],
+            2014: [ "やや易 / 標準|I: 水素ガスの製造と貯蔵\nII: ヨウ化水素生成の速度と平衡", "標準 / 標準|I: 酸化還元滴定\nII: イオン結晶の溶解度の熱化学的考察", "やや難 / やや難|I: 糖類の性質・構造\nII: ナイロン66，温度応答性高分子の合成" ],
+            2013: [ "やや易 / やや難|I: 中和滴定と指示薬\nII: ファントホッフの反応箱", "標準 / 標準|I: キレート剤の分配平衡・銅の電解精錬\nII: 放射性炭素年代測定法", "やや難 / やや難 / やや難|I: ポリイミド樹脂の合成\nII〔文1〕: アミノ酸の分離法\nII〔文2〕: アドレナリンの合成経路" ],
+            2012: [ "標準 / やや難|I: 凝固点降下と冷却曲線\nII: ポリスチレンの会合と浸透圧", "標準 / 標準|I: 格子エネルギーとイオン結合性\nII: 錯イオンと滴定", "やや難 / やや易|I: 甲状腺ホルモンの合成\nII: ポリマーの合成とその性質" ],
+            2011: [ "標準 / やや難|I: マリケンの電気陰性度と極性\nII: 緩和法による反応速度定数の測定", "やや易 / 標準|I: 酸化還元滴定によるカルシウムイオンの定量\nII: 水酸化ナトリウムの製法", "やや難 / やや易|I: 分子式C10H16の炭化水素リモネンの構造決定\nII: 酸無水物の反応" ],
+            2010: [ "標準 / 標準|I: メタンハイドレート\nII: ミカエリス・メンテンの式", "難 / 易|I: リチウムイオン電池\nII: パラジウム錯体", "標準 / やや難|I: 分子式C4H6O5の酸味成分(リンゴ酸)の構造決定\nII: 向流分配法" ],
+            2009: [ "標準 / やや難|I: 鉄の酸化反応・ヘンリーの法則\nII: 飽和炭化水素の燃焼熱", "やや難 / 易|I: 硫化水素の電離平衡・溶解度積\nII: 同位体の存在比", "標準 / やや易|I: 環状エステルを含む脂肪族エステルの構造決定\nII: ニューマン投影図を用いた単結合の回転の考察" ],
+            2008: [ "難 / やや易|I: 氷熱量計による反応熱の測定\nII: アルカリ系ボタン形酸化銀電池", "やや難 / やや難|I: ヨウ素の分配平衡\nII: 窒素酸化物の反応", "標準 / 難|I: 分子式C6H10O2で表される酢酸エステルの構造決定\nII: ステロイド骨格に対する酵素の作用の特定" ]
+        };
+        for(let y = 2008; y <= 2026; y++) {
+            if(chemRaw[y]) {
+                for(let i=0; i<3; i++) {
+                    let parts = chemRaw[y][i].split("|");
+                    chemDefaultRecords[`y${y}_${i+1}`] = { chemDiff: parts[0], chemTheme: parts[1], history: [] };
+                }
+            }
+        }
 
         const defaultPastExams = {
             "english": { title: "英語", columns: colsEnglish, records: {}, questions: [{id:"1A", name:"1(A) 要約"}, {id:"1B", name:"1(B) 段落補充"}, {id:"2A", name:"2(A) 自由英作"}, {id:"2B", name:"2(B) 和文英訳"}, {id:"3", name:"3 リスニング"}, {id:"4A", name:"4(A) 文法"}, {id:"4B", name:"4(B) 和訳"}, {id:"5", name:"5 長文読解"}] },
@@ -958,7 +1211,7 @@
             "chemistry": { title: "化学", columns: colsDefault, records: chemDefaultRecords, questions: [{id:"1", name:"第1問"}, {id:"2", name:"第2問"}, {id:"3", name:"第3問"}] }
         };
 
-        const STORAGE_KEY = "multi_book_progress_v37"; 
+        const STORAGE_KEY = "multi_book_progress_v45"; 
         let store = { books: JSON.parse(JSON.stringify(defaultBooks)), pastExams: JSON.parse(JSON.stringify(defaultPastExams)) };
         
         let currentBookId = null;
@@ -987,7 +1240,12 @@
             try {
                 let tempBooks = JSON.parse(JSON.stringify(defaultBooks));
                 let tempExams = JSON.parse(JSON.stringify(defaultPastExams));
+                let booksByTitle = {};
                 
+                Object.keys(tempBooks).forEach(k => {
+                    booksByTitle[tempBooks[k].title] = k;
+                });
+
                 const allKeys = Object.keys(localStorage);
                 let saves = [];
                 allKeys.forEach(k => {
@@ -1051,7 +1309,15 @@
                     }
                 });
 
-                store.books = tempBooks;
+                const finalBooks = {};
+                Object.keys(tempBooks).forEach(k => {
+                    const title = tempBooks[k].title;
+                    if (booksByTitle[title] === k) {
+                        finalBooks[k] = tempBooks[k];
+                    }
+                });
+
+                store.books = finalBooks;
                 store.pastExams = tempExams;
 
                 if (store.pastExams) {
@@ -1068,6 +1334,47 @@
                             let yearCols = allCols.filter(c => c.type === 'year');
                             yearCols.sort((a, b) => parseInt(b.id.replace('y', '')) - parseInt(a.id.replace('y', '')));
                             store.pastExams[subj].columns = [...customCols, ...yearCols];
+                        }
+                    });
+
+                    if (!store.pastExams.math.records) store.pastExams.math.records = {};
+                    Object.keys(mathDefaultRecords).forEach(key => {
+                        if (!store.pastExams.math.records[key]) {
+                            store.pastExams.math.records[key] = JSON.parse(JSON.stringify(mathDefaultRecords[key]));
+                        } else {
+                            if (!store.pastExams.math.records[key].diff) store.pastExams.math.records[key].diff = mathDefaultRecords[key].diff;
+                            if (!store.pastExams.math.records[key].targetTime) store.pastExams.math.records[key].targetTime = mathDefaultRecords[key].targetTime;
+                            
+                            // 古いデータで分野が空欄だった場合、新しく追加された分野データをマージする
+                            if (!store.pastExams.math.records[key].topic && mathDefaultRecords[key].topic) {
+                                store.pastExams.math.records[key].topic = mathDefaultRecords[key].topic;
+                            }
+                            
+                            if (!store.pastExams.math.records[key].history) store.pastExams.math.records[key].history = [];
+                        }
+                    });
+
+                    if (!store.pastExams.physics.records) store.pastExams.physics.records = {};
+                    Object.keys(physDefaultRecords).forEach(key => {
+                        if (!store.pastExams.physics.records[key]) {
+                            store.pastExams.physics.records[key] = JSON.parse(JSON.stringify(physDefaultRecords[key]));
+                        } else {
+                            if (!store.pastExams.physics.records[key].physField) store.pastExams.physics.records[key].physField = physDefaultRecords[key].physField;
+                            if (!store.pastExams.physics.records[key].physTheme) store.pastExams.physics.records[key].physTheme = physDefaultRecords[key].physTheme;
+                            if (!store.pastExams.physics.records[key].physTarget12) store.pastExams.physics.records[key].physTarget12 = physDefaultRecords[key].physTarget12;
+                            if (!store.pastExams.physics.records[key].physTarget3) store.pastExams.physics.records[key].physTarget3 = physDefaultRecords[key].physTarget3;
+                            if (!store.pastExams.physics.records[key].history) store.pastExams.physics.records[key].history = [];
+                        }
+                    });
+
+                    if (!store.pastExams.chemistry.records) store.pastExams.chemistry.records = {};
+                    Object.keys(chemDefaultRecords).forEach(key => {
+                        if (!store.pastExams.chemistry.records[key]) {
+                            store.pastExams.chemistry.records[key] = JSON.parse(JSON.stringify(chemDefaultRecords[key]));
+                        } else {
+                            if (!store.pastExams.chemistry.records[key].chemDiff) store.pastExams.chemistry.records[key].chemDiff = chemDefaultRecords[key].chemDiff;
+                            if (!store.pastExams.chemistry.records[key].chemTheme) store.pastExams.chemistry.records[key].chemTheme = chemDefaultRecords[key].chemTheme;
+                            if (!store.pastExams.chemistry.records[key].history) store.pastExams.chemistry.records[key].history = [];
                         }
                     });
                 }
@@ -2151,7 +2458,7 @@
         }
 
         // ----------------------------------------------------
-        // 10. 過去問画面のロジック
+        // 10. 過去問画面のロジック（フィルタ・検索機能追加）
         // ----------------------------------------------------
         function showPastExamScreen() {
             try {
@@ -2175,10 +2482,253 @@
                 const div = document.createElement("div");
                 div.className = "pe-tab" + (currentPESubject === key ? " active" : "");
                 div.innerText = subj.title || key;
-                div.onclick = () => { currentPESubject = key; renderPETabs(); renderPETable(); };
+                div.onclick = () => { 
+                    currentPESubject = key; 
+                    renderPETabs(); 
+                    renderPETable(); 
+                };
                 tabsContainer.appendChild(div);
             });
+
+            // ▼ 科目に応じて検索ボタンを切り替え ▼
+            document.getElementById("btnMathFilter").style.display = (currentPESubject === "math") ? "block" : "none";
+            document.getElementById("btnPhysFilter").style.display = (currentPESubject === "physics") ? "block" : "none";
+            document.getElementById("btnChemFilter").style.display = (currentPESubject === "chemistry") ? "block" : "none";
+            document.getElementById("btnDefaultFilter").style.display = (["math", "physics", "chemistry"].includes(currentPESubject)) ? "none" : "block";
         }
+
+        // ▼ NEW: 過去問検索機能 (モーダルの開閉) ▼
+        function openPEMathFilterModal() {
+            document.getElementById("mathSearchText").value = "";
+            document.querySelectorAll(".math-diff-chk").forEach(chk => chk.checked = true);
+            document.getElementById("mathStatusFilter").value = "";
+            document.getElementById("peMathFilterModal").classList.add("active");
+        }
+        function closePEMathFilterModal() { document.getElementById("peMathFilterModal").classList.remove("active"); }
+
+        function openPEPhysFilterModal() {
+            document.getElementById("physSearchText").value = "";
+            document.getElementById("physStatusFilter").value = "";
+            document.getElementById("pePhysFilterModal").classList.add("active");
+        }
+        function closePEPhysFilterModal() { document.getElementById("pePhysFilterModal").classList.remove("active"); }
+
+        function openPEChemFilterModal() {
+            document.getElementById("chemSearchText").value = "";
+            document.querySelectorAll(".chem-diff-chk").forEach(chk => chk.checked = true);
+            document.getElementById("chemStatusFilter").value = "";
+            document.getElementById("peChemFilterModal").classList.add("active");
+        }
+        function closePEChemFilterModal() { document.getElementById("peChemFilterModal").classList.remove("active"); }
+
+        function openPEDefaultFilterModal() {
+            document.getElementById("defaultSearchText").value = "";
+            document.getElementById("defaultStatusFilter").value = "";
+            document.getElementById("peDefaultFilterModal").classList.add("active");
+        }
+        function closePEDefaultFilterModal() { document.getElementById("peDefaultFilterModal").classList.remove("active"); }
+
+        function executePEFilter() {
+            closePEMathFilterModal();
+            closePEPhysFilterModal();
+            closePEChemFilterModal();
+            closePEDefaultFilterModal();
+            showPEFilterListScreen();
+        }
+
+        function showPEFilterListScreen() {
+            try {
+                const subj = store.pastExams[currentPESubject];
+                document.getElementById("peFilterBookTitle").innerText = `過去問（${subj.title}） - 検索結果`;
+                const container = document.getElementById("peFilterCardGrid");
+                container.innerHTML = "";
+
+                let searchText = "";
+                let selectedDiffs = [];
+                let statusFilter = "";
+
+                // 科目に応じて入力値を取得
+                if (currentPESubject === 'math') {
+                    searchText = document.getElementById("mathSearchText").value.toLowerCase().trim();
+                    selectedDiffs = Array.from(document.querySelectorAll(".math-diff-chk:checked")).map(chk => chk.value);
+                    statusFilter = document.getElementById("mathStatusFilter").value;
+                } else if (currentPESubject === 'physics') {
+                    searchText = document.getElementById("physSearchText").value.toLowerCase().trim();
+                    statusFilter = document.getElementById("physStatusFilter").value;
+                } else if (currentPESubject === 'chemistry') {
+                    searchText = document.getElementById("chemSearchText").value.toLowerCase().trim();
+                    selectedDiffs = Array.from(document.querySelectorAll(".chem-diff-chk:checked")).map(chk => chk.value);
+                    statusFilter = document.getElementById("chemStatusFilter").value;
+                } else {
+                    searchText = document.getElementById("defaultSearchText").value.toLowerCase().trim();
+                    statusFilter = document.getElementById("defaultStatusFilter").value;
+                }
+
+                let resultList = [];
+
+                if(subj.columns && Array.isArray(subj.columns)) {
+                    subj.columns.forEach(col => {
+                        if(!col) return;
+                        if(subj.questions && Array.isArray(subj.questions)) {
+                            subj.questions.forEach(q => {
+                                if(!q || !subj.records) return;
+                                const rec = subj.records[`${col.id}_${q.id}`] || { history: [] };
+                                const history = Array.isArray(rec.history) ? rec.history : [];
+                                const validHistory = history.filter(h => h && h.mark && h.mark !== "ー");
+                                const latest = validHistory.length > 0 ? validHistory[validHistory.length - 1] : null;
+
+                                const latestMark = latest ? latest.mark : null;
+                                const prevMark = validHistory.length > 1 ? validHistory[validHistory.length - 2].mark : null;
+
+                                let isMatch = true;
+
+                                // 1. キーワード検索 (分野・テーマ)
+                                if (searchText) {
+                                    let topicText = "";
+                                    if (currentPESubject === 'physics') {
+                                        topicText = `${rec.physField || ''} ${rec.physTheme || ''}`;
+                                    } else if (currentPESubject === 'chemistry') {
+                                        topicText = `${rec.chemTheme || ''}`;
+                                    } else {
+                                        topicText = `${rec.topic || ''}`;
+                                    }
+                                    if (!topicText.toLowerCase().includes(searchText)) {
+                                        isMatch = false;
+                                    }
+                                }
+
+                                // 2. 難易度検索 (数学・化学の複数選択対応)
+                                if (isMatch && (currentPESubject === 'math' || currentPESubject === 'chemistry')) {
+                                    let cellDiff = "";
+                                    if (currentPESubject === 'chemistry') cellDiff = rec.chemDiff || "";
+                                    else cellDiff = rec.diff || "";
+                                    
+                                    let isDiffMatch = false;
+
+                                    // もし「なし」が選択されていて、難易度が空欄ならマッチ
+                                    if (selectedDiffs.includes("none") && (!cellDiff || cellDiff.trim() === "")) {
+                                        isDiffMatch = true;
+                                    }
+
+                                    if (cellDiff && cellDiff.trim() !== "") {
+                                        if (currentPESubject === 'chemistry') {
+                                            // 化学は「やや易」などが含まれるため分解して判定
+                                            let chemTokens = cellDiff.split(/[\s/／]+/);
+                                            chemTokens.forEach(token => {
+                                                if(selectedDiffs.includes('易') && token === '易') isDiffMatch = true;
+                                                if(selectedDiffs.includes('やや易') && token === 'やや易') isDiffMatch = true;
+                                                if(selectedDiffs.includes('標準') && token === '標準') isDiffMatch = true;
+                                                if(selectedDiffs.includes('やや難') && token === 'やや難') isDiffMatch = true;
+                                                if(selectedDiffs.includes('難') && token === '難') isDiffMatch = true;
+                                            });
+                                        } else {
+                                            // 数学などは A,B,C,D の文字が含まれるか
+                                            selectedDiffs.forEach(d => {
+                                                if (d !== "none" && cellDiff.includes(d)) isDiffMatch = true;
+                                            });
+                                        }
+                                    }
+
+                                    if (!isDiffMatch) {
+                                        isMatch = false;
+                                    }
+                                }
+
+                                // 3. 状態検索
+                                if (isMatch && statusFilter) {
+                                    if (statusFilter === "unanswered") {
+                                        if (latestMark) isMatch = false;
+                                    } else if (statusFilter === "batsu") {
+                                        const isRed = (latestMark === "×" || latestMark === "△");
+                                        const isYellow = (latestMark === "〇" && (prevMark === "×" || prevMark === "△"));
+                                        if (!isRed && !isYellow) isMatch = false;
+                                    } else if (statusFilter === "maru") {
+                                        const isBlue = (latestMark === "〇" && (prevMark !== "×" && prevMark !== "△"));
+                                        if (!isBlue) isMatch = false;
+                                    }
+                                }
+
+                                if (isMatch) {
+                                    resultList.push({ col, q, latest, history, rec });
+                                }
+                            });
+                        }
+                    });
+                }
+
+                document.getElementById("peFilterCountBadge").innerText = `${resultList.length}問`;
+
+                if (resultList.length === 0) {
+                    container.innerHTML = `<div style="text-align:center; padding: 40px; color: #6b7280; font-size: 0.85rem;">条件に一致する過去問は見つかりませんでした。</div>`;
+                } else {
+                    resultList.forEach(item => {
+                        const card = document.createElement("div");
+                        card.className = "batsu-card";
+                        
+                        let latestMark = item.latest ? item.latest.mark : null;
+                        let prevMark = item.history.length > 1 ? item.history[item.history.length - 2].mark : null;
+                        
+                        let statusTag = '';
+                        let borderColor = '#d1d5db';
+                        let borderLeftColor = '#9ca3af';
+
+                        if (!latestMark) {
+                            statusTag = `<span style="font-size:0.65rem; background:#f1f5f9; color:#475569; padding:2px 8px; border-radius:4px; font-weight:bold;">未解答</span>`;
+                        } else if (latestMark === "×" || latestMark === "△") {
+                            statusTag = `<span style="font-size:0.65rem; background:#ffe4e6; color:#be123c; padding:2px 8px; border-radius:4px; font-weight:bold;">要解き直し(${latestMark})</span>`;
+                            borderColor = '#fda4af'; borderLeftColor = '#fb7185';
+                        } else if (latestMark === "〇" && (prevMark === "×" || prevMark === "△")) {
+                            statusTag = `<span style="font-size:0.65rem; background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:4px; font-weight:bold;">要定着(〇←${prevMark})</span>`;
+                            borderColor = '#fde047'; borderLeftColor = '#f59e0b';
+                        } else if (latestMark === "〇") {
+                            statusTag = `<span style="font-size:0.65rem; background:#d1fae5; color:#047857; padding:2px 8px; border-radius:4px; font-weight:bold;">一発〇</span>`;
+                            borderColor = '#6ee7b7'; borderLeftColor = '#34d399';
+                        }
+
+                        card.style.borderColor = borderColor;
+                        card.style.borderLeftColor = borderLeftColor;
+
+                        const historyFlow = item.history.map(h => {
+                            if(!h) return "ー";
+                            let mColor = h.mark === '〇' ? '#10b981' : (h.mark === '×' ? '#e11d48' : (h.mark === '△' ? '#d97706' : '#9ca3af'));
+                            return `<span style="color:${mColor}">${h.mark || 'ー'}</span>`;
+                        }).join(' → ');
+
+                        let detailText = "";
+                        if (currentPESubject === 'physics') {
+                            detailText = `${item.rec.physField ? `分野:${item.rec.physField} ` : ''}${item.rec.physTheme ? `テーマ:${item.rec.physTheme}` : ''}`;
+                        } else if (currentPESubject === 'chemistry') {
+                            detailText = `${item.rec.chemDiff ? `難易度:${item.rec.chemDiff} ` : ''}${item.rec.chemTheme ? `テーマ:${item.rec.chemTheme.replace(/\n/g, ' ')}` : ''}`;
+                        } else {
+                            detailText = `${item.rec.diff ? `難易度:${item.rec.diff} ` : ''}${item.rec.topic ? `分野:${item.rec.topic}` : ''}`;
+                        }
+
+                        card.innerHTML = `
+                            <div class="batsu-info">
+                                <div class="batsu-q-title">
+                                    <span>${item.col.name} - ${item.q.name}</span>
+                                    ${statusTag}
+                                </div>
+                                ${detailText ? `<div style="font-size:0.75rem; color:#0369a1; margin-top:2px; font-weight:normal;">💡 ${detailText}</div>` : ''}
+                                ${item.latest && item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;">📝 メモ: ${item.latest.note}</div>` : ''}
+                                <div class="batsu-meta">
+                                    <span>履歴: ${historyFlow || 'なし'}</span>
+                                    <span>最新: ${item.latest && item.latest.date ? item.latest.date : '未記録'} ${item.latest && item.latest.score ? `(${item.latest.score}点)` : ''}</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline" style="border-color: ${borderColor}; color: var(--text-color);">記録</button>
+                        `;
+                        card.addEventListener("click", () => { openPECellModal(item.col.id, item.q.id); });
+                        container.appendChild(card);
+                    });
+                }
+                switchScreen("peFilterListScreen");
+            } catch(e) {
+                console.error("showPEFilterListScreen error:", e);
+                alert("検索結果の表示中にエラーが発生しました。\n詳細: " + e.message);
+            }
+        }
+        // ▲ NEW: 過去問検索機能 終了 ▲
 
         function renderPETable() {
             if (!store || !store.pastExams) return;
@@ -2287,7 +2837,7 @@
                             }
 
                             rowHtml += `
-                            <td class="${cellBgClass}">
+                            <td class="${cellBgClass}" id="pe-cell-${col.id}-${q.id}">
                                 <div class="pe-cell-display ${latest.mark && latest.mark !== "ー" ? 'has-data' : ''}" onclick="openPECellModal('${col.id}', '${q.id}')">
                                     <div style="width:100%; display:flex; justify-content:space-between; font-size:0.6rem; color:#8b5cf6; margin-bottom:2px; font-weight:bold;">
                                         ${headerInfo}
@@ -2463,6 +3013,8 @@
                 
                 if (document.getElementById("peBatsuListScreen").classList.contains("active")) {
                     showPEBatsuListScreen();
+                } else if (document.getElementById("peFilterListScreen").classList.contains("active")) {
+                    showPEFilterListScreen();
                 }
             }
         }
@@ -2514,6 +3066,8 @@
             
             if (document.getElementById("peBatsuListScreen").classList.contains("active")) {
                 showPEBatsuListScreen();
+            } else if (document.getElementById("peFilterListScreen").classList.contains("active")) {
+                showPEFilterListScreen();
             }
         }
 
