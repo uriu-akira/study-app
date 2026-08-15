@@ -1239,61 +1239,49 @@
                     } catch(e) {}
                 });
 
-                saves.sort((a, b) => a.vNum - b.vNum);
+                // 降順ソート（一番新しいものが最初）
+                saves.sort((a, b) => b.vNum - a.vNum);
 
                 let tempExams = JSON.parse(JSON.stringify(defaultPastExams));
 
                 if (saves.length > 0) {
-                    // セーブデータが存在する場合：デフォルト問題集は読み込まず、セーブデータのみで構成する
+                    // ▼▼▼ 完全修正箇所：一番新しいデータだけを読み込み、古いデータは合体させずに削除する ▼▼▼
+                    const latestSave = saves[0];
                     let loadedBooks = {};
                     
-                    saves.forEach(save => {
-                        if (save.data.books) {
-                            Object.keys(save.data.books).forEach(bId => {
-                                const b = save.data.books[bId];
-                                if (!b || !b.title) return;
-                                
-                                if (!loadedBooks[bId]) {
-                                    loadedBooks[bId] = b;
-                                    if (!loadedBooks[bId].data) loadedBooks[bId].data = {};
-                                } else {
-                                    // 複数セーブがあった場合の上書きマージ
-                                    if (!loadedBooks[bId].data) loadedBooks[bId].data = {};
-                                    if (b.data) {
-                                        Object.keys(b.data).forEach(dKey => {
-                                            loadedBooks[bId].data[dKey] = b.data[dKey];
-                                        });
-                                    }
-                                    if (b.sections && b.sections.length > 0) {
-                                        loadedBooks[bId].sections = b.sections;
-                                    }
-                                    if (b.bgColor) {
-                                        loadedBooks[bId].bgColor = b.bgColor;
-                                    }
-                                    loadedBooks[bId].title = b.title;
-                                    loadedBooks[bId].subject = b.subject;
+                    if (latestSave.data.books) {
+                        Object.keys(latestSave.data.books).forEach(bId => {
+                            const b = latestSave.data.books[bId];
+                            if (!b || !b.title) return;
+                            loadedBooks[bId] = b;
+                            if (!loadedBooks[bId].data) loadedBooks[bId].data = {};
+                        });
+                    }
+
+                    if (latestSave.data.pastExams) {
+                        Object.keys(latestSave.data.pastExams).forEach(subj => {
+                            if (tempExams[subj]) {
+                                if (latestSave.data.pastExams[subj].columns && latestSave.data.pastExams[subj].columns.length > 0) {
+                                    tempExams[subj].columns = latestSave.data.pastExams[subj].columns;
                                 }
-                            });
-                        }
-                        if (save.data.pastExams) {
-                            Object.keys(save.data.pastExams).forEach(subj => {
-                                if (tempExams[subj]) {
-                                    if (save.data.pastExams[subj].columns && save.data.pastExams[subj].columns.length > 0) {
-                                        tempExams[subj].columns = save.data.pastExams[subj].columns;
-                                    }
-                                    if (save.data.pastExams[subj].records) {
-                                        if (!tempExams[subj].records) tempExams[subj].records = {};
-                                        Object.keys(save.data.pastExams[subj].records).forEach(rId => {
-                                            tempExams[subj].records[rId] = { ...tempExams[subj].records[rId], ...save.data.pastExams[subj].records[rId] };
-                                        });
-                                    }
+                                if (latestSave.data.pastExams[subj].records) {
+                                    if (!tempExams[subj].records) tempExams[subj].records = {};
+                                    Object.keys(latestSave.data.pastExams[subj].records).forEach(rId => {
+                                        tempExams[subj].records[rId] = { ...tempExams[subj].records[rId], ...latestSave.data.pastExams[subj].records[rId] };
+                                    });
                                 }
-                            });
-                        }
-                    });
+                            }
+                        });
+                    }
 
                     store.books = loadedBooks;
                     store.pastExams = tempExams;
+
+                    // 古いセーブデータの削除（掃除）
+                    for (let i = 1; i < saves.length; i++) {
+                        try { localStorage.removeItem(saves[i].key); } catch(e) {}
+                    }
+                    // ▲▲▲ 修正ここまで ▲▲▲
                 } else {
                     // 初回起動時（セーブデータなし）
                     store.books = JSON.parse(JSON.stringify(defaultBooks));
@@ -1318,6 +1306,7 @@
                         }
                     });
 
+                    // (math, physics, chemistry補完)
                     if (!store.pastExams.math.records) store.pastExams.math.records = {};
                     Object.keys(mathDefaultRecords).forEach(key => {
                         if (!store.pastExams.math.records[key]) {
@@ -1325,11 +1314,9 @@
                         } else {
                             if (!store.pastExams.math.records[key].diff) store.pastExams.math.records[key].diff = mathDefaultRecords[key].diff;
                             if (!store.pastExams.math.records[key].targetTime) store.pastExams.math.records[key].targetTime = mathDefaultRecords[key].targetTime;
-                            
                             if (!store.pastExams.math.records[key].topic && mathDefaultRecords[key].topic) {
                                 store.pastExams.math.records[key].topic = mathDefaultRecords[key].topic;
                             }
-                            
                             if (!store.pastExams.math.records[key].history) store.pastExams.math.records[key].history = [];
                         }
                     });
