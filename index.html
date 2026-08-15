@@ -1020,7 +1020,7 @@
             </div>
         </div>
     </div>
-    <!-- 過去問 列（年度・模試）追加モーダル -->
+        <!-- 過去問 列（年度・模試）追加モーダル -->
     <div class="modal-overlay" id="peColModal">
         <div class="modal-content">
             <div class="modal-header">過去問・模試の追加</div>
@@ -1436,7 +1436,9 @@
                 const finalBooks = {};
                 Object.keys(tempBooks).forEach(k => {
                     const title = tempBooks[k].title;
-                    if (booksByTitle[title] === k) {
+                    if (booksByTitle[title] && booksByTitle[title] !== k) {
+                        // 重複なのでスキップ
+                    } else {
                         finalBooks[k] = tempBooks[k];
                     }
                 });
