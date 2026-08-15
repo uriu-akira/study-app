@@ -1705,14 +1705,24 @@
                 }
                 card.style.backgroundColor = cardBgColor;
 
-                const isPastOrToday = item.planDate <= todayStr;
-                card.style.borderColor = isPastOrToday ? '#f59e0b' : meta.color;
-                card.style.borderLeftColor = isPastOrToday ? '#d97706' : meta.color;
+                let latestMark = item.latest ? item.latest.mark : null;
+                let prevMark = item.history && item.history.length > 1 ? item.history[item.history.length - 2].mark : null;
+                
+                card.style.borderColor = meta.color; 
+                card.style.borderLeftColor = meta.color;
+                
+                // ★指定リストと同じ色付けロジック
+                if (latestMark === "×" || latestMark === "△") { 
+                    card.style.borderColor = '#fda4af'; card.style.borderLeftColor = '#fb7185'; 
+                } else if (latestMark === "〇") { 
+                    card.style.borderColor = '#6ee7b7'; card.style.borderLeftColor = '#34d399'; 
+                }
 
+                const isPastOrToday = item.planDate <= todayStr;
                 const pParts = item.planDate.split("-");
                 const shortPDate = pParts.length === 3 ? `${pParts[1]}/${pParts[2]}` : item.planDate;
                 
-                let statusTag = `<span style="font-size:0.65rem; background:${isPastOrToday ? '#fef3c7' : '#ffffff'}; color:${isPastOrToday ? '#b45309' : meta.text}; padding:2px 8px; border-radius:4px; font-weight:bold; border: 1px solid ${isPastOrToday ? 'transparent' : meta.color}33;">📅 ${shortPDate}</span>`;
+                let planDateTag = `<span style="font-size:0.65rem; background:${isPastOrToday ? '#fef3c7' : '#f8fafc'}; color:${isPastOrToday ? '#b45309' : '#475569'}; padding:2px 8px; border-radius:4px; font-weight:bold; border: 1px solid ${isPastOrToday ? '#fcd34d' : '#cbd5e1'};">📅 予定: ${shortPDate}</span>`;
 
                 const historyFlow = item.history.map(h => {
                     if(!h) return "ー";
@@ -1720,25 +1730,57 @@
                     return `<span style="color:${mColor}">${h.mark || 'ー'}</span>`;
                 }).join(' → ');
 
+                // 〇×バッジ
+                let markStatusTag = '';
+                if (!latestMark || latestMark === "ー") {
+                    markStatusTag = `<span style="font-size:0.65rem; background:#ffffff; color:#4b5563; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #cbd5e1;">未 / ー</span>`;
+                } else if (latestMark === "×" || latestMark === "△") {
+                    markStatusTag = `<span style="font-size:0.65rem; background:#ffe4e6; color:#be123c; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #fda4af;">${latestMark}</span>`;
+                } else if (latestMark === "〇") {
+                    markStatusTag = `<span style="font-size:0.65rem; background:#d1fae5; color:#047857; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #6ee7b7;">〇</span>`;
+                }
+
                 if (item.type === 'book') {
-                    const custom = store.books[item.bookId].data[`${item.secId}_${item.qNum}_customNum`] || "";
-                    let qNumLabel = custom || `${item.secId}・${item.qNum}`;
+                    const backup = currentBookId;
+                    currentBookId = item.bookId;
+                    
+                    const qNumLabel = getQDisplayLabel(item.secId, item.qNum);
+                    let qDisplay = "";
+                    const secLabel = getSectionLabel(item.title, item.secId);
+
+                    if (item.bookId === "book_chem_shinenshu" || item.title.includes("化学の新演習") || item.title.includes("新理系の化学問題100選") || item.title.includes("物理重要問題集") || item.title.includes("鎌田") || item.title.includes("福間")) {
+                        qDisplay = `${item.secName} ${qNumLabel}`;
+                        if (item.bookId === "book_chem_shinenshu" || item.title.includes("化学の新演習")) {
+                            qDisplay = `${item.secName} ${qNumLabel}${qNumLabel.endsWith('番') ? '' : '番'}`;
+                        }
+                    } else if (item.title.includes("マスター・オブ・整数") || item.title.includes("合格る確率")) {
+                        qDisplay = `${item.secName} ${qNumLabel}`;
+                    } else {
+                        qDisplay = `${secLabel} ${item.secName} ${qNumLabel}`;
+                    }
+
+                    const noteVal = getNote(item.secId, item.qNum);
                     const starsDisplay = item.diff > 0 ? "★".repeat(item.diff) : "";
                     
                     card.innerHTML = `
                         <div class="batsu-info">
                             <div class="batsu-q-title">
-                                <span>【${item.title}】 ${item.secName} ${qNumLabel}</span>
-                                <span style="color:#d97706; font-size:0.8rem; letter-spacing:-1px;">${starsDisplay}</span>
-                                ${statusTag}
+                                <span>【${item.title}】 ${qDisplay}</span>
+                                ${starsDisplay ? `<span style="color:#d97706; font-size:0.8rem; letter-spacing:-1px;">${starsDisplay}</span>` : ''}
+                                ${markStatusTag}
+                                ${planDateTag}
                             </div>
+                            ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">📝 備考: ${noteVal}</div>` : ''}
                             <div class="batsu-meta">
                                 <span>履歴: ${historyFlow || 'なし'}</span>
-                                <span>最終: ${item.latest.mark || 'ー'}</span>
+                                <span>最終解答日: ${item.latest.date || '未記録'}</span>
+                                ${item.latest.time ? `<span>時間: ${item.latest.time}分</span>` : ''}
                             </div>
                         </div>
-                        <button class="btn btn-outline" style="border-color: ${isPastOrToday ? '#f59e0b' : meta.color}; color: var(--text-color); background: rgba(255,255,255,0.7);">記録</button>
+                        <button class="btn btn-outline" style="border-color: ${meta.color}; color: var(--text-color); background: rgba(255,255,255,0.7);">記録</button>
                     `;
+                    currentBookId = backup;
+
                     card.addEventListener("click", () => { 
                         currentBookId = item.bookId;
                         openModal(item.secId, item.qNum);
@@ -1746,26 +1788,29 @@
                 } else {
                     let detailText = "";
                     if (item.subjKey === 'physics') {
-                        detailText = `${item.rec.physField || ''} ${item.rec.physTheme || ''}`;
+                        detailText = `${item.rec.physField ? `分野:${item.rec.physField} ` : ''}${item.rec.physTheme ? `テーマ:${item.rec.physTheme}` : ''}`;
                     } else if (item.subjKey === 'chemistry') {
-                        detailText = `${item.rec.chemTheme ? item.rec.chemTheme.replace(/\n/g, ' ') : ''}`;
+                        detailText = `${item.rec.chemDiff ? `難易度:${item.rec.chemDiff} ` : ''}${item.rec.chemTheme ? `テーマ:${item.rec.chemTheme.replace(/\n/g, ' ')}` : ''}`;
                     } else {
-                        detailText = `${item.rec.topic || ''}`;
+                        detailText = `${item.rec.diff ? `難易度:${item.rec.diff} ` : ''}${item.rec.topic ? `分野:${item.rec.topic}` : ''}`;
                     }
 
                     card.innerHTML = `
                         <div class="batsu-info">
                             <div class="batsu-q-title">
                                 <span>【過去問: ${item.title}】 ${item.colName} - ${item.qName}</span>
-                                ${statusTag}
+                                ${markStatusTag}
+                                ${planDateTag}
                             </div>
                             ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">💡 ${detailText}</div>` : ''}
+                            ${item.latest && item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;">📝 メモ: ${item.latest.note}</div>` : ''}
                             <div class="batsu-meta">
                                 <span>履歴: ${historyFlow || 'なし'}</span>
-                                <span>最新: ${item.latest.mark || 'ー'}</span>
+                                <span>最終解答日: ${item.latest && item.latest.date ? item.latest.date : '未記録'} ${item.latest && item.latest.score ? `(${item.latest.score}点)` : ''}</span>
+                                ${item.latest && item.latest.time ? `<span>時間: ${item.latest.time}分</span>` : ''}
                             </div>
                         </div>
-                        <button class="btn btn-outline" style="border-color: ${isPastOrToday ? '#f59e0b' : meta.color}; color: var(--text-color); background: rgba(255,255,255,0.7);">記録</button>
+                        <button class="btn btn-outline" style="border-color: ${meta.color}; color: var(--text-color); background: rgba(255,255,255,0.7);">記録</button>
                     `;
                     card.addEventListener("click", () => { 
                         currentPESubject = item.subjKey;
@@ -1777,8 +1822,6 @@
             });
         }
         // ==========================================
-
-
         function getLatestEntry(secId, qNum) {
             const history = getHistoryArray(secId, qNum);
             let latest = { mark: "ー", time: "", date: "" };
