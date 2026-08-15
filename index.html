@@ -1245,7 +1245,7 @@
                 let tempExams = JSON.parse(JSON.stringify(defaultPastExams));
 
                 if (saves.length > 0) {
-                    // ▼▼▼ 完全修正箇所：一番新しいデータだけを読み込み、古いデータは合体させずに削除する ▼▼▼
+                    // 最新のセーブデータのみ読み込み
                     const latestSave = saves[0];
                     let loadedBooks = {};
                     
@@ -1281,7 +1281,6 @@
                     for (let i = 1; i < saves.length; i++) {
                         try { localStorage.removeItem(saves[i].key); } catch(e) {}
                     }
-                    // ▲▲▲ 修正ここまで ▲▲▲
                 } else {
                     // 初回起動時（セーブデータなし）
                     store.books = JSON.parse(JSON.stringify(defaultBooks));
@@ -2670,6 +2669,15 @@
                     const importedStore = JSON.parse(e.target.result);
                     if (importedStore && importedStore.books) {
                         store = importedStore;
+                        
+                        // インポートに成功したら、ローカルにある過去のセーブデータをすべて掃除する
+                        const allKeys = Object.keys(localStorage);
+                        allKeys.forEach(k => {
+                            if (k.startsWith("multi_book_progress")) {
+                                localStorage.removeItem(k);
+                            }
+                        });
+
                         saveStore();
                         alert("データの読み込みが完了しました！");
                         showDashboard();
