@@ -1359,14 +1359,6 @@
 
         function loadStore() {
             try {
-                let tempBooks = JSON.parse(JSON.stringify(defaultBooks));
-                let tempExams = JSON.parse(JSON.stringify(defaultPastExams));
-                let booksByTitle = {};
-                
-                Object.keys(tempBooks).forEach(k => {
-                    booksByTitle[tempBooks[k].title] = k;
-                });
-
                 const allKeys = Object.keys(localStorage);
                 let saves = [];
                 allKeys.forEach(k => {
@@ -1383,69 +1375,66 @@
 
                 saves.sort((a, b) => a.vNum - b.vNum);
 
-                saves.forEach(save => {
-                    if (save.data.books) {
-                        Object.keys(save.data.books).forEach(bId => {
-                            const b = save.data.books[bId];
-                            if (!b || !b.title) return;
+                let tempExams = JSON.parse(JSON.stringify(defaultPastExams));
 
-                            let targetId = null;
-                            Object.keys(tempBooks).forEach(tid => {
-                                if (tempBooks[tid].title === b.title) {
-                                    targetId = tid;
+                if (saves.length > 0) {
+                    // セーブデータが存在する場合：デフォルト問題集は読み込まず、セーブデータのみで構成する
+                    let loadedBooks = {};
+                    
+                    saves.forEach(save => {
+                        if (save.data.books) {
+                            Object.keys(save.data.books).forEach(bId => {
+                                const b = save.data.books[bId];
+                                if (!b || !b.title) return;
+                                
+                                if (!loadedBooks[bId]) {
+                                    loadedBooks[bId] = b;
+                                    if (!loadedBooks[bId].data) loadedBooks[bId].data = {};
+                                } else {
+                                    // 複数セーブがあった場合の上書きマージ
+                                    if (!loadedBooks[bId].data) loadedBooks[bId].data = {};
+                                    if (b.data) {
+                                        Object.keys(b.data).forEach(dKey => {
+                                            loadedBooks[bId].data[dKey] = b.data[dKey];
+                                        });
+                                    }
+                                    if (b.sections && b.sections.length > 0) {
+                                        loadedBooks[bId].sections = b.sections;
+                                    }
+                                    if (b.bgColor) {
+                                        loadedBooks[bId].bgColor = b.bgColor;
+                                    }
+                                    loadedBooks[bId].title = b.title;
+                                    loadedBooks[bId].subject = b.subject;
                                 }
                             });
-                            
-                            if (!targetId) {
-                                targetId = bId;
-                                tempBooks[targetId] = b;
-                                if (!tempBooks[targetId].data) tempBooks[targetId].data = {};
-                            } else {
-                                if (!tempBooks[targetId].data) tempBooks[targetId].data = {};
-                                if (b.data) {
-                                    Object.keys(b.data).forEach(dKey => {
-                                        tempBooks[targetId].data[dKey] = b.data[dKey];
-                                    });
+                        }
+                        if (save.data.pastExams) {
+                            Object.keys(save.data.pastExams).forEach(subj => {
+                                if (tempExams[subj]) {
+                                    if (save.data.pastExams[subj].columns && save.data.pastExams[subj].columns.length > 0) {
+                                        tempExams[subj].columns = save.data.pastExams[subj].columns;
+                                    }
+                                    if (save.data.pastExams[subj].records) {
+                                        if (!tempExams[subj].records) tempExams[subj].records = {};
+                                        Object.keys(save.data.pastExams[subj].records).forEach(rId => {
+                                            tempExams[subj].records[rId] = { ...tempExams[subj].records[rId], ...save.data.pastExams[subj].records[rId] };
+                                        });
+                                    }
                                 }
-                                if (b.sections && b.sections.length > 0) {
-                                    tempBooks[targetId].sections = b.sections;
-                                }
-                                if (b.bgColor) {
-                                    tempBooks[targetId].bgColor = b.bgColor;
-                                }
-                            }
-                        });
-                    }
-                    if (save.data.pastExams) {
-                        Object.keys(save.data.pastExams).forEach(subj => {
-                            if (tempExams[subj]) {
-                                if (save.data.pastExams[subj].columns && save.data.pastExams[subj].columns.length > 0) {
-                                    tempExams[subj].columns = save.data.pastExams[subj].columns;
-                                }
-                                if (save.data.pastExams[subj].records) {
-                                    if (!tempExams[subj].records) tempExams[subj].records = {};
-                                    Object.keys(save.data.pastExams[subj].records).forEach(rId => {
-                                        tempExams[subj].records[rId] = { ...tempExams[subj].records[rId], ...save.data.pastExams[subj].records[rId] };
-                                    });
-                                }
-                            }
-                        });
-                    }
-                });
+                            });
+                        }
+                    });
 
-                const finalBooks = {};
-                Object.keys(tempBooks).forEach(k => {
-                    const title = tempBooks[k].title;
-                    if (booksByTitle[title] && booksByTitle[title] !== k) {
-                        // 重複なのでスキップ
-                    } else {
-                        finalBooks[k] = tempBooks[k];
-                    }
-                });
+                    store.books = loadedBooks;
+                    store.pastExams = tempExams;
+                } else {
+                    // 初回起動時（セーブデータなし）
+                    store.books = JSON.parse(JSON.stringify(defaultBooks));
+                    store.pastExams = tempExams;
+                }
 
-                store.books = finalBooks;
-                store.pastExams = tempExams;
-
+                // 過去問のデフォルトレコードやカラム補完（常に実行）
                 if (store.pastExams) {
                     Object.keys(defaultPastExams).forEach(subj => {
                         if (!store.pastExams[subj]) store.pastExams[subj] = JSON.parse(JSON.stringify(defaultPastExams[subj]));
