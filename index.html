@@ -5,46 +5,250 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="学習管理">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>問題集進捗管理 App</title>
     <style>
-        :root { --primary-bg: #f8fafc; --card-bg: #ffffff; --border-color: #e2e8f0; --text-color: #334155; --text-muted: #64748b; --accent-color: #f59e0b; --success-color: #10b981; --primary-color: #0ea5e9; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
-        html, body { width: 100%; height: 100%; height: 100dvh; overflow: hidden; background-color: var(--primary-bg); color: var(--text-color); }
-        body { display: flex; flex-direction: column; }
-        .view-screen { display: none; flex-direction: column; width: 100%; height: 100%; overflow: hidden; }
-        .view-screen.active { display: flex; }
-        header { background-color: var(--card-bg); padding: 10px 16px; border-bottom: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 8px; z-index: 10; flex-shrink: 0; }
-        .header-top { display: flex; justify-content: space-between; align-items: center; }
-        h1 { font-size: 1.1rem; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; }
-        .btn { background-color: var(--primary-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        :root {
+            --primary-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-color: #334155;
+            --text-muted: #64748b;
+            --accent-color: #f59e0b;
+            --success-color: #10b981;
+            --primary-color: #0ea5e9;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            overflow: hidden;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .view-screen {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .view-screen.active {
+            display: flex;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.5px;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
         .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); filter: brightness(1.05); }
         .btn:active { transform: translateY(0); box-shadow: none; }
-        .btn-outline { background: #ffffff; border: 1px solid #cbd5e1; color: var(--text-color); box-shadow: none; }
-        .btn-outline:hover { background-color: #f1f5f9; transform: none; }
-        .btn-danger-outline { background: #ffffff; border: 1px solid #fda4af; color: #be123c; box-shadow: none; }
-        .btn-danger-outline:hover { background-color: #fff1f2; transform: none; }
-        .dashboard-content { flex: 1; padding: 20px; overflow-y: auto; max-width: 1000px; margin: 0 auto; width: 100%; }
-        .dash-summary { display: flex; gap: 16px; margin-bottom: 24px; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .summary-item { flex: 1; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid var(--border-color); }
+        
+        .btn-outline {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: var(--text-color);
+            box-shadow: none;
+        }
+        .btn-outline:hover { background-color: #f1f5f9; box-shadow: none; transform: none; }
+        
+        .btn-danger-outline {
+            background: #ffffff;
+            border: 1px solid #fda4af;
+            color: #be123c;
+            box-shadow: none;
+        }
+        .btn-danger-outline:hover { background-color: #fff1f2; box-shadow: none; transform: none; }
+
+        .dashboard-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .dash-summary {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .summary-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border-right: 1px solid var(--border-color);
+        }
         .summary-item:last-child { border-right: none; }
         .summary-label { font-size: 0.7rem; font-weight: bold; color: var(--text-muted); }
         .summary-value { font-size: 1.4rem; font-weight: 800; color: #0f172a; }
+
         .subject-section { margin-bottom: 32px; }
-        .subject-title { font-size: 1.1rem; font-weight: 800; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; }
-        .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-        .book-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; position: relative; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
-        .book-card:hover { transform: translateY(-4px); box-shadow: 0 12px 20px -8px rgba(0,0,0,0.15); border-color: #cbd5e1; }
+        .subject-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 6px;
+        }
+
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .book-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+        .book-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 20px -8px rgba(0,0,0,0.15);
+            border-color: #cbd5e1;
+        }
+
         .book-card-main { cursor: pointer; flex: 1; }
-        .book-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; margin-top: 4px; }
-        .book-title { font-size: 1.05rem; font-weight: bold; color: #0f172a; line-height: 1.3; padding-right: 8px; }
-        .subject-badge { font-size: 0.65rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; white-space: nowrap; background-color: #f1f5f9; color: #475569; }
-        .book-stats { font-size: 0.75rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; background: rgba(255, 255, 255, 0.6); padding: 10px; border-radius: 8px; }
+        .book-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            margin-top: 4px;
+        }
+        .book-title {
+            font-size: 1.05rem;
+            font-weight: bold;
+            color: #0f172a;
+            line-height: 1.3;
+            padding-right: 8px;
+        }
+
+        .subject-badge {
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 12px;
+            white-space: nowrap;
+            background-color: #f1f5f9;
+            color: #475569;
+        }
+
+        .book-stats {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 16px;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 10px;
+            border-radius: 8px;
+        }
         .book-stats-row { display: flex; justify-content: space-between; align-items: center; }
-        .progress-bar-bg { height: 8px; background-color: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 2px; }
-        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #38bdf8, var(--primary-color)); width: 0%; border-radius: 4px; transition: width 0.5s ease; }
-        .card-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: auto; padding-top: 12px; border-top: 1px dashed rgba(0,0,0,0.1); }
-        .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(75px, 1fr)); gap: 4px; background-color: var(--card-bg); padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border-color); }
+
+        .progress-bar-bg {
+            height: 8px;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #38bdf8, var(--primary-color));
+            width: 0%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .card-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px dashed rgba(0,0,0,0.1);
+        }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(75px, 1fr));
+            gap: 4px;
+            background-color: var(--card-bg);
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
         .stat-item { display: flex; flex-direction: column; }
         .stat-label { font-size: 0.6rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
         .stat-value { font-size: 0.85rem; font-weight: 700; color: var(--text-color); }
@@ -54,52 +258,127 @@
         .stat-value.red { color: #e11d48; }
         .stat-value.yellow { color: #d97706; }
         .stat-value.star { color: #d97706; }
+
         .star-filter-box { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
         .star-filter-item { display: inline-flex; align-items: center; gap: 2px; font-size: 0.7rem; font-weight: bold; color: #d97706; cursor: pointer; }
         .star-filter-item input { cursor: pointer; accent-color: var(--accent-color); }
-        .table-container { flex: 1; overflow: auto; position: relative; background-color: #e5e3dc; -webkit-overflow-scrolling: touch; }
+
+        .table-container {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+            background-color: #e5e3dc;
+            -webkit-overflow-scrolling: touch;
+        }
+
         table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; }
-        th, td { border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); text-align: center; vertical-align: middle; padding: 0; min-width: 95px; font-size: 0.68rem; background-color: #ffffff; color: var(--text-color); }
-        thead tr:nth-child(1) th { position: sticky; top: 0; background-color: #f4eadd; color: #5c544b; font-weight: bold; z-index: 5; height: 200px; border-bottom: 2px solid #d97706; overflow: hidden; }
+        th, td {
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+            vertical-align: middle;
+            padding: 0;
+            min-width: 95px;
+            font-size: 0.68rem;
+            background-color: #ffffff;
+            color: var(--text-color);
+        }
+
+        /* 問題集テーブルのヘッダー */
+        thead tr:nth-child(1) th {
+            position: sticky; top: 0; background-color: #f4eadd; color: #5c544b;
+            font-weight: bold; z-index: 5; height: 200px; border-bottom: 2px solid #d97706; overflow: hidden;
+        }
         .header-cell-inner { display: flex; flex-direction: column; align-items: center; height: 100%; width: 100%; padding: 4px 0; overflow: hidden; }
         .sec-checkbox { margin-bottom: 4px; width: 18px; height: 18px; cursor: pointer; accent-color: #d97706; }
         .section-number { font-size: 0.72rem; font-weight: bold; margin-bottom: 2px; }
-        .section-title { writing-mode: vertical-rl; -webkit-writing-mode: vertical-rl; text-orientation: mixed; font-size: 0.65rem; font-weight: 600; letter-spacing: 1px; white-space: nowrap; flex: 1; display: flex; align-items: center; justify-content: flex-start; overflow: hidden; text-overflow: ellipsis; max-height: 100%; }
-        thead tr:nth-child(2) th { position: sticky; top: 200px; background: #eef0e8; color: #4a5345; font-weight: 700; font-size: 0.75rem; z-index: 5; height: 20px; border-bottom: 2px solid var(--success-color); }
+        .section-title {
+            writing-mode: vertical-rl; -webkit-writing-mode: vertical-rl; text-orientation: mixed;
+            font-size: 0.65rem; font-weight: 600; letter-spacing: 1px; white-space: nowrap;
+            flex: 1; display: flex; align-items: center; justify-content: flex-start;
+            overflow: hidden; text-overflow: ellipsis; max-height: 100%;
+        }
+
+        thead tr:nth-child(2) th {
+            position: sticky; top: 200px; background: #eef0e8; color: #4a5345;
+            font-weight: 700; font-size: 0.75rem; z-index: 5; height: 20px; border-bottom: 2px solid var(--success-color);
+        }
+
         tbody tr:nth-child(even) td { background-color: #faf9f6; }
+
         .q-cell { background-color: #dbe4eb !important; color: #1e293b !important; font-size: 0.65rem; padding: 4px 6px !important; text-align: left !important; vertical-align: top !important; cursor: pointer; user-select: none; border-left: 3px solid #64748b; }
         .q-cell:hover { background-color: #cbd7e1 !important; }
         .q-cell-inner { display: flex; flex-direction: column; align-items: flex-start; width: 100%; gap: 2px; pointer-events: none; }
         .q-number-row { display: flex; justify-content: space-between; align-items: center; width: 100%; font-weight: 800; color: #0f172a; }
         .q-diff-stars { font-size: 0.55rem; color: #d97706; letter-spacing: -1px; }
         .q-cell-note { font-size: 0.58rem; color: #0284c7; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .input-cell-display { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; height: 48px; cursor: pointer; padding: 3px 4px; user-select: none; border: 1px dashed #b1ac9e; border-radius: 4px; margin: 2px; background-color: #ffffff; transition: all 0.15s ease; position: relative; }
+
+        .input-cell-display {
+            display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start;
+            height: 48px; cursor: pointer; padding: 3px 4px; user-select: none;
+            border: 1px dashed #b1ac9e; border-radius: 4px; margin: 2px; background-color: #ffffff; transition: all 0.15s ease;
+            position: relative;
+        }
         .input-cell-display:hover { border-color: var(--primary-color); background-color: #f0f9ff; border-style: solid; }
         .input-cell-display:active { opacity: 0.7; }
-        td.cell-status-red .input-cell-display, td.cell-status-blue .input-cell-display, td.cell-status-yellow .input-cell-display { border: 1px solid transparent; margin: 0; height: 52px; background-color: transparent; }
+
+        td.cell-status-red .input-cell-display, td.cell-status-blue .input-cell-display, td.cell-status-yellow .input-cell-display {
+            border: 1px solid transparent; margin: 0; height: 52px; background-color: transparent;
+        }
+
         td.cell-status-red { background-color: #fff1f2 !important; color: #be123c !important; box-shadow: inset 0 0 0 1.5px #fda4af; position: relative; }
         td.cell-status-red::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background-color: #fb7185; }
         td.cell-status-blue { background-color: #f0f9ff !important; color: #0369a1 !important; box-shadow: inset 0 0 0 1.5px #7dd3fc; }
         td.cell-status-yellow { background-color: #fffbeb !important; color: #b45309 !important; box-shadow: inset 0 0 0 1.5px #fde047; }
+
         .cell-history-flow { font-weight: bold; font-size: 0.75rem; line-height: 1; display: flex; flex-wrap: wrap; gap: 2px; width: 100%; justify-content: flex-start; padding-left: 2px; }
         .history-mark { display: inline-block; color: #a1a1aa; }
         .history-mark.maru { color: #10b981; }
         .history-mark.batsu { color: #e11d48; font-weight: 900; }
         .history-mark.tri { color: #d97706; font-weight: 900; } 
+
         .cell-subinfo { font-size: 0.58rem; color: #9ca3af; line-height: 1; width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-left: 2px; }
         .cell-latest-status { font-weight: bold; font-size: 0.62rem; }
+
         .disabled-col { background-color: #f1f5f9 !important; opacity: 0.5; pointer-events: none; }
         th.disabled-header { opacity: 0.5; background-color: #e2e8f0 !important; }
         .filtered-out { display: none !important; }
-        /* 予定モード */
-        td.cell-status-red .planned-cell .input-cell-display, td.cell-status-blue .planned-cell .input-cell-display, td.cell-status-yellow .planned-cell .input-cell-display, .planned-cell .input-cell-display, .planned-cell .pe-cell-display { background-color: #334155 !important; color: #f1f5f9 !important; border: 1.5px dashed #f59e0b !important; }
+
+        /* ▼ 予定モードの専用スタイル (詳細度を上げて他を上書き) ▼ */
+        td.cell-status-red .planned-cell .input-cell-display,
+        td.cell-status-blue .planned-cell .input-cell-display,
+        td.cell-status-yellow .planned-cell .input-cell-display,
+        .planned-cell .input-cell-display,
+        .planned-cell .pe-cell-display {
+            background-color: #334155 !important;
+            color: #f1f5f9 !important;
+            border: 1.5px dashed #f59e0b !important;
+        }
         .planned-cell .cell-subinfo, .planned-cell .cell-history-flow { color: #cbd5e1 !important; }
         .planned-cell .cell-latest-status span { color: #f8fafc !important; }
         .planned-cell .q-number-row, .planned-cell .q-diff-stars { color: #f1f5f9 !important; }
-        td.cell-status-red .plan-selected .input-cell-display, td.cell-status-blue .plan-selected .input-cell-display, td.cell-status-yellow .plan-selected .input-cell-display, .plan-selected .input-cell-display, .plan-selected .pe-cell-display { background-color: #0f172a !important; color: #ffffff !important; border: 2px solid #38bdf8 !important; box-shadow: 0 0 8px rgba(56, 189, 248, 0.6) !important; }
+
+        td.cell-status-red .plan-selected .input-cell-display,
+        td.cell-status-blue .plan-selected .input-cell-display,
+        td.cell-status-yellow .plan-selected .input-cell-display,
+        .plan-selected .input-cell-display,
+        .plan-selected .pe-cell-display {
+            background-color: #0f172a !important;
+            color: #ffffff !important;
+            border: 2px solid #38bdf8 !important;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.6) !important;
+        }
         .plan-selected .cell-subinfo, .plan-selected .cell-history-flow { color: #cbd5e1 !important; }
         .plan-selected .q-number-row, .plan-selected .q-diff-stars, .plan-selected .cell-latest-status span { color: #f8fafc !important; }
-        .planned-date-badge { position: absolute; top: -6px; right: -6px; background-color: #f59e0b; color: #fff; font-size: 0.55rem; padding: 2px 4px; border-radius: 4px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.2); z-index: 2; }
+        
+        .planned-date-badge {
+            position: absolute; top: -6px; right: -6px;
+            background-color: #f59e0b; color: #fff;
+            font-size: 0.55rem; padding: 2px 4px; border-radius: 4px; font-weight: bold;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2); z-index: 2;
+        }
+        /* ▲ 予定モードの専用スタイル ▲ */
+
         .batsu-list-container { flex: 1; padding: 16px; overflow-y: auto; max-width: 900px; margin: 0 auto; width: 100%; }
         .batsu-card-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
         .batsu-card { background: var(--card-bg); border: 1px solid #cbd5e1; border-left: 5px solid #9ca3af; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.15s; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
@@ -107,56 +386,102 @@
         .batsu-info { display: flex; flex-direction: column; gap: 4px; }
         .batsu-q-title { font-size: 0.95rem; font-weight: bold; color: var(--text-color); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .batsu-meta { font-size: 0.7rem; color: #6b7280; display: flex; gap: 12px; margin-top: 2px; }
+
+        /* モーダル群 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(15, 23, 42, 0.5); backdrop-filter: blur(2px); z-index: 100; justify-content: center; align-items: center; }
         .modal-overlay.active { display: flex; }
+        
         .modal-content { background: var(--card-bg); color: var(--text-color); width: 340px; max-width: 90vw; max-height: 90vh; overflow-y: auto; border-radius: 16px; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border-color); }
+        
+        /* 過去問入力用のワイドモーダル設定 */
         .pe-modal-wide { width: 660px !important; max-width: 95vw !important; }
         .modal-cols { display: flex; flex-wrap: wrap; gap: 16px; }
         .modal-col { flex: 1; min-width: 280px; display: flex; flex-direction: column; gap: 8px; }
-        @media (max-width: 650px) { .modal-col { border-right: none !important; padding-right: 0 !important; border-bottom: 1px dashed var(--border-color); padding-bottom: 12px; } .modal-col:last-child { border-bottom: none; padding-bottom: 0; } }
+        @media (max-width: 650px) {
+            .modal-col { border-right: none !important; padding-right: 0 !important; border-bottom: 1px dashed var(--border-color); padding-bottom: 12px; }
+            .modal-col:last-child { border-bottom: none; padding-bottom: 0; }
+        }
+
         .modal-header { font-weight: bold; font-size: 1.1rem; color: #0f172a; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; text-align: center; }
+
         .history-list-box { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 6px; font-size: 0.72rem; max-height: 90px; overflow-y: auto; }
-        .history-item { display: flex; justify-content: space-between; padding: 4px 6px; border-bottom: 1px dashed var(--border-color); cursor: pointer; border-radius: 4px; transition: background-color 0.15s; }
+        .history-item { 
+            display: flex; justify-content: space-between; padding: 4px 6px; border-bottom: 1px dashed var(--border-color);
+            cursor: pointer; border-radius: 4px; transition: background-color 0.15s;
+        }
         .history-item:hover { background-color: #e2e8f0; }
         .history-item:last-child { border-bottom: none; }
+
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         .form-label { font-size: 0.75rem; font-weight: bold; color: #475569; }
         .form-help { font-size: 0.65rem; color: var(--text-muted); line-height: 1.4; }
         .mark-options { display: flex; gap: 8px; }
+
+        /* カラーピッカー用 */
         .color-picker-group { display: flex; align-items: center; gap: 8px; flex-direction: row; }
         .color-picker-group input[type="color"] { border: none; width: 40px; height: 40px; cursor: pointer; border-radius: 4px; padding: 0; background: none; }
+
         .mark-opt-btn, .pe-mark-opt-btn { flex: 1; padding: 12px 0; border: 1px solid var(--border-color); background-color: var(--primary-bg); border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; color: var(--text-muted); transition: all 0.15s; }
         .mark-opt-btn.selected[data-val="〇"], .pe-mark-opt-btn.selected[data-val="〇"] { background-color: #ecfdf5; color: #059669; border-color: #34d399; }
         .mark-opt-btn.selected[data-val="△"], .pe-mark-opt-btn.selected[data-val="△"] { background-color: #fef3c7; color: #d97706; border-color: #fcd34d; } 
         .mark-opt-btn.selected[data-val="×"], .pe-mark-opt-btn.selected[data-val="×"] { background-color: #fff1f2; color: #e11d48; border-color: #fb7185; }
         .mark-opt-btn.selected[data-val="ー"], .pe-mark-opt-btn.selected[data-val="ー"] { background-color: #f8fafc; color: #4b5563; border-color: #cbd5e1; }
+        
         .pe-diff-btn { flex: 1; padding: 8px 0; border: 1px solid var(--border-color); background-color: var(--primary-bg); border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer; color: #d97706; transition: all 0.15s; }
         .pe-diff-btn.selected { background-color: #fffbeb; border-color: #fcd34d; color: #b45309; }
+
         .diff-options { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
         .diff-opt-btn { padding: 10px 0; border: 1px solid var(--border-color); background-color: var(--primary-bg); border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; color: #d97706; text-align: center; transition: all 0.15s; }
         .diff-opt-btn.selected { background-color: #fffbeb; border-color: #fcd34d; color: #b45309; }
+
         .modal-input { width: 100%; padding: 10px; background-color: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.85rem; color: var(--text-color); }
         .modal-input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2); }
         textarea.modal-input { resize: vertical; min-height: 140px; font-family: monospace; line-height: 1.5; }
         .modal-actions { display: flex; gap: 8px; margin-top: 8px; }
         .modal-actions .btn { flex: 1; padding: 12px; font-size: 0.85rem; }
-        .pe-tabs { display: flex; gap: 8px; padding: 12px 16px 0; background: var(--card-bg); border-bottom: 1px solid var(--border-color); overflow-x: auto; }
-        .pe-tab { padding: 8px 16px; font-weight: bold; font-size: 0.9rem; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; transition: color 0.2s; }
+
+        /* 過去問画面 タブ・テーブル CSS */
+        .pe-tabs {
+            display: flex; gap: 8px; padding: 12px 16px 0; background: var(--card-bg); border-bottom: 1px solid var(--border-color); overflow-x: auto;
+        }
+        .pe-tab {
+            padding: 8px 16px; font-weight: bold; font-size: 0.9rem; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; transition: color 0.2s;
+        }
         .pe-tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
         .pe-tab:hover { color: var(--primary-color); }
-        #pe-table th, #pe-table td { border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); text-align: center; vertical-align: middle; padding: 8px; min-width: 110px; font-size: 0.8rem; }
-        #pe-table thead th { position: sticky; top: 0; background-color: #e0f2fe; color: #0284c7; z-index: 5; border-bottom: 2px solid #0ea5e9; }
-        #pe-table td:first-child, #pe-table th:first-child { position: sticky; left: 0; z-index: 10; background-color: #f1f5f9; font-weight: bold; color: #334155; border-right: 2px solid #cbd5e1; }
+
+        #pe-table th, #pe-table td {
+            border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); text-align: center; vertical-align: middle; padding: 8px; min-width: 110px; font-size: 0.8rem;
+        }
+        #pe-table thead th {
+            position: sticky; top: 0; background-color: #e0f2fe; color: #0284c7; z-index: 5; border-bottom: 2px solid #0ea5e9;
+        }
+        #pe-table td:first-child, #pe-table th:first-child {
+            position: sticky; left: 0; z-index: 10; background-color: #f1f5f9; font-weight: bold; color: #334155; border-right: 2px solid #cbd5e1;
+        }
         #pe-table th:first-child { z-index: 15; }
-        .pe-cell-display { display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 4px; padding: 6px; border-radius: 6px; border: 1px dashed #cbd5e1; cursor: pointer; background: #ffffff; transition: background 0.1s; min-height: 64px; position: relative; width: 100%; }
+        
+        .pe-cell-display {
+            display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 4px; padding: 6px; border-radius: 6px; border: 1px dashed #cbd5e1; cursor: pointer; background: #ffffff; transition: background 0.1s; min-height: 64px; position: relative; width: 100%;
+        }
         .pe-cell-display:hover { background-color: #f0f9ff; border-style: solid; border-color: var(--primary-color); }
         .pe-cell-display.has-data { border-style: solid; border-color: transparent; }
-        td.cell-status-red .pe-cell-display, td.cell-status-blue .pe-cell-display, td.cell-status-yellow .pe-cell-display { border: 1px solid transparent; margin: 0; background-color: transparent; }
-        .filtered-out-cell { opacity: 0.15 !important; pointer-events: none !important; filter: grayscale(100%) !important; background-color: #f1f5f9 !important; transition: all 0.2s ease; }
+
+        /* セル背景の安全設定 */
+        td.cell-status-red .pe-cell-display, td.cell-status-blue .pe-cell-display, td.cell-status-yellow .pe-cell-display {
+            border: 1px solid transparent; margin: 0; background-color: transparent;
+        }
+        
+        .filtered-out-cell {
+            opacity: 0.15 !important; pointer-events: none !important; filter: grayscale(100%) !important; background-color: #f1f5f9 !important; transition: all 0.2s ease;
+        }
     </style>
 </head>
 <body>
 
+    <!-- ==============================
+         画面1: ポータル (ダッシュボード)
+         ============================== -->
     <div id="dashboardScreen" class="view-screen active">
         <header>
             <div class="header-top">
@@ -175,15 +500,31 @@
         </header>
         <div class="dashboard-content">
             <div class="dash-summary" id="dashSummary">
-                <div class="summary-item"><span class="summary-label">登録問題集</span><span class="summary-value" id="summary-total-books">0冊</span></div>
-                <div class="summary-item"><span class="summary-label">総問題数</span><span class="summary-value" id="summary-total-q">0問</span></div>
-                <div class="summary-item"><span class="summary-label">解答済み</span><span class="summary-value" id="summary-answered-q" style="color: var(--primary-color);">0問</span></div>
-                <div class="summary-item"><span class="summary-label">全体の進捗率</span><span class="summary-value" id="summary-progress">0.0%</span></div>
+                <div class="summary-item">
+                    <span class="summary-label">登録問題集</span>
+                    <span class="summary-value" id="summary-total-books">0冊</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">総問題数</span>
+                    <span class="summary-value" id="summary-total-q">0問</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">解答済み</span>
+                    <span class="summary-value" id="summary-answered-q" style="color: var(--primary-color);">0問</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">全体の進捗率</span>
+                    <span class="summary-value" id="summary-progress">0.0%</span>
+                </div>
             </div>
+
             <div id="dashboardGroupsContainer"></div>
         </div>
     </div>
 
+    <!-- ==============================
+         画面Y: ポータル 学習予定リスト画面 (NEW)
+         ============================== -->
     <div id="portalPlanListScreen" class="view-screen">
         <header>
             <div class="header-top">
@@ -202,8 +543,12 @@
         </div>
     </div>
 
+    <!-- ==============================
+         画面2: 過去問・模試管理 画面
+         ============================== -->
     <div id="pastExamScreen" class="view-screen">
         <header style="padding-bottom: 0;">
+            <!-- 通常時のヘッダー -->
             <div class="header-top" id="peHeaderNormal" style="padding: 0 0 10px 0;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
@@ -211,16 +556,19 @@
                 </div>
                 <div style="display: flex; gap: 6px;">
                     <button class="btn" style="background-color: #14b8a6;" onclick="openPlanDateModal('pe')">📅 予定</button>
+                    <!-- ▼ 科目ごとに表示が切り替わる検索ボタン群 ▼ -->
                     <div id="peFilterButtons" style="display: flex; gap: 6px;">
                         <button class="btn" id="btnMathFilter" style="background-color: #0ea5e9; display: none;" onclick="openPEMathFilterModal()">🔍 数学検索</button>
                         <button class="btn" id="btnPhysFilter" style="background-color: #8b5cf6; display: none;" onclick="openPEPhysFilterModal()">🔍 物理検索</button>
                         <button class="btn" id="btnChemFilter" style="background-color: #10b981; display: none;" onclick="openPEChemFilterModal()">🔍 化学検索</button>
                         <button class="btn" id="btnDefaultFilter" style="background-color: #64748b; display: none;" onclick="openPEDefaultFilterModal()">🔍 条件検索</button>
                     </div>
+                    
                     <button class="btn" style="background-color: #e11d48;" onclick="showPEBatsuListScreen()">📌 要復習</button>
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
                 </div>
             </div>
+            <!-- 予定登録モード時のヘッダー -->
             <div class="header-top" id="peHeaderPlanMode" style="display:none; background-color:#1e293b; color:white; padding: 6px 12px; border-radius: 8px; margin-bottom: 10px;">
                 <span style="font-weight:bold; font-size:0.9rem;" id="pePlanModeTitle">予定登録モード</span>
                 <div style="display: flex; gap: 6px;">
@@ -228,6 +576,7 @@
                     <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()">✅ 予定登録</button>
                 </div>
             </div>
+
             <div class="pe-tabs" id="peTabs"></div>
         </header>
         <div class="table-container">
@@ -238,6 +587,9 @@
         </div>
     </div>
 
+    <!-- ==============================
+         画面3: 過去問 要復習リスト画面
+         ============================== -->
     <div id="peBatsuListScreen" class="view-screen">
         <header>
             <div class="header-top">
@@ -256,6 +608,9 @@
         </div>
     </div>
 
+    <!-- ==============================
+         画面X: 過去問 検索結果リスト画面
+         ============================== -->
     <div id="peFilterListScreen" class="view-screen">
         <header>
             <div class="header-top">
@@ -274,8 +629,12 @@
         </div>
     </div>
 
+    <!-- ==============================
+         画面4: 問題集 詳細画面
+         ============================== -->
     <div id="detailScreen" class="view-screen">
         <header>
+            <!-- 通常時のヘッダー -->
             <div class="header-top" id="detailHeaderNormal">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
@@ -289,6 +648,7 @@
                     <button class="btn btn-danger-outline" onclick="resetCurrentBookStatus()">初期化</button>
                 </div>
             </div>
+            <!-- 予定登録モード時のヘッダー -->
             <div class="header-top" id="detailHeaderPlanMode" style="display:none; background-color:#1e293b; color:white; padding: 6px 12px; border-radius: 8px;">
                 <span style="font-weight:bold; font-size:0.9rem;" id="detailPlanModeTitle">予定登録モード</span>
                 <div style="display: flex; gap: 6px;">
@@ -298,7 +658,10 @@
             </div>
 
             <div class="stats-bar">
-                <div class="stat-item"><span class="stat-label">総問題数</span><span class="stat-value" id="total-questions">0</span></div>
+                <div class="stat-item">
+                    <span class="stat-label">総問題数</span>
+                    <span class="stat-value" id="total-questions">0</span>
+                </div>
                 <div class="stat-item" style="grid-column: span 2;">
                     <span class="stat-label">★1 / ★2 / ★3 (表示・集計対象)</span>
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -311,23 +674,50 @@
                         </div>
                     </div>
                 </div>
-                <div class="stat-item"><span class="stat-label">解答済み</span><span class="stat-value accent" id="answered-count">0 / 0</span></div>
-                <div class="stat-item"><span class="stat-label">🔵青 (一発〇)</span><span class="stat-value blue" id="blue-count">0</span></div>
-                <div class="stat-item"><span class="stat-label">🔴赤 (要解き直し)</span><span class="stat-value red" id="red-count">0</span></div>
-                <div class="stat-item"><span class="stat-label">🟡黄 (要定着)</span><span class="stat-value yellow" id="yellow-count">0</span></div>
-                <div class="stat-item"><span class="stat-label">進捗率</span><span class="stat-value" id="progress-percent">0.0 %</span></div>
-                <div class="stat-item"><span class="stat-label">正答率</span><span class="stat-value success" id="accuracy-rate">0.0 %</span></div>
-                <div class="stat-item"><span class="stat-label">総学習時間</span><span class="stat-value" id="total-time">0分</span></div>
+                <div class="stat-item">
+                    <span class="stat-label">解答済み</span>
+                    <span class="stat-value accent" id="answered-count">0 / 0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">🔵青 (一発〇)</span>
+                    <span class="stat-value blue" id="blue-count">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">🔴赤 (要解き直し)</span>
+                    <span class="stat-value red" id="red-count">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">🟡黄 (要定着)</span>
+                    <span class="stat-value yellow" id="yellow-count">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">進捗率</span>
+                    <span class="stat-value" id="progress-percent">0.0 %</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">正答率</span>
+                    <span class="stat-value success" id="accuracy-rate">0.0 %</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">総学習時間</span>
+                    <span class="stat-value" id="total-time">0分</span>
+                </div>
             </div>
         </header>
         <div class="table-container">
             <table id="progress-table">
-                <thead><tr id="header-titles"></tr><tr id="header-counts"></tr></thead>
+                <thead>
+                    <tr id="header-titles"></tr>
+                    <tr id="header-counts"></tr>
+                </thead>
                 <tbody id="table-body"></tbody>
             </table>
         </div>
     </div>
 
+    <!-- ==============================
+         画面5: 問題集 要復習リスト画面
+         ============================== -->
     <div id="batsuListScreen" class="view-screen">
         <header>
             <div class="header-top">
@@ -347,6 +737,9 @@
         </div>
     </div>
 
+    <!-- ==============================
+         画面6: 問題集 ★指定リスト画面
+         ============================== -->
     <div id="starListScreen" class="view-screen">
         <header>
             <div class="header-top">
@@ -366,7 +759,11 @@
         </div>
     </div>
 
-    <!-- モーダル群 -->
+    <!-- ==============================
+         ここから下は モーダル (ポップアップ)
+         ============================== -->
+
+    <!-- NEW: 予定日指定モーダル -->
     <div class="modal-overlay" id="planDateModal">
         <div class="modal-content" style="width: 320px;">
             <div class="modal-header">学習予定日の指定</div>
@@ -382,6 +779,7 @@
         </div>
     </div>
 
+    <!-- 数学専用 検索条件入力モーダル -->
     <div class="modal-overlay" id="peMathFilterModal">
         <div class="modal-content">
             <div class="modal-header" style="color:#0ea5e9;">数学の条件検索</div>
@@ -415,6 +813,7 @@
         </div>
     </div>
 
+    <!-- 物理専用 検索条件入力モーダル -->
     <div class="modal-overlay" id="pePhysFilterModal">
         <div class="modal-content">
             <div class="modal-header" style="color:#8b5cf6;">物理の条件検索</div>
@@ -422,6 +821,7 @@
                 <label class="form-label" for="physSearchText">分野・テーマ (キーワード)</label>
                 <input type="text" class="modal-input" id="physSearchText" placeholder="例: 力学、電磁気、単振動">
             </div>
+            <!-- 物理はデフォルトで難易度フィールドを持たせていないため、キーワードと状態のみ -->
             <div class="form-group">
                 <label class="form-label" for="physStatusFilter">解答状態</label>
                 <select id="physStatusFilter" class="modal-input">
@@ -438,6 +838,7 @@
         </div>
     </div>
 
+    <!-- 化学専用 検索条件入力モーダル -->
     <div class="modal-overlay" id="peChemFilterModal">
         <div class="modal-content">
             <div class="modal-header" style="color:#10b981;">化学の条件検索</div>
@@ -472,6 +873,7 @@
         </div>
     </div>
 
+    <!-- その他(英語・国語等) 汎用検索条件入力モーダル -->
     <div class="modal-overlay" id="peDefaultFilterModal">
         <div class="modal-content">
             <div class="modal-header" style="color:#64748b;">条件検索</div>
@@ -495,6 +897,8 @@
         </div>
     </div>
 
+
+    <!-- 問題集 進捗入力モーダル -->
     <div class="modal-overlay" id="inputModal">
         <div class="modal-content">
             <div class="modal-header" id="modalTitle">記録</div>
@@ -530,6 +934,7 @@
         </div>
     </div>
 
+    <!-- 問題集 問題の設定モーダル -->
     <div class="modal-overlay" id="diffModal">
         <div class="modal-content">
             <div class="modal-header" id="diffModalTitle">問題の設定</div>
@@ -557,6 +962,7 @@
         </div>
     </div>
 
+    <!-- 問題集追加・編集モーダル -->
     <div class="modal-overlay" id="bookEditModal">
         <div class="modal-content">
             <div class="modal-header" id="bookModalTitle">問題集の設定</div>
@@ -578,10 +984,12 @@
                     <option value="その他">その他</option>
                 </select>
             </div>
+            <!-- ▼ 追加：背景色の設定 -->
             <div class="form-group color-picker-group">
                 <label class="form-label">背景色</label>
                 <input type="color" id="bookBgColorInput" value="#ffffff">
             </div>
+            <!-- ▲ 追加ここまで -->
             <div class="form-group">
                 <label class="form-label">単元・問題数の構成 (一括入力)</label>
                 <span class="form-help">1行に「単元名, 問題数」の順で入力してください。<br>例：<code>力学, 25</code></span>
@@ -594,6 +1002,7 @@
         </div>
     </div>
 
+    <!-- 実績レポートモーダル -->
     <div class="modal-overlay" id="reportModal">
         <div class="modal-content" style="width: 500px; max-width: 95vw;">
             <div class="modal-header">📊 学習実績レポート</div>
@@ -611,129 +1020,7 @@
             </div>
         </div>
     </div>
-
-    <div class="modal-overlay" id="peColModal">
-        <div class="modal-content">
-            <div class="modal-header">過去問・模試の追加</div>
-            <div class="form-group">
-                <label class="form-label">追加する年度・模試名</label>
-                <input type="text" class="modal-input" id="peColNameInput" placeholder="例: 第1回東大実戦">
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-outline" onclick="closePEColModal()">キャンセル</button>
-                <button type="button" class="btn" style="background-color: var(--primary-color); color: white;" onclick="savePEColModal()">追加する</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="peCellModal">
-        <div class="modal-content pe-modal-wide">
-            <div class="modal-header" id="peCellModalTitle">記録</div>
-            <div class="modal-cols">
-                <div class="modal-col" style="border-right: 1px dashed var(--border-color); padding-right: 12px;">
-                    <div id="pe-math-fields" style="display:none; flex-direction:column; gap:8px;">
-                        <div style="display: flex; gap: 8px;">
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">難易度 (共通)</label>
-                                <div style="display: flex; gap: 4px;">
-                                    <button type="button" class="pe-diff-btn" data-val="">なし</button>
-                                    <button type="button" class="pe-diff-btn" data-val="A">A</button>
-                                    <button type="button" class="pe-diff-btn" data-val="B">B</button>
-                                    <button type="button" class="pe-diff-btn" data-val="C">C</button>
-                                    <button type="button" class="pe-diff-btn" data-val="D">D</button>
-                                </div>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">目標時間 (共通)</label>
-                                <input type="text" class="modal-input" id="peCellTargetTimeInput" placeholder="例: 25, 無制限">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">出題分野 (共通)</label>
-                            <input type="text" class="modal-input" id="peCellTopicInput" placeholder="例: 複素数平面、微積">
-                        </div>
-                    </div>
-
-                    <div id="pe-physics-fields" style="display:none; flex-direction:column; gap:8px;">
-                        <div class="form-group">
-                            <label class="form-label">分野 (共通)</label>
-                            <input type="text" class="modal-input" id="pePhysFieldInput" placeholder="例: 力学、電磁気、熱力学">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">テーマ (共通)</label>
-                            <textarea class="modal-input" id="pePhysThemeInput" style="min-height: 48px;" placeholder="例: 積木に作用する摩擦力と単振動"></textarea>
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">目標点 理I・II</label>
-                                <input type="number" class="modal-input" id="pePhysTarget12Input" placeholder="点">
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">目標点 理III</label>
-                                <input type="number" class="modal-input" id="pePhysTarget3Input" placeholder="点">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="pe-chemistry-fields" style="display:none; flex-direction:column; gap:8px;">
-                        <div class="form-group">
-                            <label class="form-label">難易度 (共通)</label>
-                            <input type="text" class="modal-input" id="peChemDiffInput" placeholder="例: 易, 標準, 難, 易/易">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">テーマ (共通)</label>
-                            <textarea class="modal-input" id="peChemThemeInput" style="min-height: 80px;" placeholder="例: I: 陽イオン系統分析&#10;II: 窒素化合物の性質・製法"></textarea>
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-top: auto; padding-top: 12px; border-top: 1px dashed var(--border-color);">
-                        <label class="form-label">判定 (必須)</label>
-                        <div class="mark-options">
-                            <button type="button" class="pe-mark-opt-btn" data-val="ー">ー</button>
-                            <button type="button" class="pe-mark-opt-btn" data-val="〇">〇</button>
-                            <button type="button" class="pe-mark-opt-btn" data-val="△">△</button>
-                            <button type="button" class="pe-mark-opt-btn" data-val="×">×</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="modal-col">
-                    <div class="form-group">
-                        <label class="form-label">解答履歴</label>
-                        <div class="history-list-box" id="peModalHistoryList" style="max-height: 85px;"></div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="peModalAttempt">編集対象の周回数</label>
-                        <select class="modal-input" id="peModalAttempt" onchange="onPEAttemptChange()"></select>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">得点 (任意)</label>
-                            <input type="number" class="modal-input" id="peCellScoreInput" placeholder="点">
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">解答時間 (任意)</label>
-                            <input type="number" class="modal-input" id="peCellTimeInput" placeholder="分">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">実施日 (任意)</label>
-                        <input type="date" class="modal-input" id="peCellDateInput">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">備考・メモ (任意)</label>
-                        <input type="text" class="modal-input" id="peCellNoteInput" placeholder="例: 力学で計算ミス">
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-actions" style="margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
-                <button type="button" class="btn btn-danger-outline" id="peModalDeleteBtn" onclick="deletePECellData()" style="display:none; flex: 0.4;">削除</button>
-                <button type="button" class="btn btn-outline" onclick="closePECellModal()">キャンセル</button>
-                <button type="button" class="btn btn-primary" onclick="savePECellModal()" style="flex: 1.6;">保存</button>
-            </div>
-        </div>
-    </div>
+    <!-- ここから全てのロジック -->
     <script>
         // ----------------------------------------------------
         // 1. 初期データ定義
@@ -902,10 +1189,11 @@
         let tempPEMark = "ー";
         let tempPEDiff = "";
 
+        // 学習予定モードのグローバル変数
         let isPlanMode = false;
-        let currentPlanType = ""; 
+        let currentPlanType = ""; // 'book' or 'pe'
         let currentPlanDate = "";
-        let selectedPlanCells = []; 
+        let selectedPlanCells = []; // array of { id1: secId/colId, id2: qNum/qId }
 
         const subjectMeta = {
             "数学": { icon: "📐", color: "#0ea5e9", bg: "#e0f2fe", text: "#0284c7" },
@@ -918,6 +1206,7 @@
             "その他": { icon: "📁", color: "#64748b", bg: "#f1f5f9", text: "#475569" }
         };
 
+        // ====== ヘルパー関数のラッパー (ダッシュボードからの呼び出し用) ======
         function getLatestEntryBook(bId, secId, qNum) {
             const backup = currentBookId; currentBookId = bId;
             const res = getLatestEntry(secId, qNum);
@@ -931,11 +1220,6 @@
         function getDifficultyBook(bId, secId, qNum) {
             const backup = currentBookId; currentBookId = bId;
             const res = getDifficulty(secId, qNum);
-            currentBookId = backup; return res;
-        }
-        function getQDisplayLabelBook(bId, secId, qNum) {
-            const backup = currentBookId; currentBookId = bId;
-            const res = getQDisplayLabel(secId, qNum);
             currentBookId = backup; return res;
         }
 
@@ -955,11 +1239,13 @@
                     } catch(e) {}
                 });
 
+                // 降順ソート（一番新しいものが最初）
                 saves.sort((a, b) => b.vNum - a.vNum);
 
                 let tempExams = JSON.parse(JSON.stringify(defaultPastExams));
 
                 if (saves.length > 0) {
+                    // 最新のセーブデータのみ読み込み
                     const latestSave = saves[0];
                     let loadedBooks = {};
                     
@@ -991,14 +1277,17 @@
                     store.books = loadedBooks;
                     store.pastExams = tempExams;
 
+                    // 古いセーブデータの削除（掃除）
                     for (let i = 1; i < saves.length; i++) {
                         try { localStorage.removeItem(saves[i].key); } catch(e) {}
                     }
                 } else {
+                    // 初回起動時（セーブデータなし）
                     store.books = JSON.parse(JSON.stringify(defaultBooks));
                     store.pastExams = tempExams;
                 }
 
+                // 過去問のデフォルトレコードやカラム補完（常に実行）
                 if (store.pastExams) {
                     Object.keys(defaultPastExams).forEach(subj => {
                         if (!store.pastExams[subj]) store.pastExams[subj] = JSON.parse(JSON.stringify(defaultPastExams[subj]));
@@ -1016,6 +1305,7 @@
                         }
                     });
 
+                    // (math, physics, chemistry補完)
                     if (!store.pastExams.math.records) store.pastExams.math.records = {};
                     Object.keys(mathDefaultRecords).forEach(key => {
                         if (!store.pastExams.math.records[key]) {
@@ -1077,6 +1367,9 @@
         }
         function saveStore() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); } catch (e) {} }
 
+        // ----------------------------------------------------
+        // 画面切り替え・表示・入力のロジック
+        // ----------------------------------------------------
         function switchScreen(screenId) {
             document.querySelectorAll(".view-screen").forEach(s => s.classList.remove("active"));
             const target = document.getElementById(screenId);
@@ -1212,6 +1505,9 @@
             document.getElementById("summary-progress").innerText = `${globalPercent}%`;
         }
 
+        // ==========================================
+        // 学習予定入力機能
+        // ==========================================
         function openPlanDateModal(type) {
             currentPlanType = type;
             document.getElementById("planDateInput").value = new Date().toISOString().split('T')[0];
@@ -1315,6 +1611,7 @@
             }
         }
 
+        // ポータル画面の予定一覧表示
         function renderPortalPlanList() {
             const listEl = document.getElementById("portalPlanCardGrid");
             const badgeEl = document.getElementById("portalPlanCountBadge");
@@ -1339,6 +1636,8 @@
                                     qNum: q,
                                     planDate: pDate,
                                     secName: sec.name,
+                                    diff: getDifficultyBook(bId, sec.id, q),
+                                    latest: getLatestEntryBook(bId, sec.id, q),
                                     history: getHistoryArrayBook(bId, sec.id, q)
                                 });
                             }
@@ -1412,7 +1711,8 @@
 
                 const pParts = item.planDate.split("-");
                 const shortPDate = pParts.length === 3 ? `${pParts[1]}/${pParts[2]}` : item.planDate;
-                let planTag = `<span style="font-size:0.65rem; background:${isPastOrToday ? '#fef3c7' : '#ffffff'}; color:${isPastOrToday ? '#b45309' : meta.text}; padding:2px 8px; border-radius:4px; font-weight:bold; border: 1px solid ${isPastOrToday ? 'transparent' : meta.color}33;">📅 ${shortPDate}</span>`;
+                
+                let statusTag = `<span style="font-size:0.65rem; background:${isPastOrToday ? '#fef3c7' : '#ffffff'}; color:${isPastOrToday ? '#b45309' : meta.text}; padding:2px 8px; border-radius:4px; font-weight:bold; border: 1px solid ${isPastOrToday ? 'transparent' : meta.color}33;">📅 ${shortPDate}</span>`;
 
                 const historyFlow = item.history.map(h => {
                     if(!h) return "ー";
@@ -1421,53 +1721,20 @@
                 }).join(' → ');
 
                 if (item.type === 'book') {
-                    const book = store.books[item.bookId];
-                    let diffVal = book.data[`${item.secId}_${item.qNum}_diff`];
-                    if(diffVal === undefined) diffVal = 1;
-                    const starsDisplay = diffVal > 0 ? "★".repeat(diffVal) : "";
+                    const custom = store.books[item.bookId].data[`${item.secId}_${item.qNum}_customNum`] || "";
+                    let qNumLabel = custom || `${item.secId}・${item.qNum}`;
+                    const starsDisplay = item.diff > 0 ? "★".repeat(item.diff) : "";
                     
-                    const qNumLabel = getQDisplayLabelBook(item.bookId, item.secId, item.qNum);
-                    const title = book.title || "";
-                    const secLabel = getSectionLabel(title, item.secId);
-                    let qDisplay = "";
-
-                    if (item.bookId === "book_chem_shinenshu" || title.includes("化学の新演習") || title.includes("新理系の化学問題100選") || title.includes("物理重要問題集") || title.includes("鎌田") || title.includes("福間") || title.includes("合格る確率")) {
-                        qDisplay = `${item.secName} ${qNumLabel}`;
-                        if (item.bookId === "book_chem_shinenshu" || title.includes("化学の新演習")) {
-                            qDisplay = `${item.secName} ${qNumLabel}${qNumLabel.endsWith('番') ? '' : '番'}`;
-                        }
-                    } else if (title.includes("マスター・オブ・整数")) {
-                        qDisplay = `${item.secName} ${qNumLabel}`;
-                    } else {
-                        qDisplay = `${secLabel} ${item.secName} ${qNumLabel}`;
-                    }
-
-                    qDisplay = `【${title}】 ` + qDisplay;
-                    const noteVal = book.data[`${item.secId}_${item.qNum}_note`] || "";
-
-                    const validHistory = item.history.filter(h => h && h.mark && h.mark !== "ー");
-                    const latestEntry = validHistory.length > 0 ? validHistory[validHistory.length - 1] : { mark: "ー" };
-                    let latestMark = latestEntry.mark || "ー";
-                    
-                    let statusTag = '';
-                    if (latestMark === "×") statusTag = `<span style="font-size:0.65rem; background:#ffe4e6; color:#be123c; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #fda4af;">×</span>`;
-                    else if (latestMark === "〇") statusTag = `<span style="font-size:0.65rem; background:#d1fae5; color:#047857; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #6ee7b7;">〇</span>`;
-                    else if (latestMark === "△") statusTag = `<span style="font-size:0.65rem; background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #fcd34d;">△</span>`;
-                    else statusTag = `<span style="font-size:0.65rem; background:#ffffff; color:#4b5563; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #cbd5e1;">未 / ー</span>`;
-
                     card.innerHTML = `
                         <div class="batsu-info">
                             <div class="batsu-q-title">
-                                <span>${qDisplay}</span>
-                                ${starsDisplay ? `<span style="color:#d97706; font-size:0.8rem; letter-spacing:-1px;">${starsDisplay}</span>` : ''}
+                                <span>【${item.title}】 ${item.secName} ${qNumLabel}</span>
+                                <span style="color:#d97706; font-size:0.8rem; letter-spacing:-1px;">${starsDisplay}</span>
                                 ${statusTag}
-                                ${planTag}
                             </div>
-                            ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">📝 備考: ${noteVal}</div>` : ''}
                             <div class="batsu-meta">
                                 <span>履歴: ${historyFlow || 'なし'}</span>
-                                <span>最終解答日: ${latestEntry.date || '未記録'}</span>
-                                ${latestEntry.time ? `<span>時間: ${latestEntry.time}分</span>` : ''}
+                                <span>最終: ${item.latest.mark || 'ー'}</span>
                             </div>
                         </div>
                         <button class="btn btn-outline" style="border-color: ${isPastOrToday ? '#f59e0b' : meta.color}; color: var(--text-color); background: rgba(255,255,255,0.7);">記録</button>
@@ -1486,30 +1753,16 @@
                         detailText = `${item.rec.topic || ''}`;
                     }
 
-                    const diffVal = item.rec.diff || item.rec.chemDiff || "";
-                    const noteVal = item.latest && item.latest.note ? item.latest.note : "";
-                    
-                    let latestMark = item.latest && item.latest.mark ? item.latest.mark : "ー";
-                    let statusTag = '';
-                    if (latestMark === "×") statusTag = `<span style="font-size:0.65rem; background:#ffe4e6; color:#be123c; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #fda4af;">×</span>`;
-                    else if (latestMark === "〇") statusTag = `<span style="font-size:0.65rem; background:#d1fae5; color:#047857; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #6ee7b7;">〇</span>`;
-                    else if (latestMark === "△") statusTag = `<span style="font-size:0.65rem; background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #fcd34d;">△</span>`;
-                    else statusTag = `<span style="font-size:0.65rem; background:#ffffff; color:#4b5563; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #cbd5e1;">未 / ー</span>`;
-
                     card.innerHTML = `
                         <div class="batsu-info">
                             <div class="batsu-q-title">
                                 <span>【過去問: ${item.title}】 ${item.colName} - ${item.qName}</span>
-                                ${diffVal ? `<span style="color:#d97706; font-size:0.8rem; letter-spacing:-1px;">[${diffVal}]</span>` : ''}
                                 ${statusTag}
-                                ${planTag}
                             </div>
                             ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">💡 ${detailText}</div>` : ''}
-                            ${noteVal ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;">📝 メモ: ${noteVal}</div>` : ''}
                             <div class="batsu-meta">
                                 <span>履歴: ${historyFlow || 'なし'}</span>
-                                <span>最終解答日: ${item.latest && item.latest.date ? item.latest.date : '未記録'}</span>
-                                ${item.latest && item.latest.time ? `<span>時間: ${item.latest.time}分</span>` : ''}
+                                <span>最新: ${item.latest.mark || 'ー'}</span>
                             </div>
                         </div>
                         <button class="btn btn-outline" style="border-color: ${isPastOrToday ? '#f59e0b' : meta.color}; color: var(--text-color); background: rgba(255,255,255,0.7);">記録</button>
@@ -1523,6 +1776,8 @@
                 listEl.appendChild(card);
             });
         }
+        // ==========================================
+
 
         function getLatestEntry(secId, qNum) {
             const history = getHistoryArray(secId, qNum);
@@ -1673,11 +1928,13 @@
                         if (disabled) tdInput.classList.add("disabled-col");
                         tdInput.id = `cell_${sec.id}_${qNum}`;
                         
+                        // 予定日の取得
                         const planDate = book.data[`${sec.id}_${qNum}_plan`];
                         if (planDate) {
                             tdInput.classList.add("planned-cell");
                         }
                         
+                        // 同日の予定であれば初期選択状態にする
                         if (isPlanMode && planDate === currentPlanDate) {
                             tdInput.classList.add("plan-selected");
                             selectedPlanCells.push({ id1: sec.id, id2: qNum });
@@ -2043,7 +2300,6 @@
                     let statusTag = '';
                     if (latestMark === "×") statusTag = `<span style="font-size:0.65rem; background:#ffe4e6; color:#be123c; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #fda4af;">×</span>`;
                     else if (latestMark === "〇") statusTag = `<span style="font-size:0.65rem; background:#d1fae5; color:#047857; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #6ee7b7;">〇</span>`;
-                    else if (latestMark === "△") statusTag = `<span style="font-size:0.65rem; background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #fcd34d;">△</span>`;
                     else statusTag = `<span style="font-size:0.65rem; background:#ffffff; color:#4b5563; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #cbd5e1;">未 / ー</span>`;
 
                     card.innerHTML = `
@@ -2159,6 +2415,7 @@
                 const book = store.books[currentBookId];
                 book.data[`${secId}_${qNum}_history`] = history;
                 
+                // もし予定が入っていたら削除
                 if (book.data[`${secId}_${qNum}_plan`]) delete book.data[`${secId}_${qNum}_plan`];
 
                 const td = document.getElementById(`cell_${secId}_${qNum}`);
@@ -2266,6 +2523,7 @@
             const book = store.books[currentBookId];
             book.data[`${secId}_${qNum}_history`] = history;
             
+            // 予定が入っていた場合は消化したとみなして削除
             if (book.data[`${secId}_${qNum}_plan`]) {
                 delete book.data[`${secId}_${qNum}_plan`];
             }
@@ -2412,6 +2670,7 @@
                     if (importedStore && importedStore.books) {
                         store = importedStore;
                         
+                        // インポートに成功したら、ローカルにある過去のセーブデータをすべて掃除する
                         const allKeys = Object.keys(localStorage);
                         allKeys.forEach(k => {
                             if (k.startsWith("multi_book_progress")) {
@@ -2540,12 +2799,14 @@
                 tabsContainer.appendChild(div);
             });
 
+            // ▼ 科目に応じて検索ボタンを切り替え ▼
             document.getElementById("btnMathFilter").style.display = (currentPESubject === "math") ? "block" : "none";
             document.getElementById("btnPhysFilter").style.display = (currentPESubject === "physics") ? "block" : "none";
             document.getElementById("btnChemFilter").style.display = (currentPESubject === "chemistry") ? "block" : "none";
             document.getElementById("btnDefaultFilter").style.display = (["math", "physics", "chemistry"].includes(currentPESubject)) ? "none" : "block";
         }
 
+        // ▼ NEW: 過去問検索機能 (モーダルの開閉) ▼
         function openPEMathFilterModal() {
             document.getElementById("mathSearchText").value = "";
             document.querySelectorAll(".math-diff-chk").forEach(chk => chk.checked = true);
@@ -2598,6 +2859,7 @@
                 let selectedDiffs = [];
                 let statusFilter = "";
 
+                // 科目に応じて入力値を取得
                 if (currentPESubject === 'math') {
                     searchText = document.getElementById("mathSearchText").value.toLowerCase().trim();
                     selectedDiffs = Array.from(document.querySelectorAll(".math-diff-chk:checked")).map(chk => chk.value);
@@ -2632,6 +2894,7 @@
 
                                 let isMatch = true;
 
+                                // 1. キーワード検索 (分野・テーマ)
                                 if (searchText) {
                                     let topicText = "";
                                     if (currentPESubject === 'physics') {
@@ -2646,6 +2909,7 @@
                                     }
                                 }
 
+                                // 2. 難易度検索 (数学・化学の複数選択対応)
                                 if (isMatch && (currentPESubject === 'math' || currentPESubject === 'chemistry')) {
                                     let cellDiff = "";
                                     if (currentPESubject === 'chemistry') cellDiff = rec.chemDiff || "";
@@ -2653,12 +2917,14 @@
                                     
                                     let isDiffMatch = false;
 
+                                    // もし「なし」が選択されていて、難易度が空欄ならマッチ
                                     if (selectedDiffs.includes("none") && (!cellDiff || cellDiff.trim() === "")) {
                                         isDiffMatch = true;
                                     }
 
                                     if (cellDiff && cellDiff.trim() !== "") {
                                         if (currentPESubject === 'chemistry') {
+                                            // 化学は「やや易」などが含まれるため分解して判定
                                             let chemTokens = cellDiff.split(/[\s/／]+/);
                                             chemTokens.forEach(token => {
                                                 if(selectedDiffs.includes('易') && token === '易') isDiffMatch = true;
@@ -2668,6 +2934,7 @@
                                                 if(selectedDiffs.includes('難') && token === '難') isDiffMatch = true;
                                             });
                                         } else {
+                                            // 数学などは A,B,C,D の文字が含まれるか
                                             selectedDiffs.forEach(d => {
                                                 if (d !== "none" && cellDiff.includes(d)) isDiffMatch = true;
                                             });
@@ -2679,6 +2946,7 @@
                                     }
                                 }
 
+                                // 3. 状態検索
                                 if (isMatch && statusFilter) {
                                     if (statusFilter === "unanswered") {
                                         if (latestMark) isMatch = false;
@@ -2741,11 +3009,11 @@
 
                         let detailText = "";
                         if (currentPESubject === 'physics') {
-                            detailText = `${item.rec.physField ? \`分野:${item.rec.physField} \` : ''}${item.rec.physTheme ? \`テーマ:${item.rec.physTheme}\` : ''}`;
+                            detailText = `${item.rec.physField ? `分野:${item.rec.physField} ` : ''}${item.rec.physTheme ? `テーマ:${item.rec.physTheme}` : ''}`;
                         } else if (currentPESubject === 'chemistry') {
-                            detailText = `${item.rec.chemDiff ? \`難易度:${item.rec.chemDiff} \` : ''}${item.rec.chemTheme ? \`テーマ:${item.rec.chemTheme.replace(/\n/g, ' ')}\` : ''}`;
+                            detailText = `${item.rec.chemDiff ? `難易度:${item.rec.chemDiff} ` : ''}${item.rec.chemTheme ? `テーマ:${item.rec.chemTheme.replace(/\n/g, ' ')}` : ''}`;
                         } else {
-                            detailText = `${item.rec.diff ? \`難易度:${item.rec.diff} \` : ''}${item.rec.topic ? \`分野:${item.rec.topic}\` : ''}`;
+                            detailText = `${item.rec.diff ? `難易度:${item.rec.diff} ` : ''}${item.rec.topic ? `分野:${item.rec.topic}` : ''}`;
                         }
 
                         card.innerHTML = `
@@ -2758,7 +3026,7 @@
                                 ${item.latest && item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;">📝 メモ: ${item.latest.note}</div>` : ''}
                                 <div class="batsu-meta">
                                     <span>履歴: ${historyFlow || 'なし'}</span>
-                                    <span>最新: ${item.latest && item.latest.date ? item.latest.date : '未記録'} ${item.latest && item.latest.score ? \`(\${item.latest.score}点)\` : ''}</span>
+                                    <span>最新: ${item.latest && item.latest.date ? item.latest.date : '未記録'} ${item.latest && item.latest.score ? `(${item.latest.score}点)` : ''}</span>
                                 </div>
                             </div>
                             <button class="btn btn-outline" style="border-color: ${borderColor}; color: var(--text-color); background: rgba(255,255,255,0.7);">記録</button>
@@ -2856,6 +3124,7 @@
                             else if(latest.mark === "×") latestMarkClass = "batsu";
                             else if(latest.mark === "△") latestMarkClass = "tri";
 
+                            // 予定日の取得
                             const planDate = rec.plan;
                             let plannedClass = planDate ? "planned-cell" : "";
 
@@ -2866,6 +3135,7 @@
                                 planBadge = `<div class="planned-date-badge">📅 ${shortPDate}</div>`;
                             }
 
+                            // ▼追加：同日の予定であれば初期選択状態にする
                             let isSelected = false;
                             if (isPlanMode && planDate === currentPlanDate) {
                                 isSelected = true;
@@ -3078,6 +3348,7 @@
             if (selectedIdx < rec.history.length) {
                 rec.history.splice(selectedIdx, 1);
                 
+                // もし予定が入っていたら削除
                 if (rec.plan) delete rec.plan;
 
                 saveStore();
@@ -3134,6 +3405,7 @@
                 rec.history.push(attemptData);
             }
             
+            // 予定が入っていた場合は消化したとみなして削除
             if (rec.plan) {
                 delete rec.plan;
             }
@@ -3152,6 +3424,7 @@
             }
         }
 
+        // --- 過去問専用 要復習リスト ---
         function showPEBatsuListScreen() {
             try {
                 const subj = store.pastExams[currentPESubject];
@@ -3222,11 +3495,11 @@
 
                         let detailText = "";
                         if (currentPESubject === 'physics') {
-                            detailText = `${item.rec.physField ? \`分野:${item.rec.physField} \` : ''}${item.rec.physTheme ? \`テーマ:${item.rec.physTheme}\` : ''}`;
+                            detailText = `${item.rec.physField ? `分野:${item.rec.physField} ` : ''}${item.rec.physTheme ? `テーマ:${item.rec.physTheme}` : ''}`;
                         } else if (currentPESubject === 'chemistry') {
-                            detailText = `${item.rec.chemDiff ? \`難易度:${item.rec.chemDiff} \` : ''}${item.rec.chemTheme ? \`テーマ:${item.rec.chemTheme.replace(/\n/g, ' ')}\` : ''}`;
+                            detailText = `${item.rec.chemDiff ? `難易度:${item.rec.chemDiff} ` : ''}${item.rec.chemTheme ? `テーマ:${item.rec.chemTheme.replace(/\n/g, ' ')}` : ''}`;
                         } else {
-                            detailText = `${item.rec.diff ? \`難易度:${item.rec.diff} \` : ''}${item.rec.topic ? \`分野:${item.rec.topic}\` : ''}`;
+                            detailText = `${item.rec.diff ? `難易度:${item.rec.diff} ` : ''}${item.rec.topic ? `分野:${item.rec.topic}` : ''}`;
                         }
 
                         card.innerHTML = `
@@ -3255,6 +3528,9 @@
             }
         }
 
+        // ----------------------------------------------------
+        // 11. 初期化処理
+        // ----------------------------------------------------
         window.onload = function() {
             try {
                 const sel = document.getElementById("modalTime");
