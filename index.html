@@ -1182,7 +1182,7 @@
         let currentBookId = null;
         let activeTarget = { secId: null, qNum: null };
         let tempMark = "ー";
-        let tempDiff = 1;
+        let tempDiff = 0;
 
         let currentPESubject = "english";
         let activePECell = { colId: null, qId: null };
@@ -1777,7 +1777,7 @@
                                 ${item.latest.time ? `<span>時間: ${item.latest.time}分</span>` : ''}
                             </div>
                         </div>
-                        <button class="btn btn-outline" style="border-color: ${meta.color}; color: var(--text-color); background: rgba(255,255,255,0.7);">記録</button>
+                        <button class="btn btn-outline" style="border-color: ${isPastOrToday ? '#f59e0b' : meta.color}; color: var(--text-color); background: rgba(255,255,255,0.7);">記録</button>
                     `;
                     currentBookId = backup;
 
@@ -1822,7 +1822,531 @@
             });
         }
         // ==========================================
-        function getLatestEntry(secId, qNum) {
+
+        function renderPETable() {
+            if (!store || !store.pastExams) return;
+            const subj = store.pastExams[currentPESubject];
+            if (!subj) return;
+
+            const thead = document.getElementById("pe-header-row");
+            const tbody = document.getElementById("pe-table-body");
+            if (!thead || !tbody) return;
+            
+            thead.innerHTML = '<th style="width:140px; position:sticky; left:0; z-index:10; background:#f4eadd;"><div style="display:flex;flex-direction:column;gap:6px;align-items:center;"><span>年度 / 模試</span><button class="btn btn-outline" style="padding:2px 8px; font-size:0.7rem; border-color:#0ea5e9; color:#0ea5e9;" onclick="openPEColModal()">+ 追加</button></div></th>';
+            
+            if(subj.questions && Array.isArray(subj.questions)) {
+                subj.questions.forEach(q => {
+                    thead.innerHTML += `
+                    <th style="min-width: 110px;">
+                        <div style="display:flex; justify-content:center; align-items:center; padding:12px 4px;">
+                            <div style="text-align:center; font-size:0.9rem; color:#0f172a; font-weight:bold;">
+                                ${q?.name || ""}
+                            </div>
+                        </div>
+                    </th>`;
+                });
+            }
+
+            tbody.innerHTML = "";
+            if(subj.columns && Array.isArray(subj.columns)) {
+                subj.columns.forEach(col => {
+                    if(!col) return;
+                    const delBtn = col.type !== 'year' ? `<button style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:1.1rem; padding:0 4px; opacity:0.6; line-height:1;" onclick="deletePECol('${col.id}')" title="削除">×</button>` : '';
+                    
+                    let rowHtml = `<tr>
+                    <td style="position:sticky; left:0; z-index:5; background:#faf9f6; font-weight:bold; font-size:0.85rem; text-align:left; padding:8px 12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>${col.name || ""}</span>
+                            ${delBtn}
+                        </div>
+                    </td>`;
+                    
+                    if (subj.questions && Array.isArray(subj.questions)) {
+                        subj.questions.forEach(q => {
+                            if(!q) return;
+                            if (!subj.records) subj.records = {};
+                            const rec = subj.records[`${col.id}_${q.id}`] || { history: [] };
+                            const history = Array.isArray(rec.history) ? rec.history : [];
+                            const validHistory = history.filter(h => h && h.mark && h.mark !== "ー");
+                            const latest = validHistory.length > 0 ? validHistory[validHistory.length - 1] : {};
+                            
+                            let flowHtml = "ー";
+                            if (history.length > 0) {
+                                flowHtml = history.map((h) => {
+                                    if (!h) return "ー";
+                                    let mClass = "history-mark";
+                                    if (h.mark === "〇") mClass += " maru";
+                                    if (h.mark === "×") mClass += " batsu";
+                                    if (h.mark === "△") mClass += " tri";
+                                    return `<span class="${mClass}">${h.mark || 'ー'}</span>`;
+                                }).join("");
+                            }
+                            
+                            let detail = "";
+                            if(latest.score) detail += `${latest.score}点`;
+                            if(latest.time) detail += (detail ? ` / ` : "") + `${latest.time}分`;
+
+                            let cellBgClass = "";
+                            const latestMark = latest.mark || "ー";
+                            const prevMark = validHistory.length > 1 ? validHistory[validHistory.length - 2].mark : null;
+
+                            if (latestMark === "×" || latestMark === "△") {
+                                cellBgClass = "cell-status-red";
+                            } else if (latestMark === "〇") {
+                                if (prevMark === "×" || prevMark === "△") {
+                                    cellBgClass = "cell-status-yellow";
+                                } else {
+                                    cellBgClass = "cell-status-blue";
+                                }
+                            }
+
+                            let latestMarkClass = "";
+                            if(latest.mark === "〇") latestMarkClass = "maru";
+                            else if(latest.mark === "×") latestMarkClass = "batsu";
+                            else if(latest.mark === "△") latestMarkClass = "tri";
+
+                            // 予定日の取得
+                            const planDate = rec.plan;
+                            let plannedClass = planDate ? "planned-cell" : "";
+
+                            let planBadge = "";
+                            if (planDate) {
+                                const pParts = planDate.split("-");
+                                const shortPDate = pParts.length === 3 ? `${pParts[1]}/${pParts[2]}` : planDate;
+                                planBadge = `<div class="planned-date-badge">📅 ${shortPDate}</div>`;
+                            }
+
+                            // ▼追加：同日の予定であれば初期選択状態にする
+                            let isSelected = false;
+                            if (isPlanMode && planDate === currentPlanDate) {
+                                isSelected = true;
+                                selectedPlanCells.push({ id1: col.id, id2: q.id });
+                            }
+                            let selectedClass = isSelected ? "plan-selected" : "";
+
+                            let headerInfo = "";
+                            let topicInfo = "";
+
+                            if (currentPESubject === 'physics') {
+                                headerInfo = `<span style="color:#0ea5e9;">${rec.physField || ''}</span>`;
+                                if (rec.physTarget12 || rec.physTarget3) {
+                                    headerInfo += `<span style="font-size:0.55rem; color:#64748b;">目標: ${rec.physTarget12 || '-'}/${rec.physTarget3 || '-'}</span>`;
+                                }
+                                if(rec.physTheme) {
+                                    topicInfo = `<div style="font-size:0.6rem; color:#475569; margin-top:4px; line-height:1.2; max-width:100px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${rec.physTheme}">${rec.physTheme}</div>`;
+                                }
+                            } else if (currentPESubject === 'chemistry') {
+                                headerInfo = `<span style="color:#d97706;">${rec.chemDiff || ''}</span>`;
+                                if(rec.chemTheme) {
+                                    topicInfo = `<div style="font-size:0.6rem; color:#475569; margin-top:4px; line-height:1.2; max-width:100px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; text-align:left;" title="${rec.chemTheme}">${rec.chemTheme.replace(/\n/g, '<br>')}</div>`;
+                                }
+                            } else {
+                                headerInfo = `<span>${rec.diff || ''}</span><span>${rec.targetTime ? (rec.targetTime === '無制限' ? '無制限' : rec.targetTime + 'm') : ''}</span>`;
+                                if(rec.topic) {
+                                    topicInfo = `<div style="font-size:0.65rem; color:#475569; margin-top:4px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:90px;" title="${rec.topic}">${rec.topic}</div>`;
+                                }
+                            }
+
+                            rowHtml += `
+                            <td class="${cellBgClass} ${plannedClass} ${selectedClass}" id="pe-cell-${col.id}-${q.id}">
+                                <div class="pe-cell-display ${latest.mark && latest.mark !== "ー" ? 'has-data' : ''}" onclick="onPECellClick('${col.id}', '${q.id}', this)">
+                                    ${planBadge}
+                                    <div style="width:100%; display:flex; justify-content:space-between; font-size:0.6rem; color:#8b5cf6; margin-bottom:2px; font-weight:bold;">
+                                        ${headerInfo}
+                                    </div>
+                                    <div style="font-size:1.2rem; font-weight:900; line-height:1;" class="${latestMarkClass}">${latest.mark || 'ー'}</div>
+                                    <div class="cell-history-flow" style="justify-content:center;">${flowHtml}</div>
+                                    ${topicInfo}
+                                    ${detail ? `<div style="font-size:0.6rem; color:var(--text-muted); margin-top:2px;">${detail}</div>` : ''}
+                                </div>
+                            </td>`;
+                        });
+                    }
+                    rowHtml += `</tr>`;
+                    tbody.innerHTML += rowHtml;
+                });
+            }
+        }
+
+        function onPECellClick(colId, qId, element) {
+            if (isPlanMode) {
+                const td = element.closest('td');
+                togglePlanSelection(colId, qId, td);
+            } else {
+                openPECellModal(colId, qId);
+            }
+        }
+
+        function openPEColModal() {
+            document.getElementById("peColNameInput").value = "";
+            document.getElementById("peColModal").classList.add("active");
+        }
+        function closePEColModal() { document.getElementById("peColModal").classList.remove("active"); }
+
+        function savePEColModal() {
+            const name = document.getElementById("peColNameInput").value.trim();
+            if (!name) return alert("タイトル（年度や模試名）を入力してください");
+            const subj = store.pastExams[currentPESubject];
+            const newCol = { id: "col_" + Date.now(), name, type: 'custom' };
+            subj.columns.unshift(newCol); 
+            saveStore();
+            closePEColModal();
+            renderPETable();
+        }
+
+        function deletePECol(colId) {
+            if(confirm("この列と入力された記録を削除しますか？\n※この操作は元に戻せません。")) {
+                const subj = store.pastExams[currentPESubject];
+                subj.columns = subj.columns.filter(c => c.id !== colId);
+                saveStore();
+                renderPETable();
+            }
+        }
+
+        function setTempPEMark(val) {
+            tempPEMark = val;
+            document.querySelectorAll(".pe-mark-opt-btn").forEach(btn => {
+                btn.classList.toggle("selected", btn.getAttribute("data-val") === val);
+            });
+        }
+        
+        function setTempPEDiff(val) {
+            tempPEDiff = val;
+            document.querySelectorAll(".pe-diff-btn").forEach(btn => {
+                btn.classList.toggle("selected", btn.getAttribute("data-val") === val);
+            });
+        }
+
+        function openPECellModal(colId, qId) {
+            activePECell = { colId, qId };
+            const subj = store.pastExams[currentPESubject];
+            const col = subj.columns.find(c => c.id === colId);
+            const q = subj.questions.find(qu => qId === qu.id);
+            
+            document.getElementById("peCellModalTitle").innerText = `${col.name} - ${q.name}`;
+            
+            if (!subj.records) subj.records = {};
+            if (!subj.records[`${colId}_${qId}`]) {
+                subj.records[`${colId}_${qId}`] = { history: [] };
+            }
+            const rec = subj.records[`${colId}_${qId}`];
+            const history = Array.isArray(rec.history) ? rec.history : [];
+
+            document.getElementById('pe-math-fields').style.display = 'none';
+            document.getElementById('pe-physics-fields').style.display = 'none';
+            document.getElementById('pe-chemistry-fields').style.display = 'none';
+
+            if (currentPESubject === 'physics') {
+                document.getElementById('pe-physics-fields').style.display = 'flex';
+                document.getElementById('pePhysFieldInput').value = rec.physField || "";
+                document.getElementById('pePhysThemeInput').value = rec.physTheme || "";
+                document.getElementById('pePhysTarget12Input').value = rec.physTarget12 || "";
+                document.getElementById('pePhysTarget3Input').value = rec.physTarget3 || "";
+            } else if (currentPESubject === 'chemistry') {
+                document.getElementById('pe-chemistry-fields').style.display = 'flex';
+                document.getElementById('peChemDiffInput').value = rec.chemDiff || "";
+                document.getElementById('peChemThemeInput').value = rec.chemTheme || "";
+            } else {
+                document.getElementById('pe-math-fields').style.display = 'flex';
+                setTempPEDiff(rec.diff || "");
+                document.getElementById("peCellTargetTimeInput").value = rec.targetTime || "";
+                document.getElementById("peCellTopicInput").value = rec.topic || "";
+            }
+
+            const historyListEl = document.getElementById("peModalHistoryList");
+            if (history.length === 0) {
+                historyListEl.innerHTML = '<span style="color:#6b7280;">まだ記録がありません</span>';
+            } else {
+                historyListEl.innerHTML = history.map((h, i) => {
+                    if(!h) return "";
+                    const t = h.time ? `${h.time}分` : '';
+                    const d = h.date || '';
+                    const s = h.score ? `${h.score}点` : '';
+                    return `
+                        <div class="history-item" onclick="selectPEHistoryAttempt(${i})">
+                            <span><strong>${i + 1}回目:</strong> <span style="font-weight:bold; ${h.mark==='〇'?'color:#10b981':(h.mark==='×'?'color:#e11d48':(h.mark==='△'?'color:#d97706':''))}">${h.mark || 'ー'}</span> ${s}</span>
+                            <span style="color:#6b7280;">${t} ${d}</span>
+                        </div>
+                    `;
+                }).join("");
+            }
+
+            const select = document.getElementById("peModalAttempt");
+            select.innerHTML = "";
+            history.forEach((_, idx) => { select.innerHTML += `<option value="${idx}">${idx + 1}回目</option>`; });
+            const newIndex = history.length;
+            select.innerHTML += `<option value="${newIndex}">${newIndex + 1}回目 (新規)</option>`;
+            select.value = newIndex;
+
+            onPEAttemptChange(); 
+
+            document.getElementById("peCellModal").classList.add("active");
+        }
+
+        function selectPEHistoryAttempt(index) {
+            document.getElementById("peModalAttempt").value = index;
+            onPEAttemptChange();
+        }
+
+        function onPEAttemptChange() {
+            const { colId, qId } = activePECell;
+            const subj = store.pastExams[currentPESubject];
+            const rec = subj.records[`${colId}_${qId}`];
+            const history = Array.isArray(rec.history) ? rec.history : [];
+            const selectedIdx = parseInt(document.getElementById("peModalAttempt").value, 10);
+            const deleteBtn = document.getElementById("peModalDeleteBtn");
+
+            if (selectedIdx < history.length && history[selectedIdx]) {
+                const entry = history[selectedIdx];
+                setTempPEMark(entry.mark || "ー");
+                document.getElementById("peCellScoreInput").value = entry.score || "";
+                document.getElementById("peCellTimeInput").value = entry.time || "";
+                document.getElementById("peCellDateInput").value = entry.date || new Date().toISOString().split('T')[0];
+                document.getElementById("peCellNoteInput").value = entry.note || "";
+                deleteBtn.style.display = "block"; 
+            } else {
+                setTempPEMark("ー");
+                document.getElementById("peCellScoreInput").value = "";
+                document.getElementById("peCellTimeInput").value = "";
+                document.getElementById("peCellDateInput").value = new Date().toISOString().split('T')[0];
+                document.getElementById("peCellNoteInput").value = "";
+                deleteBtn.style.display = "none"; 
+            }
+        }
+
+        function closePECellModal() { document.getElementById("peCellModal").classList.remove("active"); }
+
+        function deletePECellData() {
+            if (!confirm("この回の記録を削除しますか？")) return;
+            
+            const subj = store.pastExams[currentPESubject];
+            const { colId, qId } = activePECell;
+            const selectedIdx = parseInt(document.getElementById("peModalAttempt").value, 10);
+            
+            const rec = subj.records[`${colId}_${qId}`];
+            if (!rec || !rec.history) return;
+            
+            if (selectedIdx < rec.history.length) {
+                rec.history.splice(selectedIdx, 1);
+                
+                // もし予定が入っていたら削除
+                if (rec.plan) delete rec.plan;
+
+                saveStore();
+                closePECellModal();
+                renderPETable();
+                
+                if (document.getElementById("peBatsuListScreen").classList.contains("active")) {
+                    showPEBatsuListScreen();
+                } else if (document.getElementById("peFilterListScreen").classList.contains("active")) {
+                    showPEFilterListScreen();
+                } else if (document.getElementById("portalPlanListScreen").classList.contains("active")) {
+                    renderPortalPlanList();
+                }
+            }
+        }
+
+        function savePECellModal() {
+            const subj = store.pastExams[currentPESubject];
+            const { colId, qId } = activePECell;
+            const inputDate = document.getElementById("peCellDateInput").value;
+            const selectedIdx = parseInt(document.getElementById("peModalAttempt").value, 10);
+            
+            if(!subj.records) subj.records = {};
+            if(!subj.records[`${colId}_${qId}`]) subj.records[`${colId}_${qId}`] = { history: [] };
+            
+            const rec = subj.records[`${colId}_${qId}`];
+            
+            if (currentPESubject === 'physics') {
+                rec.physField = document.getElementById("pePhysFieldInput").value.trim();
+                rec.physTheme = document.getElementById("pePhysThemeInput").value.trim();
+                rec.physTarget12 = document.getElementById("pePhysTarget12Input").value;
+                rec.physTarget3 = document.getElementById("pePhysTarget3Input").value;
+            } else if (currentPESubject === 'chemistry') {
+                rec.chemDiff = document.getElementById("peChemDiffInput").value.trim();
+                rec.chemTheme = document.getElementById("peChemThemeInput").value.trim();
+            } else {
+                rec.diff = tempPEDiff;
+                rec.targetTime = document.getElementById("peCellTargetTimeInput").value.trim();
+                rec.topic = document.getElementById("peCellTopicInput").value.trim();
+            }
+            
+            const attemptData = {
+                mark: tempPEMark,
+                score: document.getElementById("peCellScoreInput").value,
+                time: document.getElementById("peCellTimeInput").value,
+                date: inputDate,
+                note: document.getElementById("peCellNoteInput").value
+            };
+            
+            if (!rec.history) rec.history = [];
+            if (selectedIdx < rec.history.length) {
+                rec.history[selectedIdx] = attemptData;
+            } else {
+                rec.history.push(attemptData);
+            }
+            
+            // 予定が入っていた場合は消化したとみなして削除
+            if (rec.plan) {
+                delete rec.plan;
+            }
+            
+            if (inputDate) lastUsedPEDate = inputDate;
+            saveStore();
+            closePECellModal();
+            renderPETable();
+            
+            if (document.getElementById("peBatsuListScreen").classList.contains("active")) {
+                showPEBatsuListScreen();
+            } else if (document.getElementById("peFilterListScreen").classList.contains("active")) {
+                showPEFilterListScreen();
+            } else if (document.getElementById("portalPlanListScreen").classList.contains("active")) {
+                renderPortalPlanList();
+            }
+        }
+
+        // --- 過去問専用 要復習リスト ---
+        function showPEBatsuListScreen() {
+            try {
+                const subj = store.pastExams[currentPESubject];
+                const subjNameMap = { "english":"英語", "math":"数学", "physics":"物理", "chemistry":"化学", "japanese":"国語" };
+                const meta = subjectMeta[subjNameMap[currentPESubject]] || subjectMeta["その他"];
+
+                document.getElementById("peBatsuBookTitle").innerText = `過去問（${subj.title}） - 要復習リスト`;
+                const container = document.getElementById("peBatsuCardGrid");
+                container.innerHTML = "";
+
+                let batsuList = [];
+
+                if(subj.columns && Array.isArray(subj.columns)) {
+                    subj.columns.forEach(col => {
+                        if(!col) return;
+                        if(subj.questions && Array.isArray(subj.questions)) {
+                            subj.questions.forEach(q => {
+                                if(!q || !subj.records) return;
+                                const rec = subj.records[`${col.id}_${q.id}`];
+                                if (!rec || !rec.history || !Array.isArray(rec.history) || rec.history.length === 0) return;
+                                
+                                const history = rec.history;
+                                const validHistory = history.filter(h => h && h.mark && h.mark !== "ー");
+                                const latest = validHistory.length > 0 ? validHistory[validHistory.length - 1] : null;
+                                if(!latest) return;
+
+                                const latestValidMark = latest.mark;
+                                const prevValidMark = validHistory.length > 1 ? validHistory[validHistory.length - 2].mark : null;
+
+                                const isRed = (latestValidMark === "×" || latestValidMark === "△");
+                                const isYellow = (latestValidMark === "〇" && (prevValidMark === "×" || prevValidMark === "△"));
+
+                                if (isRed || isYellow) {
+                                    batsuList.push({ col, q, latest, history, statusColor: isRed ? 'red' : 'yellow', rec });
+                                }
+                            });
+                        }
+                    });
+                }
+
+                document.getElementById("peBatsuCountBadge").innerText = `${batsuList.length}問`;
+
+                if (batsuList.length === 0) {
+                    container.innerHTML = `<div style="text-align:center; padding: 40px; color: #6b7280; font-size: 0.85rem;">🎉 復習が必要な過去問（×・△・要定着）はありません！</div>`;
+                } else {
+                    batsuList.forEach(item => {
+                        const card = document.createElement("div");
+                        card.className = "batsu-card";
+                        card.style.backgroundColor = meta.bg;
+
+                        if (item.statusColor === 'yellow') {
+                            card.style.borderColor = '#fde047';
+                            card.style.borderLeftColor = '#f59e0b';
+                        } else {
+                            card.style.borderColor = meta.color;
+                            card.style.borderLeftColor = meta.color;
+                        }
+
+                        const historyFlow = item.history.map(h => {
+                            if(!h) return "ー";
+                            let mColor = h.mark === '〇' ? '#10b981' : (h.mark === '×' ? '#e11d48' : (h.mark === '△' ? '#d97706' : '#9ca3af'));
+                            return `<span style="color:${mColor}">${h.mark || 'ー'}</span>`;
+                        }).join(' → ');
+
+                        const statusTag = item.statusColor === 'yellow' 
+                            ? `<span style="font-size:0.65rem; background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #fcd34d;">要定着(〇←×)</span>`
+                            : `<span style="font-size:0.65rem; background:#ffe4e6; color:#be123c; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #fda4af;">要解き直し(${item.latest.mark})</span>`;
+
+                        let detailText = "";
+                        if (currentPESubject === 'physics') {
+                            detailText = `${item.rec.physField ? `分野:${item.rec.physField} ` : ''}${item.rec.physTheme ? `テーマ:${item.rec.physTheme}` : ''}`;
+                        } else if (currentPESubject === 'chemistry') {
+                            detailText = `${item.rec.chemDiff ? `難易度:${item.rec.chemDiff} ` : ''}${item.rec.chemTheme ? `テーマ:${item.rec.chemTheme.replace(/\n/g, ' ')}` : ''}`;
+                        } else {
+                            detailText = `${item.rec.diff ? `難易度:${item.rec.diff} ` : ''}${item.rec.topic ? `分野:${item.rec.topic}` : ''}`;
+                        }
+
+                        card.innerHTML = `
+                            <div class="batsu-info">
+                                <div class="batsu-q-title">
+                                    <span>${item.col.name} - ${item.q.name}</span>
+                                    ${statusTag}
+                                </div>
+                                ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">💡 ${detailText}</div>` : ''}
+                                ${item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;">📝 メモ: ${item.latest.note}</div>` : ''}
+                                <div class="batsu-meta">
+                                    <span>履歴: ${historyFlow}</span>
+                                    <span>最新: ${item.latest.date || '未記録'} ${item.latest.score ? `(${item.latest.score}点)` : ''}</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline" style="border-color: ${item.statusColor === 'yellow' ? '#fcd34d' : '#fda4af'}; color: ${item.statusColor === 'yellow' ? '#d97706' : '#e11d48'}; background: rgba(255,255,255,0.7);">再挑戦</button>
+                        `;
+                        card.addEventListener("click", () => { openPECellModal(item.col.id, item.q.id); });
+                        container.appendChild(card);
+                    });
+                }
+                switchScreen("peBatsuListScreen");
+            } catch(e) {
+                console.error("showPEBatsuListScreen error:", e);
+                alert("要復習リストの表示中にエラーが発生しました。\n詳細: " + e.message);
+            }
+        }
+
+        // ----------------------------------------------------
+        // 11. 初期化処理
+        // ----------------------------------------------------
+        window.onload = function() {
+            try {
+                const sel = document.getElementById("modalTime");
+                if (sel) {
+                    sel.innerHTML = '<option value="">未入力</option>';
+                    for (let i = 1; i <= 60; i++) sel.innerHTML += `<option value="${i}">${i}分</option>`;
+                }
+
+                document.querySelectorAll(".mark-opt-btn").forEach(btn => {
+                    btn.addEventListener("click", function() { setTempMark(this.getAttribute("data-val")); });
+                });
+
+                document.querySelectorAll(".diff-opt-btn").forEach(btn => {
+                    btn.addEventListener("click", function() { setTempDiff(this.getAttribute("data-val")); });
+                });
+
+                document.querySelectorAll(".pe-mark-opt-btn").forEach(btn => {
+                    btn.addEventListener("click", function() { setTempPEMark(this.getAttribute("data-val")); });
+                });
+                
+                document.querySelectorAll(".pe-diff-btn").forEach(btn => {
+                    btn.addEventListener("click", function() { setTempPEDiff(this.getAttribute("data-val")); });
+                });
+                
+                loadStore();
+                showDashboard();
+            } catch (e) {
+                console.error("起動時にエラーが発生しました:", e);
+                alert("アプリの起動中にエラーが発生しました。\n詳細: " + e.message);
+            }
+        };
+    </script>
+</body>
+</html>
+function getLatestEntry(secId, qNum) {
             const history = getHistoryArray(secId, qNum);
             let latest = { mark: "ー", time: "", date: "" };
             for (let i = history.length - 1; i >= 0; i--) {
@@ -1849,7 +2373,7 @@
 
         function getDifficulty(secId, qNum) {
             const book = store.books[currentBookId];
-            if (!book) return 1;
+            if (!book) return 0;
             if (!book.data) book.data = {};
             const val = book.data[`${secId}_${qNum}_diff`];
             if (val !== undefined) return val;
@@ -1857,7 +2381,7 @@
             if (currentBookId === "book_std_math12ab" || currentBookId === "book_std_math3c" || title.includes("マスター・オブ・整数") || title.includes("新理系の化学問題100選") || title.includes("物理重要問題集") || title.includes("合格る確率")) {
                 return 0;
             }
-            return 1;
+            return 0;
         }
 
         function getNote(secId, qNum) {
