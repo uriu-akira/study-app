@@ -1020,6 +1020,134 @@
             </div>
         </div>
     </div>
+
+    <!-- 過去問 列追加モーダル -->
+    <div class="modal-overlay" id="peColModal">
+        <div class="modal-content">
+            <div class="modal-header">年度 / 模試の追加</div>
+            <div class="form-group">
+                <label class="form-label" for="peColNameInput">タイトル</label>
+                <input type="text" class="modal-input" id="peColNameInput" placeholder="例: 2027年度、第1回東大模試">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" onclick="closePEColModal()">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="savePEColModal()">追加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 過去問 進捗入力モーダル -->
+    <div class="modal-overlay" id="peCellModal">
+        <div class="modal-content pe-modal-wide">
+            <div class="modal-header" id="peCellModalTitle">過去問記録</div>
+            
+            <div class="modal-cols">
+                <!-- 左カラム：履歴と基本入力 -->
+                <div class="modal-col">
+                    <div class="form-group">
+                        <label class="form-label">解答履歴</label>
+                        <div class="history-list-box" id="peModalHistoryList"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="peModalAttempt">編集対象の周回数</label>
+                        <select class="modal-input" id="peModalAttempt" onchange="onPEAttemptChange()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">判定</label>
+                        <div class="mark-options">
+                            <button type="button" class="pe-mark-opt-btn" data-val="ー">ー</button>
+                            <button type="button" class="pe-mark-opt-btn" data-val="〇">〇</button>
+                            <button type="button" class="pe-mark-opt-btn" data-val="△">△</button>
+                            <button type="button" class="pe-mark-opt-btn" data-val="×">×</button>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <div class="form-group" style="flex:1;">
+                            <label class="form-label" for="peCellScoreInput">得点</label>
+                            <input type="number" class="modal-input" id="peCellScoreInput" placeholder="得点">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label class="form-label" for="peCellTimeInput">解答時間(分)</label>
+                            <input type="number" class="modal-input" id="peCellTimeInput" placeholder="時間">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="peCellDateInput">実施日</label>
+                        <input type="date" class="modal-input" id="peCellDateInput">
+                    </div>
+                </div>
+
+                <!-- 右カラム：科目別設定とメモ -->
+                <div class="modal-col">
+                    <!-- 物理用 -->
+                    <div id="pe-physics-fields" style="display:none; flex-direction:column; gap:8px;">
+                        <div class="form-group">
+                            <label class="form-label">分野</label>
+                            <input type="text" class="modal-input" id="pePhysFieldInput" placeholder="例: 力学">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">テーマ</label>
+                            <input type="text" class="modal-input" id="pePhysThemeInput" placeholder="例: 摩擦のある運動">
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <div class="form-group" style="flex:1;">
+                                <label class="form-label">目標(1,2問)</label>
+                                <input type="number" class="modal-input" id="pePhysTarget12Input" placeholder="分">
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label class="form-label">目標(3問)</label>
+                                <input type="number" class="modal-input" id="pePhysTarget3Input" placeholder="分">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 化学用 -->
+                    <div id="pe-chemistry-fields" style="display:none; flex-direction:column; gap:8px;">
+                        <div class="form-group">
+                            <label class="form-label">難易度</label>
+                            <input type="text" class="modal-input" id="peChemDiffInput" placeholder="例: 標準 / 難">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">テーマ</label>
+                            <textarea class="modal-input" id="peChemThemeInput" placeholder="例: 糖類の構造決定" style="min-height:80px;"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 数学・その他用 -->
+                    <div id="pe-math-fields" style="display:flex; flex-direction:column; gap:8px;">
+                        <div class="form-group">
+                            <label class="form-label">難易度</label>
+                            <div class="diff-options">
+                                <button type="button" class="pe-diff-btn" data-val="A">A</button>
+                                <button type="button" class="pe-diff-btn" data-val="B">B</button>
+                                <button type="button" class="pe-diff-btn" data-val="C">C</button>
+                                <button type="button" class="pe-diff-btn" data-val="D">D</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">分野</label>
+                            <input type="text" class="modal-input" id="peCellTopicInput" placeholder="例: 微分法・積分法">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">目標時間</label>
+                            <input type="text" class="modal-input" id="peCellTargetTimeInput" placeholder="例: 25 または 無制限">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top:auto;">
+                        <label class="form-label" for="peCellNoteInput">メモ・反省点</label>
+                        <textarea class="modal-input" id="peCellNoteInput" placeholder="気づきや反省点を記録..." style="min-height:60px;"></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions" style="margin-top:16px;">
+                <button type="button" class="btn btn-danger-outline" id="peModalDeleteBtn" onclick="deletePECellData()" style="display:none; flex:0.4;">削除</button>
+                <button type="button" class="btn btn-outline" onclick="closePECellModal()">キャンセル</button>
+                <button type="button" class="btn" style="background-color:var(--primary-color); color:white;" onclick="savePECellModal()">保存</button>
+            </div>
+        </div>
+    </div>
     <!-- ここから全てのロジック -->
     <script>
         // ----------------------------------------------------
@@ -1182,12 +1310,13 @@
         let currentBookId = null;
         let activeTarget = { secId: null, qNum: null };
         let tempMark = "ー";
-        let tempDiff = 0; // ← 【修正】初期値を0（なし）に変更
+        let tempDiff = 0; // 【修正】初期値を0（なし）に変更
 
         let currentPESubject = "english";
         let activePECell = { colId: null, qId: null };
         let tempPEMark = "ー";
         let tempPEDiff = "";
+        let lastUsedPEDate = ""; // 変数追加（エラー防止）
 
         // 学習予定モードのグローバル変数
         let isPlanMode = false;
@@ -1850,7 +1979,7 @@
 
         function getDifficulty(secId, qNum) {
             const book = store.books[currentBookId];
-            if (!book) return 0; // ← 【修正】初期値を0（なし）に変更
+            if (!book) return 0; // 【修正】初期値を0に変更
             if (!book.data) book.data = {};
             const val = book.data[`${secId}_${qNum}_diff`];
             if (val !== undefined) return val;
@@ -1858,7 +1987,7 @@
             if (currentBookId === "book_std_math12ab" || currentBookId === "book_std_math3c" || title.includes("マスター・オブ・整数") || title.includes("新理系の化学問題100選") || title.includes("物理重要問題集") || title.includes("合格る確率")) {
                 return 0;
             }
-            return 0; // ← 【修正】初期値を0（なし）に変更
+            return 0; // 【修正】初期値を0に変更
         }
 
         function getNote(secId, qNum) {
@@ -2516,7 +2645,8 @@
             
             // --- 【修正】カーソルをテキストボックスに合わせる ---
             setTimeout(() => {
-                document.getElementById("modalQNumInput").focus();
+                const el = document.getElementById("modalQNumInput");
+                if (el) el.focus();
             }, 50);
         }
 
@@ -3265,7 +3395,8 @@
         function deletePECol(colId) {
             if(confirm("この列と入力された記録を削除しますか？\n※この操作は元に戻せません。")) {
                 const subj = store.pastExams[currentPESubject];
-                subj.columns = subj.columns.filter(c => c.id !== colId);
+                // 【修正】型違いエラー防止のため String() で判定
+                subj.columns = subj.columns.filter(c => String(c.id) !== String(colId));
                 saveStore();
                 renderPETable();
             }
@@ -3288,8 +3419,15 @@
         function openPECellModal(colId, qId) {
             activePECell = { colId, qId };
             const subj = store.pastExams[currentPESubject];
-            const col = subj.columns.find(c => c.id === colId);
-            const q = subj.questions.find(qu => qId === qu.id);
+            
+            // 【修正】型違いエラー防止のため、IDを文字列に変換して検索する
+            const col = subj.columns.find(c => String(c.id) === String(colId));
+            const q = subj.questions.find(qu => String(qu.id) === String(qId));
+            
+            if (!col || !q) {
+                console.error("見つかりません:", colId, qId);
+                return;
+            }
             
             document.getElementById("peCellModalTitle").innerText = `${col.name} - ${q.name}`;
             
