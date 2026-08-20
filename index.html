@@ -488,14 +488,14 @@
                 <h1>答 問題集 進捗管理ポータル</h1>
                 <div style="display: flex; gap: 6px;">
                     <button class="btn" style="background-color: #14b8a6;" onclick="showPortalPlanListScreen()">套 予定一覧</button>
-                    <button class="btn" style="background-color: #8b5cf6;" onclick="showPastExamScreen()">雌 過去問・模試管理</button>
                     <button class="btn" style="background-color: var(--accent-color);" onclick="openReportModal()">投 実績</button>
+                    <button class="btn" onclick="openBookModal()">+ 問題集を追加</button>
+                    <button class="btn" style="background-color: #8b5cf6;" onclick="showPastExamScreen()">雌 過去問・模試管理</button>
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
                     <label class="btn btn-outline" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer;">
                         データ読込
                         <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
                     </label>
-                    <button class="btn" onclick="openBookModal()">+ 問題集を追加</button>
                 </div>
             </div>
         </header>
