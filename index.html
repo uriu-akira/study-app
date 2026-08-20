@@ -1103,9 +1103,9 @@
             </div>
             <!-- ▲ 追加ここまで -->
             <div class="form-group">
-                <label class="form-label">単元・問題数の構成 (一括入力)</label>
-                <span class="form-help">1行に「単元名, 問題数」の順で入力してください。<br>例：<code>力学, 25</code></span>
-                <textarea class="modal-input" id="bookSectionsText" placeholder="力学, 20&#10;熱力学, 15&#10;波動, 18"></textarea>
+                <label class="form-label">単元見出し・単元名・問題数の構成 (一括入力)</label>
+                <span class="form-help">1行に「表示ラベル, 単元名, 問題数」の順で入力できます。<br>例：<code>§1, 微分, 12</code> / <code>Part A, 積分, 17</code><br>従来どおり「単元名, 問題数」の2項目でも登録できます。</span>
+                <textarea class="modal-input" id="bookSectionsText" placeholder="§1, 微分, 12&#10;Part A, 積分, 17&#10;総合, 演習問題, 20"></textarea>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-outline" onclick="closeBookModal()">キャンセル</button>
@@ -2287,6 +2287,11 @@
         }
 
         function getSectionLabel(title, secId) {
+            const book = store.books[currentBookId];
+            if (book && book.sections) {
+                const sec = book.sections.find(s => String(s.id) === String(secId));
+                if (sec && sec.label && String(sec.label).trim()) return String(sec.label).trim();
+            }
             if (!title) return `§${secId}`;
             if (title.includes("新理系の化学問題100選") || title.includes("鎌田の化学") || title.includes("鎌田の理論") || title.includes("鎌田の有機") || title.includes("福間の無機")) return `第${secId}章`;
             if (title.includes("化学の新演習") || title.includes("物理重要問題集")) return `${secId}`;
@@ -3016,7 +3021,10 @@
                 document.getElementById("bookSubjectInput").value = book.subject || "その他";
                 document.getElementById("bookBgColorInput").value = book.bgColor || "#ffffff";
                 if(book.sections) {
-                    const textLines = book.sections.map(s => `${s.name}, ${s.count}`);
+                    const backupBookId = currentBookId;
+                    currentBookId = bookId;
+                    const textLines = book.sections.map(s => `${getSectionLabel(book.title, s.id)}, ${s.name}, ${s.count}`);
+                    currentBookId = backupBookId;
                     document.getElementById("bookSectionsText").value = textLines.join("\n");
                 }
             } else {
@@ -3024,7 +3032,7 @@
                 document.getElementById("bookTitleInput").value = "";
                 document.getElementById("bookSubjectInput").value = "数学";
                 document.getElementById("bookBgColorInput").value = "#ffffff";
-                const sampleText = Array.from({length: 8}, (_, i) => `第${i+1}章, 15`).join("\n");
+                const sampleText = Array.from({length: 8}, (_, i) => `§${i+1}, 第${i+1}章, 15`).join("\n");
                 document.getElementById("bookSectionsText").value = sampleText;
             }
             document.getElementById("bookEditModal").classList.add("active");
@@ -3049,16 +3057,23 @@
             for (let line of lines) {
                 line = line.trim();
                 if (!line) continue;
-                const parts = line.replace(/[，、\t]/g, ",").split(",");
-                if (parts.length >= 2) {
-                    const name = parts[0].trim();
-                    const count = parseInt(parts[1].trim(), 10);
+                const parts = line.replace(/[，、\t]/g, ",").split(",").map(p => p.trim());
+                if (parts.length >= 3) {
+                    const label = parts[0];
+                    const name = parts[1];
+                    const count = parseInt(parts[2], 10);
+                    if (name && !isNaN(count) && count > 0) {
+                        newSections.push({ id: secCounter++, label: label, name: name, count: count });
+                    }
+                } else if (parts.length >= 2) {
+                    const name = parts[0];
+                    const count = parseInt(parts[1], 10);
                     if (name && !isNaN(count) && count > 0) {
                         newSections.push({ id: secCounter++, name: name, count: count });
                     }
                 }
             }
-            if (newSections.length === 0) return alert("単元と問題数の形式が正しくありません。\n例：「複素数平面, 18」のように入力してください。");
+            if (newSections.length === 0) return alert("入力形式が正しくありません。\n例：「§1, 複素数平面, 18」または「複素数平面, 18」のように入力してください。");
 
             if (bookId && store.books[bookId]) {
                 store.books[bookId].title = title;
