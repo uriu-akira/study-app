@@ -379,6 +379,36 @@
         }
         /* ▲ 予定モードの専用スタイル ▲ */
 
+        .portal-plan-tabs {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding: 2px 0 10px;
+            margin-bottom: 8px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+        .portal-plan-tab {
+            flex: 0 0 auto;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #475569;
+            border-radius: 999px;
+            padding: 7px 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s ease;
+        }
+        .portal-plan-tab:hover { background: #f8fafc; }
+        .portal-plan-tab.active {
+            background: #14b8a6;
+            border-color: #14b8a6;
+            color: #ffffff;
+            box-shadow: 0 2px 5px rgba(20, 184, 166, 0.22);
+        }
+
         .batsu-list-container { flex: 1; padding: 16px; overflow-y: auto; max-width: 900px; margin: 0 auto; width: 100%; }
         .batsu-card-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
         .plan-date-group-header {
@@ -498,12 +528,12 @@
     <div id="dashboardScreen" class="view-screen active">
         <header>
             <div class="header-top">
-                <h1> 問題集 進捗管理ポータル</h1>
+                <h1>📚 問題集 進捗管理ポータル</h1>
                 <div style="display: flex; gap: 6px;">
-                    <button class="btn" style="background-color: #14b8a6;" onclick="showPortalPlanListScreen()"> 予定一覧</button>
-                    <button class="btn" style="background-color: var(--accent-color);" onclick="openReportModal()"> 実績</button>
+                    <button class="btn" style="background-color: #14b8a6;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
+                    <button class="btn" style="background-color: var(--accent-color);" onclick="openReportModal()">📊 実績</button>
                     <button class="btn" onclick="openBookModal()">+ 問題集を追加</button>
-                    <button class="btn" style="background-color: #8b5cf6;" onclick="showPastExamScreen()"> 過去問・模試管理</button>
+                    <button class="btn" style="background-color: #8b5cf6;" onclick="showPastExamScreen()">🎓 過去問・模試管理</button>
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
                     <label class="btn btn-outline" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer;">
                         データ読込
@@ -544,14 +574,25 @@
             <div class="header-top">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
-                    <h1 style="color: #14b8a6;"> 学習予定リスト</h1>
+                    <h1 style="color: #14b8a6;">📅 学習予定リスト</h1>
                 </div>
             </div>
         </header>
         <div class="batsu-list-container">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="font-size: 0.9rem; color: #334155;">登録されているすべての学習予定</h2>
-                <span id="portalPlanCountBadge" style="font-size: 0.8rem; background: #ccfbf1; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: bold;">0件</span>
+            <div class="portal-plan-tabs" id="portalPlanTabs">
+                <button class="portal-plan-tab active" data-subject="all" onclick="setPortalPlanSubject('all')">全科目</button>
+                <button class="portal-plan-tab" data-subject="英語" onclick="setPortalPlanSubject('英語')">英語</button>
+                <button class="portal-plan-tab" data-subject="数学" onclick="setPortalPlanSubject('数学')">数学</button>
+                <button class="portal-plan-tab" data-subject="国語" onclick="setPortalPlanSubject('国語')">国語</button>
+                <button class="portal-plan-tab" data-subject="物理" onclick="setPortalPlanSubject('物理')">物理</button>
+                <button class="portal-plan-tab" data-subject="化学" onclick="setPortalPlanSubject('化学')">化学</button>
+                <button class="portal-plan-tab" data-subject="生物" onclick="setPortalPlanSubject('生物')">生物</button>
+                <button class="portal-plan-tab" data-subject="社会" onclick="setPortalPlanSubject('社会')">社会</button>
+                <button class="portal-plan-tab" data-subject="その他" onclick="setPortalPlanSubject('その他')">その他</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                <h2 id="portalPlanListHeading" style="font-size: 0.9rem; color: #334155;">登録されているすべての学習予定</h2>
+                <span id="portalPlanCountBadge" style="font-size: 0.8rem; background: #ccfbf1; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: bold; white-space: nowrap;">0件</span>
             </div>
             <div class="batsu-card-grid" id="portalPlanCardGrid"></div>
         </div>
@@ -566,19 +607,19 @@
             <div class="header-top" id="peHeaderNormal" style="padding: 0 0 10px 0;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
-                    <h1 style="color: #4f46e5;"> 東大理系 過去問・模試管理</h1>
+                    <h1 style="color: #4f46e5;">🎓 東大理系 過去問・模試管理</h1>
                 </div>
                 <div style="display: flex; gap: 6px;">
-                    <button class="btn" style="background-color: #14b8a6;" onclick="openPlanDateModal('pe')"> 予定</button>
+                    <button class="btn" style="background-color: #14b8a6;" onclick="openPlanDateModal('pe')">📅 予定</button>
                     <!-- ▼ 科目ごとに表示が切り替わる検索ボタン群 ▼ -->
                     <div id="peFilterButtons" style="display: flex; gap: 6px;">
-                        <button class="btn" id="btnMathFilter" style="background-color: #0ea5e9; display: none;" onclick="openPEMathFilterModal()"> 数学検索</button>
-                        <button class="btn" id="btnPhysFilter" style="background-color: #8b5cf6; display: none;" onclick="openPEPhysFilterModal()"> 物理検索</button>
-                        <button class="btn" id="btnChemFilter" style="background-color: #10b981; display: none;" onclick="openPEChemFilterModal()"> 化学検索</button>
-                        <button class="btn" id="btnDefaultFilter" style="background-color: #64748b; display: none;" onclick="openPEDefaultFilterModal()"> 条件検索</button>
+                        <button class="btn" id="btnMathFilter" style="background-color: #0ea5e9; display: none;" onclick="openPEMathFilterModal()">🔍 数学検索</button>
+                        <button class="btn" id="btnPhysFilter" style="background-color: #8b5cf6; display: none;" onclick="openPEPhysFilterModal()">🔍 物理検索</button>
+                        <button class="btn" id="btnChemFilter" style="background-color: #10b981; display: none;" onclick="openPEChemFilterModal()">🔍 化学検索</button>
+                        <button class="btn" id="btnDefaultFilter" style="background-color: #64748b; display: none;" onclick="openPEDefaultFilterModal()">🔍 条件検索</button>
                     </div>
                     
-                    <button class="btn" style="background-color: #e11d48;" onclick="showPEBatsuListScreen()"> 要復習</button>
+                    <button class="btn" style="background-color: #e11d48;" onclick="showPEBatsuListScreen()">📌 要復習</button>
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
                 </div>
             </div>
@@ -587,7 +628,7 @@
                 <span style="font-weight:bold; font-size:0.9rem;" id="pePlanModeTitle">予定登録モード</span>
                 <div style="display: flex; gap: 6px;">
                     <button class="btn" style="background-color: #f1f5f9; color: #0f172a;" onclick="cancelPlanMode()">キャンセル</button>
-                    <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()"> 予定登録</button>
+                    <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()">✅ 予定登録</button>
                 </div>
             </div>
 
@@ -655,9 +696,9 @@
                     <h1 id="detailBookTitle"></h1>
                 </div>
                 <div style="display: flex; gap: 6px;">
-                    <button class="btn" style="background-color: #14b8a6;" onclick="openPlanDateModal('book')"> 予定</button>
+                    <button class="btn" style="background-color: #14b8a6;" onclick="openPlanDateModal('book')">📅 予定</button>
                     <button class="btn" style="background-color: var(--accent-color);" onclick="showStarListScreen()">★ 指定リスト</button>
-                    <button class="btn" style="background-color: #e11d48;" onclick="showBatsuListScreen()"> 要復習</button>
+                    <button class="btn" style="background-color: #e11d48;" onclick="showBatsuListScreen()">📌 要復習</button>
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
                     <button class="btn btn-danger-outline" onclick="resetCurrentBookStatus()">初期化</button>
                 </div>
@@ -667,7 +708,7 @@
                 <span style="font-weight:bold; font-size:0.9rem;" id="detailPlanModeTitle">予定登録モード</span>
                 <div style="display: flex; gap: 6px;">
                     <button class="btn" style="background-color: #f1f5f9; color: #0f172a;" onclick="cancelPlanMode()">キャンセル</button>
-                    <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()"> 予定登録</button>
+                    <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()">✅ 予定登録</button>
                 </div>
             </div>
 
@@ -693,15 +734,15 @@
                     <span class="stat-value accent" id="answered-count">0 / 0</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">青 (一発〇)</span>
+                    <span class="stat-label">🔵青 (一発〇)</span>
                     <span class="stat-value blue" id="blue-count">0</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">赤 (要解き直し)</span>
+                    <span class="stat-label">🔴赤 (要解き直し)</span>
                     <span class="stat-value red" id="red-count">0</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">黄 (要定着)</span>
+                    <span class="stat-label">🟡黄 (要定着)</span>
                     <span class="stat-value yellow" id="yellow-count">0</span>
                 </div>
                 <div class="stat-item">
@@ -737,7 +778,7 @@
             <div class="header-top">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button class="btn btn-outline" onclick="showDetailScreen()">← 表に戻る</button>
-                    <button class="btn btn-outline" onclick="showDashboard()"> ポータル</button>
+                    <button class="btn btn-outline" onclick="showDashboard()">🏠 ポータル</button>
                     <h1 id="batsuBookTitle">要復習リスト</h1>
                 </div>
             </div>
@@ -759,7 +800,7 @@
             <div class="header-top">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button class="btn btn-outline" onclick="showDetailScreen()">← 表に戻る</button>
-                    <button class="btn btn-outline" onclick="showDashboard()"> ポータル</button>
+                    <button class="btn btn-outline" onclick="showDashboard()">🏠 ポータル</button>
                     <h1 id="starBookTitle">★指定リスト</h1>
                 </div>
             </div>
@@ -1019,7 +1060,7 @@
     <!-- 実績レポートモーダル -->
     <div class="modal-overlay" id="reportModal">
         <div class="modal-content" style="width: 500px; max-width: 95vw;">
-            <div class="modal-header"> 学習実績レポート</div>
+            <div class="modal-header">📊 学習実績レポート</div>
             <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
                 <input type="date" class="modal-input" id="reportFrom" style="flex:1;">
                 <span style="font-weight: bold; color: var(--text-muted);">〜</span>
@@ -1337,16 +1378,17 @@
         let currentPlanType = ""; // 'book' or 'pe'
         let currentPlanDate = "";
         let selectedPlanCells = []; // array of { id1: secId/colId, id2: qNum/qId }
+        let currentPortalPlanSubject = "all"; // 予定一覧の科目タブ
 
         const subjectMeta = {
-            "数学": { icon: "", color: "#0ea5e9", bg: "#e0f2fe", text: "#0284c7" },
-            "英語": { icon: "", color: "#f43f5e", bg: "#ffe4e6", text: "#e11d48" },
-            "物理": { icon: "", color: "#8b5cf6", bg: "#e0e7ff", text: "#4f46e5" },
-            "化学": { icon: "", color: "#10b981", bg: "#d1fae5", text: "#059669" },
-            "生物": { icon: "", color: "#84cc16", bg: "#dcfce7", text: "#16a34a" },
-            "国語": { icon: "", color: "#f59e0b", bg: "#fef3c7", text: "#d97706" },
-            "社会": { icon: "", color: "#a855f7", bg: "#ede9fe", text: "#7e22ce" },
-            "その他": { icon: "", color: "#64748b", bg: "#f1f5f9", text: "#475569" }
+            "数学": { icon: "📐", color: "#0ea5e9", bg: "#e0f2fe", text: "#0284c7" },
+            "英語": { icon: "🔤", color: "#f43f5e", bg: "#ffe4e6", text: "#e11d48" },
+            "物理": { icon: "🍎", color: "#8b5cf6", bg: "#e0e7ff", text: "#4f46e5" },
+            "化学": { icon: "🧪", color: "#10b981", bg: "#d1fae5", text: "#059669" },
+            "生物": { icon: "🌱", color: "#84cc16", bg: "#dcfce7", text: "#16a34a" },
+            "国語": { icon: "📖", color: "#f59e0b", bg: "#fef3c7", text: "#d97706" },
+            "社会": { icon: "🌍", color: "#a855f7", bg: "#ede9fe", text: "#7e22ce" },
+            "その他": { icon: "📁", color: "#64748b", bg: "#f1f5f9", text: "#475569" }
         };
 
         // ====== ヘルパー関数のラッパー (ダッシュボードからの呼び出し用) ======
@@ -1670,12 +1712,12 @@
             if (currentPlanType === 'book') {
                 document.getElementById("detailHeaderNormal").style.display = "none";
                 document.getElementById("detailHeaderPlanMode").style.display = "flex";
-                document.getElementById("detailPlanModeTitle").innerText = currentPlanDate ? ` 予定登録モード: ${currentPlanDate}` : ` 予定解除モード`;
+                document.getElementById("detailPlanModeTitle").innerText = currentPlanDate ? `📅 予定登録モード: ${currentPlanDate}` : `📅 予定解除モード`;
                 initTable();
             } else {
                 document.getElementById("peHeaderNormal").style.display = "none";
                 document.getElementById("peHeaderPlanMode").style.display = "flex";
-                document.getElementById("pePlanModeTitle").innerText = currentPlanDate ? ` 予定登録モード: ${currentPlanDate}` : ` 予定解除モード`;
+                document.getElementById("pePlanModeTitle").innerText = currentPlanDate ? `📅 予定登録モード: ${currentPlanDate}` : `📅 予定解除モード`;
                 renderPETable();
             }
         }
@@ -1754,6 +1796,15 @@
             }
         }
 
+        // 予定一覧の科目タブ切替
+        function setPortalPlanSubject(subject) {
+            currentPortalPlanSubject = subject || "all";
+            document.querySelectorAll(".portal-plan-tab").forEach(tab => {
+                tab.classList.toggle("active", tab.dataset.subject === currentPortalPlanSubject);
+            });
+            renderPortalPlanList();
+        }
+
         // ポータル画面の予定一覧表示
         function renderPortalPlanList() {
             const listEl = document.getElementById("portalPlanCardGrid");
@@ -1773,6 +1824,7 @@
                             if (pDate) {
                                 allPlans.push({
                                     type: 'book',
+                                    subject: book.subject || "その他",
                                     bookId: bId,
                                     title: book.title,
                                     secId: sec.id,
@@ -1801,8 +1853,10 @@
                                 const validHistory = history.filter(h => h && h.mark && h.mark !== "ー");
                                 const latest = validHistory.length > 0 ? validHistory[validHistory.length - 1] : { mark: "ー" };
 
+                                const peSubjectNameMap = { "english":"英語", "math":"数学", "physics":"物理", "chemistry":"化学", "japanese":"国語" };
                                 allPlans.push({
                                     type: 'pe',
+                                    subject: peSubjectNameMap[subjKey] || subj.title || "その他",
                                     subjKey: subjKey,
                                     title: subj.title,
                                     colId: col.id,
@@ -1820,14 +1874,30 @@
                 }
             });
 
-            badgeEl.innerText = `${allPlans.length}件`;
+            // 選択中の科目で絞り込み
+            const visiblePlans = currentPortalPlanSubject === "all"
+                ? allPlans
+                : allPlans.filter(item => item.subject === currentPortalPlanSubject);
 
-            if (allPlans.length === 0) {
-                listEl.innerHTML = `<div style="text-align:center; padding: 40px; color: #6b7280; font-size: 0.85rem;">現在、登録されている学習予定はありません。</div>`;
+            document.querySelectorAll(".portal-plan-tab").forEach(tab => {
+                tab.classList.toggle("active", tab.dataset.subject === currentPortalPlanSubject);
+            });
+
+            const headingEl = document.getElementById("portalPlanListHeading");
+            if (headingEl) {
+                headingEl.innerText = currentPortalPlanSubject === "all"
+                    ? "登録されているすべての学習予定"
+                    : `${currentPortalPlanSubject}の学習予定`;
+            }
+            badgeEl.innerText = `${visiblePlans.length}件`;
+
+            if (visiblePlans.length === 0) {
+                const subjectLabel = currentPortalPlanSubject === "all" ? "" : `${currentPortalPlanSubject}の`;
+                listEl.innerHTML = `<div style="text-align:center; padding: 40px; color: #6b7280; font-size: 0.85rem;">現在、${subjectLabel}登録されている学習予定はありません。</div>`;
                 return;
             }
 
-            allPlans.sort((a, b) => {
+            visiblePlans.sort((a, b) => {
                 const dateCmp = a.planDate.localeCompare(b.planDate);
                 if (dateCmp !== 0) return dateCmp;
                 const typeCmp = a.type.localeCompare(b.type);
@@ -1838,9 +1908,9 @@
             const todayStr = new Date().toISOString().split('T')[0];
             let lastPlanDate = null;
 
-            allPlans.forEach(item => {
+            visiblePlans.forEach(item => {
                 if (item.planDate !== lastPlanDate) {
-                    const sameDateCount = allPlans.filter(p => p.planDate === item.planDate).length;
+                    const sameDateCount = visiblePlans.filter(p => p.planDate === item.planDate).length;
                     const dateObj = new Date(item.planDate + "T00:00:00");
                     const weekNames = ["日", "月", "火", "水", "木", "金", "土"];
                     const parts = item.planDate.split("-");
@@ -1850,7 +1920,7 @@
                     const relativeLabel = item.planDate === todayStr ? "今日" : (item.planDate < todayStr ? "期限超過" : "予定");
                     const header = document.createElement("div");
                     header.className = "plan-date-group-header";
-                    header.innerHTML = `<span> ${dateLabel}</span><span style="font-size:0.68rem; font-weight:700; opacity:0.8;">${relativeLabel}</span><span class="plan-date-group-count">${sameDateCount}件</span>`;
+                    header.innerHTML = `<span>📅 ${dateLabel}</span><span style="font-size:0.68rem; font-weight:700; opacity:0.8;">${relativeLabel}</span><span class="plan-date-group-count">${sameDateCount}件</span>`;
                     listEl.appendChild(header);
                     lastPlanDate = item.planDate;
                 }
@@ -1887,7 +1957,7 @@
                 const pParts = item.planDate.split("-");
                 const shortPDate = pParts.length === 3 ? `${pParts[1]}/${pParts[2]}` : item.planDate;
                 
-                let planDateTag = `<span style="font-size:0.65rem; background:${isPastOrToday ? '#fef3c7' : '#f8fafc'}; color:${isPastOrToday ? '#b45309' : '#475569'}; padding:2px 8px; border-radius:4px; font-weight:bold; border: 1px solid ${isPastOrToday ? '#fcd34d' : '#cbd5e1'};"> 予定: ${shortPDate}</span>`;
+                let planDateTag = `<span style="font-size:0.65rem; background:${isPastOrToday ? '#fef3c7' : '#f8fafc'}; color:${isPastOrToday ? '#b45309' : '#475569'}; padding:2px 8px; border-radius:4px; font-weight:bold; border: 1px solid ${isPastOrToday ? '#fcd34d' : '#cbd5e1'};">📅 予定: ${shortPDate}</span>`;
 
                 const historyFlow = item.history.map(h => {
                     if(!h) return "ー";
@@ -1935,7 +2005,7 @@
                                 ${markStatusTag}
                                 ${planDateTag}
                             </div>
-                            ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;"> 備考: ${noteVal}</div>` : ''}
+                            ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">📝 備考: ${noteVal}</div>` : ''}
                             <div class="batsu-meta">
                                 <span>履歴: ${historyFlow || 'なし'}</span>
                                 <span>最終解答日: ${item.latest.date || '未記録'}</span>
@@ -1967,8 +2037,8 @@
                                 ${markStatusTag}
                                 ${planDateTag}
                             </div>
-                            ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;"> ${detailText}</div>` : ''}
-                            ${item.latest && item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;"> メモ: ${item.latest.note}</div>` : ''}
+                            ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">💡 ${detailText}</div>` : ''}
+                            ${item.latest && item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;">📝 メモ: ${item.latest.note}</div>` : ''}
                             <div class="batsu-meta">
                                 <span>履歴: ${historyFlow || 'なし'}</span>
                                 <span>最終解答日: ${item.latest && item.latest.date ? item.latest.date : '未記録'} ${item.latest && item.latest.score ? `(${item.latest.score}点)` : ''}</span>
@@ -2231,7 +2301,7 @@
             if (planDate) {
                 const pParts = planDate.split("-");
                 const shortPDate = pParts.length === 3 ? `${pParts[1]}/${pParts[2]}` : planDate;
-                planBadge = `<div class="planned-date-badge"> ${shortPDate}</div>`;
+                planBadge = `<div class="planned-date-badge">📅 ${shortPDate}</div>`;
             }
 
             td.innerHTML = `
@@ -2383,7 +2453,7 @@
             document.getElementById("batsuCountBadge").innerText = `${batsuList.length}問`;
 
             if (batsuList.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 40px; color: #6b7280; font-size: 0.85rem;"> 復習が必要な問題（赤・黄）はありません！順調です。</div>`;
+                container.innerHTML = `<div style="text-align:center; padding: 40px; color: #6b7280; font-size: 0.85rem;">🎉 復習が必要な問題（赤・黄）はありません！順調です。</div>`;
             } else {
                 batsuList.forEach(item => {
                     const card = document.createElement("div");
@@ -2425,7 +2495,7 @@
                     card.innerHTML = `
                         <div class="batsu-info">
                             <div class="batsu-q-title"><span>${qDisplay}</span>${starsDisplay ? `<span style="color:#d97706; font-size:0.8rem; letter-spacing:-1px;">${starsDisplay}</span>` : ''}${statusTag}</div>
-                            ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;"> 備考: ${noteVal}</div>` : ''}
+                            ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">📝 備考: ${noteVal}</div>` : ''}
                             <div class="batsu-meta"><span>履歴: ${historyFlow}</span><span>最終解答日: ${item.latest.date || '未記録'}</span>${item.latest.time ? `<span>時間: ${item.latest.time}分</span>` : ''}</div>
                         </div>
                         <button class="btn btn-outline" style="border-color: ${item.statusColor === 'yellow' ? '#fcd34d' : '#fda4af'}; color: ${item.statusColor === 'yellow' ? '#d97706' : '#e11d48'}; background: rgba(255,255,255,0.7);">再挑戦</button>
@@ -2514,7 +2584,7 @@
                     card.innerHTML = `
                         <div class="batsu-info">
                             <div class="batsu-q-title"><span>${qDisplay}</span><span style="color:#d97706; font-size:0.8rem; letter-spacing:-1px;">${starsDisplay}</span>${statusTag}</div>
-                            ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;"> 備考: ${noteVal}</div>` : ''}
+                            ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">📝 備考: ${noteVal}</div>` : ''}
                             <div class="batsu-meta"><span>履歴: ${historyFlow || 'なし'}</span><span>最終解答日: ${item.latest.date || '未記録'}</span>${item.latest.time ? `<span>時間: ${item.latest.time}分</span>` : ''}</div>
                         </div>
                         <button class="btn btn-outline" style="border-color: ${meta.color}; color: var(--text-color); background: rgba(255,255,255,0.7);">記録</button>
@@ -2969,7 +3039,7 @@
             } else {
                 const summaryHtml = `
                     <div style="background: #e0f2fe; padding: 12px; border-radius: 8px; border: 1px solid #bae6fd; margin-bottom: 16px;">
-                        <div style="font-weight: bold; color: #0284c7; margin-bottom: 6px;"> 全体の合計</div>
+                        <div style="font-weight: bold; color: #0284c7; margin-bottom: 6px;">📊 全体の合計</div>
                         <div style="display: flex; gap: 12px; font-size: 0.85rem; color: #0369a1;">
                             <span>新規: <strong>${totalNew}</strong> 問</span>
                             <span>復習: <strong>${totalRev}</strong> 回</span>
@@ -3237,8 +3307,8 @@
                                     <span>${item.col.name} - ${item.q.name}</span>
                                     ${statusTag}
                                 </div>
-                                ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;"> ${detailText}</div>` : ''}
-                                ${item.latest && item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;"> メモ: ${item.latest.note}</div>` : ''}
+                                ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">💡 ${detailText}</div>` : ''}
+                                ${item.latest && item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;">📝 メモ: ${item.latest.note}</div>` : ''}
                                 <div class="batsu-meta">
                                     <span>履歴: ${historyFlow || 'なし'}</span>
                                     <span>最新: ${item.latest && item.latest.date ? item.latest.date : '未記録'} ${item.latest && item.latest.score ? `(${item.latest.score}点)` : ''}</span>
@@ -3347,7 +3417,7 @@
                             if (planDate) {
                                 const pParts = planDate.split("-");
                                 const shortPDate = pParts.length === 3 ? `${pParts[1]}/${pParts[2]}` : planDate;
-                                planBadge = `<div class="planned-date-badge"> ${shortPDate}</div>`;
+                                planBadge = `<div class="planned-date-badge">📅 ${shortPDate}</div>`;
                             }
 
                             // ▼追加：同日の予定であれば初期選択状態にする
@@ -3691,7 +3761,7 @@
                 document.getElementById("peBatsuCountBadge").innerText = `${batsuList.length}問`;
 
                 if (batsuList.length === 0) {
-                    container.innerHTML = `<div style="text-align:center; padding: 40px; color: #6b7280; font-size: 0.85rem;"> 復習が必要な過去問（×・△・要定着）はありません！</div>`;
+                    container.innerHTML = `<div style="text-align:center; padding: 40px; color: #6b7280; font-size: 0.85rem;">🎉 復習が必要な過去問（×・△・要定着）はありません！</div>`;
                 } else {
                     batsuList.forEach(item => {
                         const card = document.createElement("div");
@@ -3731,8 +3801,8 @@
                                     <span>${item.col.name} - ${item.q.name}</span>
                                     ${statusTag}
                                 </div>
-                                ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;"> ${detailText}</div>` : ''}
-                                ${item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;"> メモ: ${item.latest.note}</div>` : ''}
+                                ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">💡 ${detailText}</div>` : ''}
+                                ${item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;">📝 メモ: ${item.latest.note}</div>` : ''}
                                 <div class="batsu-meta">
                                     <span>履歴: ${historyFlow}</span>
                                     <span>最新: ${item.latest.date || '未記録'} ${item.latest.score ? `(${item.latest.score}点)` : ''}</span>
