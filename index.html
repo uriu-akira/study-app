@@ -1874,6 +1874,19 @@
                 }
             });
 
+            // 予定がある科目だけタブを表示（「全科目」は常に表示）
+            const subjectsWithPlans = new Set(allPlans.map(item => item.subject));
+            document.querySelectorAll(".portal-plan-tab").forEach(tab => {
+                const subject = tab.dataset.subject;
+                const shouldShow = subject === "all" || subjectsWithPlans.has(subject);
+                tab.style.display = shouldShow ? "inline-flex" : "none";
+            });
+
+            // 選択中の科目に予定がなくなった場合は「全科目」に戻す
+            if (currentPortalPlanSubject !== "all" && !subjectsWithPlans.has(currentPortalPlanSubject)) {
+                currentPortalPlanSubject = "all";
+            }
+
             // 選択中の科目で絞り込み
             const visiblePlans = currentPortalPlanSubject === "all"
                 ? allPlans
