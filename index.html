@@ -485,11 +485,12 @@
     <div id="dashboardScreen" class="view-screen active">
         <header>
             <div class="header-top">
-                <h1>📚 問題集 進捗管理ポータル</h1>
+                <h1>答 問題集 進捗管理ポータル</h1>
                 <div style="display: flex; gap: 6px;">
-                    <button class="btn" style="background-color: #14b8a6;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
-                    <button class="btn" style="background-color: #8b5cf6;" onclick="showPastExamScreen()">🎓 過去問・模試管理</button>
-                    <button class="btn" style="background-color: var(--accent-color);" onclick="openReportModal()">📊 実績</button>
+                    <button class="btn" style="background-color: #14b8a6;" onclick="showPortalPlanListScreen()">套 予定一覧</button>
+                    <button class="btn" style="background-color: #8b5cf6;" onclick="showPastExamScreen()">雌 過去問・模試管理</button>
+                    <button class="btn" style="background-color: var(--accent-color);" onclick="openReportModal()">投 実績</button>
+                    <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
                     <label class="btn btn-outline" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer;">
                         データ読込
                         <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
@@ -530,7 +531,7 @@
             <div class="header-top">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
-                    <h1 style="color: #14b8a6;">📅 学習予定リスト</h1>
+                    <h1 style="color: #14b8a6;">套 学習予定リスト</h1>
                 </div>
             </div>
         </header>
@@ -552,19 +553,19 @@
             <div class="header-top" id="peHeaderNormal" style="padding: 0 0 10px 0;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
-                    <h1 style="color: #4f46e5;">🎓 東大理系 過去問・模試管理</h1>
+                    <h1 style="color: #4f46e5;">雌 東大理系 過去問・模試管理</h1>
                 </div>
                 <div style="display: flex; gap: 6px;">
-                    <button class="btn" style="background-color: #14b8a6;" onclick="openPlanDateModal('pe')">📅 予定</button>
+                    <button class="btn" style="background-color: #14b8a6;" onclick="openPlanDateModal('pe')">套 予定</button>
                     <!-- ▼ 科目ごとに表示が切り替わる検索ボタン群 ▼ -->
                     <div id="peFilterButtons" style="display: flex; gap: 6px;">
-                        <button class="btn" id="btnMathFilter" style="background-color: #0ea5e9; display: none;" onclick="openPEMathFilterModal()">🔍 数学検索</button>
-                        <button class="btn" id="btnPhysFilter" style="background-color: #8b5cf6; display: none;" onclick="openPEPhysFilterModal()">🔍 物理検索</button>
-                        <button class="btn" id="btnChemFilter" style="background-color: #10b981; display: none;" onclick="openPEChemFilterModal()">🔍 化学検索</button>
-                        <button class="btn" id="btnDefaultFilter" style="background-color: #64748b; display: none;" onclick="openPEDefaultFilterModal()">🔍 条件検索</button>
+                        <button class="btn" id="btnMathFilter" style="background-color: #0ea5e9; display: none;" onclick="openPEMathFilterModal()">剥 数学検索</button>
+                        <button class="btn" id="btnPhysFilter" style="background-color: #8b5cf6; display: none;" onclick="openPEPhysFilterModal()">剥 物理検索</button>
+                        <button class="btn" id="btnChemFilter" style="background-color: #10b981; display: none;" onclick="openPEChemFilterModal()">剥 化学検索</button>
+                        <button class="btn" id="btnDefaultFilter" style="background-color: #64748b; display: none;" onclick="openPEDefaultFilterModal()">剥 条件検索</button>
                     </div>
                     
-                    <button class="btn" style="background-color: #e11d48;" onclick="showPEBatsuListScreen()">📌 要復習</button>
+                    <button class="btn" style="background-color: #e11d48;" onclick="showPEBatsuListScreen()">東 要復習</button>
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
                 </div>
             </div>
@@ -573,7 +574,7 @@
                 <span style="font-weight:bold; font-size:0.9rem;" id="pePlanModeTitle">予定登録モード</span>
                 <div style="display: flex; gap: 6px;">
                     <button class="btn" style="background-color: #f1f5f9; color: #0f172a;" onclick="cancelPlanMode()">キャンセル</button>
-                    <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()">✅ 予定登録</button>
+                    <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()">笨・予定登録</button>
                 </div>
             </div>
 
@@ -641,9 +642,9 @@
                     <h1 id="detailBookTitle"></h1>
                 </div>
                 <div style="display: flex; gap: 6px;">
-                    <button class="btn" style="background-color: #14b8a6;" onclick="openPlanDateModal('book')">📅 予定</button>
+                    <button class="btn" style="background-color: #14b8a6;" onclick="openPlanDateModal('book')">套 予定</button>
                     <button class="btn" style="background-color: var(--accent-color);" onclick="showStarListScreen()">★ 指定リスト</button>
-                    <button class="btn" style="background-color: #e11d48;" onclick="showBatsuListScreen()">📌 要復習</button>
+                    <button class="btn" style="background-color: #e11d48;" onclick="showBatsuListScreen()">東 要復習</button>
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
                     <button class="btn btn-danger-outline" onclick="resetCurrentBookStatus()">初期化</button>
                 </div>
@@ -653,7 +654,7 @@
                 <span style="font-weight:bold; font-size:0.9rem;" id="detailPlanModeTitle">予定登録モード</span>
                 <div style="display: flex; gap: 6px;">
                     <button class="btn" style="background-color: #f1f5f9; color: #0f172a;" onclick="cancelPlanMode()">キャンセル</button>
-                    <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()">✅ 予定登録</button>
+                    <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()">笨・予定登録</button>
                 </div>
             </div>
 
@@ -679,15 +680,15 @@
                     <span class="stat-value accent" id="answered-count">0 / 0</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">🔵青 (一発〇)</span>
+                    <span class="stat-label">鳩青 (一発〇)</span>
                     <span class="stat-value blue" id="blue-count">0</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">🔴赤 (要解き直し)</span>
+                    <span class="stat-label">閥赤 (要解き直し)</span>
                     <span class="stat-value red" id="red-count">0</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">🟡黄 (要定着)</span>
+                    <span class="stat-label">泯黄 (要定着)</span>
                     <span class="stat-value yellow" id="yellow-count">0</span>
                 </div>
                 <div class="stat-item">
@@ -723,7 +724,7 @@
             <div class="header-top">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button class="btn btn-outline" onclick="showDetailScreen()">← 表に戻る</button>
-                    <button class="btn btn-outline" onclick="showDashboard()">🏠 ポータル</button>
+                    <button class="btn btn-outline" onclick="showDashboard()">匠 ポータル</button>
                     <h1 id="batsuBookTitle">要復習リスト</h1>
                 </div>
             </div>
@@ -745,7 +746,7 @@
             <div class="header-top">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button class="btn btn-outline" onclick="showDetailScreen()">← 表に戻る</button>
-                    <button class="btn btn-outline" onclick="showDashboard()">🏠 ポータル</button>
+                    <button class="btn btn-outline" onclick="showDashboard()">匠 ポータル</button>
                     <h1 id="starBookTitle">★指定リスト</h1>
                 </div>
             </div>
@@ -1005,10 +1006,10 @@
     <!-- 実績レポートモーダル -->
     <div class="modal-overlay" id="reportModal">
         <div class="modal-content" style="width: 500px; max-width: 95vw;">
-            <div class="modal-header">📊 学習実績レポート</div>
+            <div class="modal-header">投 学習実績レポート</div>
             <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
                 <input type="date" class="modal-input" id="reportFrom" style="flex:1;">
-                <span style="font-weight: bold; color: var(--text-muted);">〜</span>
+                <span style="font-weight: bold; color: var(--text-muted);">縲・/span>
                 <input type="date" class="modal-input" id="reportTo" style="flex:1;">
                 <button class="btn btn-primary" onclick="generateReport()">集計</button>
             </div>
@@ -1176,7 +1177,7 @@
             "book_std_math12ab": { id: "book_std_math12ab", title: "新数学スタンダード演習 (ⅠAⅡB)", subject: "数学", bgColor: "#ffffff", sections: [ { id: 1, name: "数と式", count: 14 }, { id: 2, name: "方程式・不等式", count: 16 }, { id: 3, name: "集合と論証・命題", count: 12 }, { id: 4, name: "関数（1次・2次）", count: 10 }, { id: 5, name: "行列", count: 19 }, { id: 6, name: "場合の数", count: 19 }, { id: 7, name: "確率（数A）", count: 19 }, { id: 8, name: "整数", count: 21 }, { id: 9, name: "座標", count: 17 }, { id: 10, name: "平面のベクトル", count: 14 }, { id: 11, name: "空間のベクトル", count: 12 }, { id: 12, name: "三角・指数・対数関数", count: 19 }, { id: 13, name: "図形", count: 29 }, { id: 14, name: "微分法", count: 11 }, { id: 15, name: "積分法", count: 14 }, { id: 16, name: "データの分析・確率推測", count: 12 }, { id: 17, name: "総合演習（整式）", count: 25 }, { id: 18, name: "総合演習（図形）", count: 24 } ], data: {} },
             "book_std_math3c": { id: "book_std_math3c", title: "数学ⅢCスタンダード演習", subject: "数学", bgColor: "#ffffff", sections: [ { id: 1, name: "複素数平面", count: 18 }, { id: 2, name: "式と曲線", count: 15 }, { id: 3, name: "数列の極限・関数と極限", count: 16 }, { id: 4, name: "微分法（導関数と応用）", count: 20 }, { id: 5, name: "積分法（計算と定積分）", count: 18 }, { id: 6, name: "積分法の応用（面積・体積）", count: 22 }, { id: 7, name: "ベクトル（空間・位置）", count: 14 }, { id: 8, name: "総合演習（ⅢC）", count: 12 } ], data: {} },
             "book_chem_shinenshu": { id: "book_chem_shinenshu", title: "化学の新演習", subject: "化学", bgColor: "#ffffff", sections: [ { id: 1, name: "物質の構造", count: 45 }, { id: 2, name: "物質の状態", count: 48 }, { id: 3, name: "物質の変化", count: 66 }, { id: 4, name: "無機物質", count: 52 }, { id: 5, name: "有機化学", count: 70 }, { id: 6, name: "高分子化合物", count: 50 } ], data: {} },
-            "book_ukarukakuritsu": { id: "book_ukarukakuritsu", title: "合格る確率", subject: "数学", bgColor: "#ffffff", sections: [ { id: 1, name: "原理原則編", count: 17 }, { id: 2, name: "典型手法編", count: 13 }, { id: 3, name: "入試実戦編", count: 36 }, { id: 4, name: "実戦融合問題編", count: 25 }, { id: 5, name: "超高難度有名問題編", count: 9 } ], data: { "1_1_note": "数え上げ", "1_2_note": "順列", "1_3_note": "重複順列", "1_4_note": "数える順序", "1_5_note": "場合分け", "1_6_note": "補集合の利用", "1_7_note": "組合せ", "1_8_note": "同じものを含む順列", "1_9_note": "円順列", "1_10_note": "場合の数の比", "1_11_note": "乗法定理（独立試行）", "1_12_note": "等確率", "1_13_note": "同基準", "1_14_note": "独立反復試行", "1_15_note": "独立でない試行（非復元抽出）", "1_16_note": "起こりやすさの割合", "1_17_note": "余事象の利用", "2_1_note": "隣り合う、隣り合わない（その1）", "2_2_note": "組合せ→順列", "2_3_note": "順序が指定されているとき", "2_4_note": "対称性の活用", "2_5_note": "包除原理", "2_6_note": "最短経路", "2_7_note": "◯を | で仕切る（その1）", "2_8_note": "◯を | で仕切る（その2）", "2_9_note": "組分け", "2_10_note": "円順列と数珠順列", "2_11_note": "注目すべきことのみに集中", "2_12_note": "一方を固定して", "2_13_note": "独立反復試行（回数指定）", "3_1_note": "書き出しか？ 法則か？", "3_2_note": "辞書式配列", "3_3_note": "〜〜を含む列", "3_4_note": "隣り合う、隣り合わない（その2）", "3_5_note": "最短経路（通れない点）", "3_6_note": "最短経路\"的\"な", "3_7_note": "座標の変化", "3_8_note": "◯を | で仕切る→整数解の個数", "3_9_note": "◯を | で仕切る→増加列", "3_10_note": "◯を | で仕切る→「連」", "3_11_note": "◯を | で仕切る→アラカルト", "3_12_note": "ボールと箱（相互関係1）", "3_13_note": "ボールと箱（相互関係2）", "3_14_note": "ボールと箱（相互関係3）", "3_15_note": "トーナメント", "3_16_note": "じゃんけん", "3_17_note": "番号と色（その1）", "3_18_note": "番号と色（その2）", "3_19_note": "円順列と確率", "3_20_note": "立方体の塗り方", "3_21_note": "独立反復試行：各回3事象", "3_22_note": "独立反復試行：〜勝したら終了", "3_23_note": "独立反復試行：〜勝リードで終了", "3_24_note": "独立反復試行：デュース", "3_25_note": "積が2、6の倍数", "3_26_note": "積が4、12の倍数", "3_27_note": "最大値", "3_28_note": "最大値、最小値", "3_29_note": "第◯回に△度目の（反復試行）", "3_30_note": "第◯回に△度目の（非復元）", "3_31_note": "条件付き確率（単なる割合）", "3_32_note": "条件付き確率（時の流れ）", "3_33_note": "条件付き確率（原因の確率）", "3_34_note": "条件付き確率（応用）", "3_35_note": "条件付き確率（抽象的）", "3_36_note": "事象の独立（数学B）", "4_1_note": "確率の最大化", "4_2_note": "正多角形", "4_3_note": "2変数の条件", "4_4_note": "独立反復試行：2連続で終了", "4_5_note": "「まで」から「ちょうど」へ", "4_6_note": "一定方向への推移", "4_7_note": "確率漸化式（各回2状態）", "4_8_note": "確率漸化式（対称的でない）", "4_9_note": "確率漸化式（1-P_nでよい？）", "4_10_note": "確率漸化式（\"束ねる\"）", "4_11_note": "確率漸化式（偶奇分け）", "4_12_note": "確率漸化式（各回3状態：対称性あり）", "4_13_note": "確率漸化式（各回3状態：対称性なし）", "4_14_note": "確率漸化式（ちょうど〜になる）", "4_15_note": "すごろく", "4_16_note": "確率漸化式（連続しない）", "4_17_note": "領域の分割", "4_18_note": "確率漸化式？", "4_19_note": "漸化式と条件付き確率", "4_20_note": "数列Σと条件付き確率", "4_21_note": "区分求積法との融合（数学Ⅲ）", "4_22_note": "eに収束（数学Ⅲ）", "4_23_note": "期待値", "4_24_note": "期待値と二項係数", "4_25_note": "良問", "5_1_note": "巴戦（数学Ⅲ）", "5_2_note": "ランダムウォーク（反射壁）", "5_3_note": "破産の確率", "5_4_note": "カタラン数", "5_5_note": "ポイヤの壺", "5_6_note": "包除原理（一般）", "5_7_note": "乱列", "5_8_note": "期待値の加法性（数学B）", "5_9_note": "クーポンコレクター（数学B、数学Ⅲ）" } }
+            "book_ukarukakuritsu": { id: "book_ukarukakuritsu", title: "合格る確率", subject: "数学", bgColor: "#ffffff", sections: [ { id: 1, name: "原理原則編", count: 17 }, { id: 2, name: "典型手法編", count: 13 }, { id: 3, name: "入試実戦編", count: 36 }, { id: 4, name: "実戦融合問題編", count: 25 }, { id: 5, name: "超高難度有名問題編", count: 9 } ], data: { "1_1_note": "数え上げ", "1_2_note": "順列", "1_3_note": "重複順列", "1_4_note": "数える順序", "1_5_note": "場合分け", "1_6_note": "補集合の利用", "1_7_note": "組合せ", "1_8_note": "同じものを含む順列", "1_9_note": "円順列", "1_10_note": "場合の数の比", "1_11_note": "乗法定理（独立試行）", "1_12_note": "等確率", "1_13_note": "同基準", "1_14_note": "独立反復試行", "1_15_note": "独立でない試行（非復元抽出）", "1_16_note": "起こりやすさの割合", "1_17_note": "余事象の利用", "2_1_note": "隣り合う、隣り合わない（その1）", "2_2_note": "組合せ→順列", "2_3_note": "順序が指定されているとき", "2_4_note": "対称性の活用", "2_5_note": "包除原理", "2_6_note": "最短経路", "2_7_note": "◯を | で仕切る（その1）", "2_8_note": "◯を | で仕切る（その2）", "2_9_note": "組分け", "2_10_note": "円順列と数珠順列", "2_11_note": "注目すべきことのみに集中", "2_12_note": "一方を固定して", "2_13_note": "独立反復試行（回数指定）", "3_1_note": "書き出しか？ 法則か？", "3_2_note": "辞書式配列", "3_3_note": "縲懊怩ﾜむ列", "3_4_note": "隣り合う、隣り合わない（その2）", "3_5_note": "最短経路（通れない点）", "3_6_note": "最短経路\"的\"な", "3_7_note": "座標の変化", "3_8_note": "◯を | で仕切る→整数解の個数", "3_9_note": "◯を | で仕切る→増加列", "3_10_note": "◯を | で仕切る→「連」", "3_11_note": "◯を | で仕切る→アラカルト", "3_12_note": "ボールと箱（相互関係1）", "3_13_note": "ボールと箱（相互関係2）", "3_14_note": "ボールと箱（相互関係3）", "3_15_note": "トーナメント", "3_16_note": "じゃんけん", "3_17_note": "番号と色（その1）", "3_18_note": "番号と色（その2）", "3_19_note": "円順列と確率", "3_20_note": "立方体の塗り方", "3_21_note": "独立反復試行：各回3事象", "3_22_note": "独立反復試行：縲恟氓ｵたら終了", "3_23_note": "独立反復試行：縲恟气梶[ドで終了", "3_24_note": "独立反復試行：デュース", "3_25_note": "積が2、6の倍数", "3_26_note": "積が4、12の倍数", "3_27_note": "最大値", "3_28_note": "最大値、最小値", "3_29_note": "第◯回に△度目の（反復試行）", "3_30_note": "第◯回に△度目の（非復元）", "3_31_note": "条件付き確率（単なる割合）", "3_32_note": "条件付き確率（時の流れ）", "3_33_note": "条件付き確率（原因の確率）", "3_34_note": "条件付き確率（応用）", "3_35_note": "条件付き確率（抽象的）", "3_36_note": "事象の独立（数学B）", "4_1_note": "確率の最大化", "4_2_note": "正多角形", "4_3_note": "2変数の条件", "4_4_note": "独立反復試行：2連続で終了", "4_5_note": "「まで」から「ちょうど」へ", "4_6_note": "一定方向への推移", "4_7_note": "確率漸化式（各回2状態）", "4_8_note": "確率漸化式（対称的でない）", "4_9_note": "確率漸化式（1-P_nでよい？）", "4_10_note": "確率漸化式（\"束ねる\"）", "4_11_note": "確率漸化式（偶奇分け）", "4_12_note": "確率漸化式（各回3状態：対称性あり）", "4_13_note": "確率漸化式（各回3状態：対称性なし）", "4_14_note": "確率漸化式（ちょうど縲怩ﾉなる）", "4_15_note": "すごろく", "4_16_note": "確率漸化式（連続しない）", "4_17_note": "領域の分割", "4_18_note": "確率漸化式？", "4_19_note": "漸化式と条件付き確率", "4_20_note": "数列Σと条件付き確率", "4_21_note": "区分求積法との融合（数学Ⅲ）", "4_22_note": "eに収束（数学Ⅲ）", "4_23_note": "期待値", "4_24_note": "期待値と二項係数", "4_25_note": "良問", "5_1_note": "巴戦（数学Ⅲ）", "5_2_note": "ランダムウォーク（反射壁）", "5_3_note": "破産の確率", "5_4_note": "カタラン数", "5_5_note": "ポイヤの壺", "5_6_note": "包除原理（一般）", "5_7_note": "乱列", "5_8_note": "期待値の加法性（数学B）", "5_9_note": "クーポンコレクター（数学B、数学Ⅲ）" } }
         };
 
         const colsMath = [];
@@ -1325,14 +1326,14 @@
         let selectedPlanCells = []; // array of { id1: secId/colId, id2: qNum/qId }
 
         const subjectMeta = {
-            "数学": { icon: "📐", color: "#0ea5e9", bg: "#e0f2fe", text: "#0284c7" },
-            "英語": { icon: "🔤", color: "#f43f5e", bg: "#ffe4e6", text: "#e11d48" },
-            "物理": { icon: "🍎", color: "#8b5cf6", bg: "#e0e7ff", text: "#4f46e5" },
-            "化学": { icon: "🧪", color: "#10b981", bg: "#d1fae5", text: "#059669" },
-            "生物": { icon: "🌱", color: "#84cc16", bg: "#dcfce7", text: "#16a34a" },
-            "国語": { icon: "📖", color: "#f59e0b", bg: "#fef3c7", text: "#d97706" },
-            "社会": { icon: "🌍", color: "#a855f7", bg: "#ede9fe", text: "#7e22ce" },
-            "その他": { icon: "📁", color: "#64748b", bg: "#f1f5f9", text: "#475569" }
+            "数学": { icon: "盗", color: "#0ea5e9", bg: "#e0f2fe", text: "#0284c7" },
+            "英語": { icon: "筈", color: "#f43f5e", bg: "#ffe4e6", text: "#e11d48" },
+            "物理": { icon: "克", color: "#8b5cf6", bg: "#e0e7ff", text: "#4f46e5" },
+            "化学": { icon: "ｧｪ", color: "#10b981", bg: "#d1fae5", text: "#059669" },
+            "生物": { icon: "験", color: "#84cc16", bg: "#dcfce7", text: "#16a34a" },
+            "国語": { icon: "当", color: "#f59e0b", bg: "#fef3c7", text: "#d97706" },
+            "社会": { icon: "訣", color: "#a855f7", bg: "#ede9fe", text: "#7e22ce" },
+            "その他": { icon: "刀", color: "#64748b", bg: "#f1f5f9", text: "#475569" }
         };
 
         // ====== ヘルパー関数のラッパー (ダッシュボードからの呼び出し用) ======
@@ -1612,7 +1613,7 @@
                                 </div>
                             </div>
                             <div class="card-actions">
-                                <button class="btn btn-outline" style="font-size: 0.65rem; padding: 4px 8px; border-color: ${meta.color}; background: rgba(255,255,255,0.7);" onclick="openBookModal('${bId}')">✏️ 編集</button>
+                                <button class="btn btn-outline" style="font-size: 0.65rem; padding: 4px 8px; border-color: ${meta.color}; background: rgba(255,255,255,0.7);" onclick="openBookModal('${bId}')">笨擾ｸ・編集</button>
                                 <button class="btn btn-danger-outline" style="font-size: 0.65rem; padding: 4px 8px; background: rgba(255,255,255,0.7);" onclick="deleteBook('${bId}')">削除</button>
                             </div>
                         `;
@@ -1656,12 +1657,12 @@
             if (currentPlanType === 'book') {
                 document.getElementById("detailHeaderNormal").style.display = "none";
                 document.getElementById("detailHeaderPlanMode").style.display = "flex";
-                document.getElementById("detailPlanModeTitle").innerText = currentPlanDate ? `📅 予定登録モード: ${currentPlanDate}` : `📅 予定解除モード`;
+                document.getElementById("detailPlanModeTitle").innerText = currentPlanDate ? `套 予定登録モード: ${currentPlanDate}` : `套 予定解除モード`;
                 initTable();
             } else {
                 document.getElementById("peHeaderNormal").style.display = "none";
                 document.getElementById("peHeaderPlanMode").style.display = "flex";
-                document.getElementById("pePlanModeTitle").innerText = currentPlanDate ? `📅 予定登録モード: ${currentPlanDate}` : `📅 予定解除モード`;
+                document.getElementById("pePlanModeTitle").innerText = currentPlanDate ? `套 予定登録モード: ${currentPlanDate}` : `套 予定解除モード`;
                 renderPETable();
             }
         }
@@ -1851,7 +1852,7 @@
                 const pParts = item.planDate.split("-");
                 const shortPDate = pParts.length === 3 ? `${pParts[1]}/${pParts[2]}` : item.planDate;
                 
-                let planDateTag = `<span style="font-size:0.65rem; background:${isPastOrToday ? '#fef3c7' : '#f8fafc'}; color:${isPastOrToday ? '#b45309' : '#475569'}; padding:2px 8px; border-radius:4px; font-weight:bold; border: 1px solid ${isPastOrToday ? '#fcd34d' : '#cbd5e1'};">📅 予定: ${shortPDate}</span>`;
+                let planDateTag = `<span style="font-size:0.65rem; background:${isPastOrToday ? '#fef3c7' : '#f8fafc'}; color:${isPastOrToday ? '#b45309' : '#475569'}; padding:2px 8px; border-radius:4px; font-weight:bold; border: 1px solid ${isPastOrToday ? '#fcd34d' : '#cbd5e1'};">套 予定: ${shortPDate}</span>`;
 
                 const historyFlow = item.history.map(h => {
                     if(!h) return "ー";
@@ -1899,7 +1900,7 @@
                                 ${markStatusTag}
                                 ${planDateTag}
                             </div>
-                            ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">📝 備考: ${noteVal}</div>` : ''}
+                            ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">統 備考: ${noteVal}</div>` : ''}
                             <div class="batsu-meta">
                                 <span>履歴: ${historyFlow || 'なし'}</span>
                                 <span>最終解答日: ${item.latest.date || '未記録'}</span>
@@ -1931,8 +1932,8 @@
                                 ${markStatusTag}
                                 ${planDateTag}
                             </div>
-                            ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">💡 ${detailText}</div>` : ''}
-                            ${item.latest && item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;">📝 メモ: ${item.latest.note}</div>` : ''}
+                            ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">庁 ${detailText}</div>` : ''}
+                            ${item.latest && item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;">統 メモ: ${item.latest.note}</div>` : ''}
                             <div class="batsu-meta">
                                 <span>履歴: ${historyFlow || 'なし'}</span>
                                 <span>最終解答日: ${item.latest && item.latest.date ? item.latest.date : '未記録'} ${item.latest && item.latest.score ? `(${item.latest.score}点)` : ''}</span>
@@ -2195,7 +2196,7 @@
             if (planDate) {
                 const pParts = planDate.split("-");
                 const shortPDate = pParts.length === 3 ? `${pParts[1]}/${pParts[2]}` : planDate;
-                planBadge = `<div class="planned-date-badge">📅 ${shortPDate}</div>`;
+                planBadge = `<div class="planned-date-badge">套 ${shortPDate}</div>`;
             }
 
             td.innerHTML = `
@@ -2347,7 +2348,7 @@
             document.getElementById("batsuCountBadge").innerText = `${batsuList.length}問`;
 
             if (batsuList.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 40px; color: #6b7280; font-size: 0.85rem;">🎉 復習が必要な問題（赤・黄）はありません！順調です。</div>`;
+                container.innerHTML = `<div style="text-align:center; padding: 40px; color: #6b7280; font-size: 0.85rem;">脂 復習が必要な問題（赤・黄）はありません！順調です。</div>`;
             } else {
                 batsuList.forEach(item => {
                     const card = document.createElement("div");
@@ -2389,7 +2390,7 @@
                     card.innerHTML = `
                         <div class="batsu-info">
                             <div class="batsu-q-title"><span>${qDisplay}</span>${starsDisplay ? `<span style="color:#d97706; font-size:0.8rem; letter-spacing:-1px;">${starsDisplay}</span>` : ''}${statusTag}</div>
-                            ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">📝 備考: ${noteVal}</div>` : ''}
+                            ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">統 備考: ${noteVal}</div>` : ''}
                             <div class="batsu-meta"><span>履歴: ${historyFlow}</span><span>最終解答日: ${item.latest.date || '未記録'}</span>${item.latest.time ? `<span>時間: ${item.latest.time}分</span>` : ''}</div>
                         </div>
                         <button class="btn btn-outline" style="border-color: ${item.statusColor === 'yellow' ? '#fcd34d' : '#fda4af'}; color: ${item.statusColor === 'yellow' ? '#d97706' : '#e11d48'}; background: rgba(255,255,255,0.7);">再挑戦</button>
@@ -2478,7 +2479,7 @@
                     card.innerHTML = `
                         <div class="batsu-info">
                             <div class="batsu-q-title"><span>${qDisplay}</span><span style="color:#d97706; font-size:0.8rem; letter-spacing:-1px;">${starsDisplay}</span>${statusTag}</div>
-                            ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">📝 備考: ${noteVal}</div>` : ''}
+                            ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">統 備考: ${noteVal}</div>` : ''}
                             <div class="batsu-meta"><span>履歴: ${historyFlow || 'なし'}</span><span>最終解答日: ${item.latest.date || '未記録'}</span>${item.latest.time ? `<span>時間: ${item.latest.time}分</span>` : ''}</div>
                         </div>
                         <button class="btn btn-outline" style="border-color: ${meta.color}; color: var(--text-color); background: rgba(255,255,255,0.7);">記録</button>
@@ -2919,9 +2920,9 @@
                         <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
                             <div style="font-weight: bold; color: #0f172a; margin-bottom: 6px;">${book.title}</div>
                             <div style="display: flex; gap: 12px; font-size: 0.8rem; color: #475569;">
-                                <span>🆕 新規: <strong style="color: var(--primary-color);">${bookNew}</strong> 問</span>
-                                <span>🔄 復習: <strong style="color: #f59e0b;">${bookRev}</strong> 回</span>
-                                <span>⏱️ 時間: <strong>${Math.floor(bookMin/60)}時間${bookMin%60}分</strong></span>
+                                <span>・ 新規: <strong style="color: var(--primary-color);">${bookNew}</strong> 問</span>
+                                <span>売 復習: <strong style="color: #f59e0b;">${bookRev}</strong> 回</span>
+                                <span>竢ｱ・・時間: <strong>${Math.floor(bookMin/60)}時間${bookMin%60}分</strong></span>
                             </div>
                         </div>
                     `;
@@ -2933,7 +2934,7 @@
             } else {
                 const summaryHtml = `
                     <div style="background: #e0f2fe; padding: 12px; border-radius: 8px; border: 1px solid #bae6fd; margin-bottom: 16px;">
-                        <div style="font-weight: bold; color: #0284c7; margin-bottom: 6px;">📊 全体の合計</div>
+                        <div style="font-weight: bold; color: #0284c7; margin-bottom: 6px;">投 全体の合計</div>
                         <div style="display: flex; gap: 12px; font-size: 0.85rem; color: #0369a1;">
                             <span>新規: <strong>${totalNew}</strong> 問</span>
                             <span>復習: <strong>${totalRev}</strong> 回</span>
@@ -3201,8 +3202,8 @@
                                     <span>${item.col.name} - ${item.q.name}</span>
                                     ${statusTag}
                                 </div>
-                                ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">💡 ${detailText}</div>` : ''}
-                                ${item.latest && item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;">📝 メモ: ${item.latest.note}</div>` : ''}
+                                ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">庁 ${detailText}</div>` : ''}
+                                ${item.latest && item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;">統 メモ: ${item.latest.note}</div>` : ''}
                                 <div class="batsu-meta">
                                     <span>履歴: ${historyFlow || 'なし'}</span>
                                     <span>最新: ${item.latest && item.latest.date ? item.latest.date : '未記録'} ${item.latest && item.latest.score ? `(${item.latest.score}点)` : ''}</span>
@@ -3311,7 +3312,7 @@
                             if (planDate) {
                                 const pParts = planDate.split("-");
                                 const shortPDate = pParts.length === 3 ? `${pParts[1]}/${pParts[2]}` : planDate;
-                                planBadge = `<div class="planned-date-badge">📅 ${shortPDate}</div>`;
+                                planBadge = `<div class="planned-date-badge">套 ${shortPDate}</div>`;
                             }
 
                             // ▼追加：同日の予定であれば初期選択状態にする
@@ -3655,7 +3656,7 @@
                 document.getElementById("peBatsuCountBadge").innerText = `${batsuList.length}問`;
 
                 if (batsuList.length === 0) {
-                    container.innerHTML = `<div style="text-align:center; padding: 40px; color: #6b7280; font-size: 0.85rem;">🎉 復習が必要な過去問（×・△・要定着）はありません！</div>`;
+                    container.innerHTML = `<div style="text-align:center; padding: 40px; color: #6b7280; font-size: 0.85rem;">脂 復習が必要な過去問（×・△・要定着）はありません！</div>`;
                 } else {
                     batsuList.forEach(item => {
                         const card = document.createElement("div");
@@ -3695,8 +3696,8 @@
                                     <span>${item.col.name} - ${item.q.name}</span>
                                     ${statusTag}
                                 </div>
-                                ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">💡 ${detailText}</div>` : ''}
-                                ${item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;">📝 メモ: ${item.latest.note}</div>` : ''}
+                                ${detailText ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">庁 ${detailText}</div>` : ''}
+                                ${item.latest.note ? `<div style="font-size:0.75rem; color:#6b7280; margin-top:2px; font-weight:normal;">統 メモ: ${item.latest.note}</div>` : ''}
                                 <div class="batsu-meta">
                                     <span>履歴: ${historyFlow}</span>
                                     <span>最新: ${item.latest.date || '未記録'} ${item.latest.score ? `(${item.latest.score}点)` : ''}</span>
