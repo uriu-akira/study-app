@@ -381,6 +381,19 @@
 
         .batsu-list-container { flex: 1; padding: 16px; overflow-y: auto; max-width: 900px; margin: 0 auto; width: 100%; }
         .batsu-card-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+        .plan-date-group-header {
+            display: flex; align-items: center; gap: 10px;
+            margin: 18px 0 2px; padding: 9px 12px;
+            background: linear-gradient(90deg, #ccfbf1 0%, #f0fdfa 100%);
+            border: 1px solid #99f6e4; border-left: 5px solid #14b8a6; border-radius: 9px;
+            color: #0f766e; font-size: 0.9rem; font-weight: 800;
+            position: sticky; top: 0; z-index: 3; box-shadow: 0 2px 5px rgba(15,118,110,0.08);
+        }
+        .plan-date-group-header:first-child { margin-top: 0; }
+        .plan-date-group-count {
+            margin-left: auto; font-size: 0.68rem; padding: 2px 8px;
+            border-radius: 999px; background: #ffffff; color: #0f766e; border: 1px solid #99f6e4;
+        }
         .batsu-card { background: var(--card-bg); border: 1px solid #cbd5e1; border-left: 5px solid #9ca3af; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.15s; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .batsu-card:hover { filter: brightness(0.97); }
         .batsu-info { display: flex; flex-direction: column; gap: 4px; }
@@ -1814,11 +1827,33 @@
                 return;
             }
 
-            allPlans.sort((a, b) => a.planDate.localeCompare(b.planDate));
+            allPlans.sort((a, b) => {
+                const dateCmp = a.planDate.localeCompare(b.planDate);
+                if (dateCmp !== 0) return dateCmp;
+                const typeCmp = a.type.localeCompare(b.type);
+                if (typeCmp !== 0) return typeCmp;
+                return (a.title || "").localeCompare(b.title || "", "ja");
+            });
 
             const todayStr = new Date().toISOString().split('T')[0];
+            let lastPlanDate = null;
 
             allPlans.forEach(item => {
+                if (item.planDate !== lastPlanDate) {
+                    const sameDateCount = allPlans.filter(p => p.planDate === item.planDate).length;
+                    const dateObj = new Date(item.planDate + "T00:00:00");
+                    const weekNames = ["日", "月", "火", "水", "木", "金", "土"];
+                    const parts = item.planDate.split("-");
+                    const dateLabel = parts.length === 3
+                        ? `${parseInt(parts[0], 10)}年${parseInt(parts[1], 10)}月${parseInt(parts[2], 10)}日（${weekNames[dateObj.getDay()]}）`
+                        : item.planDate;
+                    const relativeLabel = item.planDate === todayStr ? "今日" : (item.planDate < todayStr ? "期限超過" : "予定");
+                    const header = document.createElement("div");
+                    header.className = "plan-date-group-header";
+                    header.innerHTML = `<span>套 ${dateLabel}</span><span style="font-size:0.68rem; font-weight:700; opacity:0.8;">${relativeLabel}</span><span class="plan-date-group-count">${sameDateCount}件</span>`;
+                    listEl.appendChild(header);
+                    lastPlanDate = item.planDate;
+                }
                 const card = document.createElement("div");
                 card.className = "batsu-card";
                 
