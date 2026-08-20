@@ -452,6 +452,36 @@
             background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px;
         }
 
+        .portal-plan-toolbar {
+            display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px;
+        }
+        .adhoc-add-btn {
+            border: none; background: #7c3aed; color: #ffffff; border-radius: 9px;
+            padding: 8px 13px; font-size: 0.76rem; font-weight: 800; cursor: pointer; white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(124,58,237,0.18);
+        }
+        .adhoc-task-card { border-left-width: 6px !important; }
+        .adhoc-task-badge {
+            display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px;
+            background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd;
+            font-size: 0.64rem; font-weight: 900;
+        }
+        .adhoc-priority-high { background:#ffe4e6; color:#be123c; border-color:#fda4af; }
+        .adhoc-priority-medium { background:#fef3c7; color:#b45309; border-color:#fcd34d; }
+        .adhoc-priority-low { background:#f1f5f9; color:#475569; border-color:#cbd5e1; }
+        .adhoc-card-actions { display:flex; gap:6px; flex:0 0 auto; margin-left:10px; }
+        .adhoc-complete-btn {
+            border:1px solid #6ee7b7; background:#ecfdf5; color:#047857; border-radius:8px;
+            padding:7px 10px; font-size:0.72rem; font-weight:800; cursor:pointer;
+        }
+        @media (max-width: 650px) {
+            .portal-plan-toolbar { align-items: stretch; flex-direction: column; }
+            .adhoc-add-btn { width:100%; }
+            .adhoc-task-card { align-items:flex-start; flex-direction:column; gap:10px; }
+            .adhoc-card-actions { margin-left:0; width:100%; }
+            .adhoc-card-actions button { flex:1; }
+        }
+
         .batsu-list-container { flex: 1; padding: 16px; overflow-y: auto; max-width: 900px; margin: 0 auto; width: 100%; }
         .batsu-card-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
         .plan-date-group-header {
@@ -622,6 +652,10 @@
             </div>
         </header>
         <div class="batsu-list-container">
+            <div class="portal-plan-toolbar">
+                <div style="font-size:0.72rem; color:#64748b;">問題集・過去問の予定と、単発タスクをまとめて管理できます。</div>
+                <button class="adhoc-add-btn" type="button" onclick="openAdhocTaskModal()">＋ 単発タスク追加</button>
+            </div>
             <div class="portal-plan-tabs" id="portalPlanTabs">
                 <button class="portal-plan-tab active" data-subject="all" onclick="setPortalPlanSubject('all')">全科目</button>
                 <button class="portal-plan-tab" data-subject="英語" onclick="setPortalPlanSubject('英語')">英語</button>
@@ -1260,6 +1294,51 @@
             </div>
         </div>
     </div>
+    <!-- 単発タスク追加・編集モーダル -->
+    <div class="modal-overlay" id="adhocTaskModal">
+        <div class="modal-content" style="width:420px; max-width:94vw;">
+            <div class="modal-header" id="adhocTaskModalTitle">単発タスク</div>
+            <input type="hidden" id="adhocTaskIdInput">
+            <div class="form-group">
+                <label class="form-label" for="adhocTaskTitleInput">タスク名</label>
+                <input type="text" class="modal-input" id="adhocTaskTitleInput" placeholder="例: 英作文の添削を提出">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="adhocTaskSubjectInput">科目</label>
+                <select class="modal-input" id="adhocTaskSubjectInput">
+                    <option value="英語">英語</option><option value="数学">数学</option><option value="国語">国語</option>
+                    <option value="物理">物理</option><option value="化学">化学</option><option value="生物">生物</option>
+                    <option value="社会">社会</option><option value="その他">その他</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="adhocTaskDateInput">予定日</label>
+                <input type="date" class="modal-input" id="adhocTaskDateInput">
+            </div>
+            <div style="display:flex; gap:8px;">
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label" for="adhocTaskMinutesInput">所要時間（分）</label>
+                    <input type="number" min="0" step="5" class="modal-input" id="adhocTaskMinutesInput" placeholder="例: 30">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label" for="adhocTaskPriorityInput">優先度</label>
+                    <select class="modal-input" id="adhocTaskPriorityInput">
+                        <option value="medium">中</option><option value="high">高</option><option value="low">低</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="adhocTaskNoteInput">メモ</label>
+                <textarea class="modal-input" id="adhocTaskNoteInput" placeholder="補足や持ち物、提出先など" style="min-height:90px;"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-danger-outline" id="adhocTaskDeleteBtn" onclick="deleteAdhocTask()" style="display:none; flex:0.55;">削除</button>
+                <button type="button" class="btn btn-outline" onclick="closeAdhocTaskModal()">キャンセル</button>
+                <button type="button" class="btn" style="background:#7c3aed; color:white;" onclick="saveAdhocTask()">保存</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ここから全てのロジック -->
     <script>
         // ----------------------------------------------------
@@ -1417,7 +1496,7 @@
         };
 
         const STORAGE_KEY = "multi_book_progress_v45"; 
-        let store = { books: JSON.parse(JSON.stringify(defaultBooks)), pastExams: JSON.parse(JSON.stringify(defaultPastExams)) };
+        let store = { books: JSON.parse(JSON.stringify(defaultBooks)), pastExams: JSON.parse(JSON.stringify(defaultPastExams)), adHocTasks: [] };
         
         let currentBookId = null;
         let activeTarget = { secId: null, qNum: null };
@@ -1521,6 +1600,7 @@
 
                     store.books = loadedBooks;
                     store.pastExams = tempExams;
+                    store.adHocTasks = Array.isArray(latestSave.data.adHocTasks) ? latestSave.data.adHocTasks : [];
 
                     // 古いセーブデータの削除（掃除）
                     for (let i = 1; i < saves.length; i++) {
@@ -1530,6 +1610,7 @@
                     // 初回起動時（セーブデータなし）
                     store.books = JSON.parse(JSON.stringify(defaultBooks));
                     store.pastExams = tempExams;
+                    store.adHocTasks = [];
                 }
 
                 // 過去問のデフォルトレコードやカラム補完（常に実行）
@@ -1605,6 +1686,7 @@
                     }
                 });
 
+                if (!Array.isArray(store.adHocTasks)) store.adHocTasks = [];
                 saveStore();
             } catch (e) {
                 console.error("データの読み込み中にエラーが発生しました:", e);
@@ -1633,6 +1715,83 @@
         function showPortalPlanListScreen() {
             renderPortalPlanList();
             switchScreen("portalPlanListScreen");
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+        }
+
+        function openAdhocTaskModal(taskId = "") {
+            if (!Array.isArray(store.adHocTasks)) store.adHocTasks = [];
+            const task = taskId ? store.adHocTasks.find(t => t.id === taskId) : null;
+            document.getElementById("adhocTaskIdInput").value = task ? task.id : "";
+            document.getElementById("adhocTaskModalTitle").innerText = task ? "単発タスクを編集" : "単発タスクを追加";
+            document.getElementById("adhocTaskTitleInput").value = task ? (task.title || "") : "";
+            document.getElementById("adhocTaskSubjectInput").value = task ? (task.subject || "その他") : (currentPortalPlanSubject !== "all" ? currentPortalPlanSubject : "その他");
+            const defaultDate = currentPortalPlanView === "day" && currentPortalPlanDay ? currentPortalPlanDay : formatLocalDate(new Date());
+            document.getElementById("adhocTaskDateInput").value = task ? (task.planDate || "") : defaultDate;
+            document.getElementById("adhocTaskMinutesInput").value = task && task.minutes ? task.minutes : "";
+            document.getElementById("adhocTaskPriorityInput").value = task ? (task.priority || "medium") : "medium";
+            document.getElementById("adhocTaskNoteInput").value = task ? (task.note || "") : "";
+            document.getElementById("adhocTaskDeleteBtn").style.display = task ? "block" : "none";
+            document.getElementById("adhocTaskModal").classList.add("active");
+            setTimeout(() => document.getElementById("adhocTaskTitleInput").focus(), 50);
+        }
+
+        function closeAdhocTaskModal() {
+            document.getElementById("adhocTaskModal").classList.remove("active");
+        }
+
+        function saveAdhocTask() {
+            const id = document.getElementById("adhocTaskIdInput").value;
+            const title = document.getElementById("adhocTaskTitleInput").value.trim();
+            const subject = document.getElementById("adhocTaskSubjectInput").value;
+            const planDate = document.getElementById("adhocTaskDateInput").value;
+            const minutesVal = document.getElementById("adhocTaskMinutesInput").value;
+            const priority = document.getElementById("adhocTaskPriorityInput").value;
+            const note = document.getElementById("adhocTaskNoteInput").value.trim();
+            if (!title) { alert("タスク名を入力してください。"); return; }
+            if (!planDate) { alert("予定日を指定してください。"); return; }
+            if (!Array.isArray(store.adHocTasks)) store.adHocTasks = [];
+            const payload = {
+                id: id || `task_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+                title, subject, planDate,
+                minutes: minutesVal ? Math.max(0, parseInt(minutesVal, 10) || 0) : 0,
+                priority, note, completed: false,
+                createdAt: new Date().toISOString()
+            };
+            if (id) {
+                const idx = store.adHocTasks.findIndex(t => t.id === id);
+                if (idx >= 0) payload.createdAt = store.adHocTasks[idx].createdAt || payload.createdAt;
+                if (idx >= 0) store.adHocTasks[idx] = { ...store.adHocTasks[idx], ...payload };
+                else store.adHocTasks.push(payload);
+            } else {
+                store.adHocTasks.push(payload);
+            }
+            saveStore();
+            closeAdhocTaskModal();
+            renderPortalPlanList();
+        }
+
+        function deleteAdhocTask() {
+            const id = document.getElementById("adhocTaskIdInput").value;
+            if (!id) return;
+            const task = (store.adHocTasks || []).find(t => t.id === id);
+            if (!task || !confirm(`「${task.title}」を削除しますか？`)) return;
+            store.adHocTasks = store.adHocTasks.filter(t => t.id !== id);
+            saveStore();
+            closeAdhocTaskModal();
+            renderPortalPlanList();
+        }
+
+        function completeAdhocTask(taskId) {
+            const task = (store.adHocTasks || []).find(t => t.id === taskId);
+            if (!task) return;
+            if (!confirm(`「${task.title}」を完了にしますか？`)) return;
+            task.completed = true;
+            task.completedAt = new Date().toISOString();
+            saveStore();
+            renderPortalPlanList();
         }
 
         function renderDashboard() {
@@ -1981,6 +2140,24 @@
                 }
             });
 
+            // 単発タスク（未完了のみ）
+            if (!Array.isArray(store.adHocTasks)) store.adHocTasks = [];
+            store.adHocTasks.forEach(task => {
+                if (!task || task.completed || !task.planDate) return;
+                allPlans.push({
+                    type: 'adhoc',
+                    subject: task.subject || "その他",
+                    taskId: task.id,
+                    title: task.title || "単発タスク",
+                    planDate: task.planDate,
+                    minutes: task.minutes || 0,
+                    priority: task.priority || "medium",
+                    note: task.note || "",
+                    latest: null,
+                    history: []
+                });
+            });
+
             // 予定がある科目だけタブを表示（「全科目」は常に表示）
             const subjectsWithPlans = new Set(allPlans.map(item => item.subject));
             document.querySelectorAll(".portal-plan-tab").forEach(tab => {
@@ -2081,7 +2258,7 @@
                 return (a.title || "").localeCompare(b.title || "", "ja");
             });
 
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = formatLocalDate(new Date());
             let lastPlanDate = null;
 
             visiblePlans.forEach(item => {
@@ -2109,6 +2286,10 @@
                     const book = store.books[item.bookId];
                     meta = subjectMeta[book.subject] || subjectMeta["その他"];
                     cardBgColor = book.bgColor || "#ffffff";
+                } else if (item.type === 'adhoc') {
+                    meta = subjectMeta[item.subject] || subjectMeta["その他"];
+                    cardBgColor = "#faf5ff";
+                    card.classList.add("adhoc-task-card");
                 } else {
                     const subjNameMap = { "english":"英語", "math":"数学", "physics":"物理", "chemistry":"化学", "japanese":"国語" };
                     meta = subjectMeta[subjNameMap[item.subjKey]] || subjectMeta["その他"];
@@ -2198,6 +2379,41 @@
                         currentBookId = item.bookId;
                         openModal(item.secId, item.qNum);
                     });
+                } else if (item.type === 'adhoc') {
+                    const priorityMap = {
+                        high: { label: "優先度 高", cls: "adhoc-priority-high" },
+                        medium: { label: "優先度 中", cls: "adhoc-priority-medium" },
+                        low: { label: "優先度 低", cls: "adhoc-priority-low" }
+                    };
+                    const pr = priorityMap[item.priority] || priorityMap.medium;
+                    const safeTitle = escapeHtml(item.title);
+                    const safeNote = escapeHtml(item.note);
+                    card.innerHTML = `
+                        <div class="batsu-info">
+                            <div class="batsu-q-title">
+                                <span>${safeTitle}</span>
+                                <span class="adhoc-task-badge">単発</span>
+                                <span class="adhoc-task-badge ${pr.cls}">${pr.label}</span>
+                                ${planDateTag}
+                            </div>
+                            ${safeNote ? `<div style="font-size:0.75rem; color:#6d28d9; margin-top:3px; font-weight:normal;">📝 ${safeNote}</div>` : ''}
+                            <div class="batsu-meta">
+                                <span>科目: ${escapeHtml(item.subject)}</span>
+                                ${item.minutes ? `<span>予定時間: ${item.minutes}分</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="adhoc-card-actions">
+                            <button type="button" class="adhoc-complete-btn" data-action="complete">✓ 完了</button>
+                            <button type="button" class="btn btn-outline" data-action="edit" style="border-color:#c4b5fd; color:#6d28d9; background:#fff;">編集</button>
+                        </div>
+                    `;
+                    card.querySelector('[data-action="complete"]').addEventListener("click", (ev) => {
+                        ev.stopPropagation(); completeAdhocTask(item.taskId);
+                    });
+                    card.querySelector('[data-action="edit"]').addEventListener("click", (ev) => {
+                        ev.stopPropagation(); openAdhocTaskModal(item.taskId);
+                    });
+                    card.addEventListener("click", () => openAdhocTaskModal(item.taskId));
                 } else {
                     let detailText = "";
                     if (item.subjKey === 'physics') {
@@ -3147,6 +3363,7 @@
                     const importedStore = JSON.parse(e.target.result);
                     if (importedStore && importedStore.books) {
                         store = importedStore;
+                        if (!Array.isArray(store.adHocTasks)) store.adHocTasks = [];
                         
                         // インポートに成功したら、ローカルにある過去のセーブデータをすべて掃除する
                         const allKeys = Object.keys(localStorage);
