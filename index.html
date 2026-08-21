@@ -3361,7 +3361,7 @@
             const resultArea = document.getElementById('reportResultArea');
             if (!fromDate || !toDate) return alert("期間を正しく指定してください。");
             
-            let totalNew = 0; let totalRev = 0; let totalMin = 0; let html = '';
+            let totalNew = 0; let totalRev = 0; let totalMin = 0; let totalAdhoc = 0; let totalAdhocMin = 0; let html = '';
             
             Object.keys(store.books).forEach(bId => {
                 const book = store.books[bId];
@@ -3396,6 +3396,51 @@
                     `;
                 }
             });
+
+            // 完了した単発タスクも実績として集計する
+            const adhocDone = (Array.isArray(store.adHocTasks) ? store.adHocTasks : []).filter(task => {
+                if (!task || !task.completed || !task.completedAt) return false;
+                const d = new Date(task.completedAt);
+                if (Number.isNaN(d.getTime())) return false;
+                const completedDate = formatLocalDate(d);
+                return completedDate >= fromDate && completedDate <= toDate;
+            });
+
+            if (adhocDone.length > 0) {
+                totalAdhoc = adhocDone.length;
+                totalAdhocMin = adhocDone.reduce((sum, task) => sum + (parseInt(task.minutes, 10) || 0), 0);
+                totalMin += totalAdhocMin;
+
+                const priorityLabel = { high: '高', medium: '中', low: '低' };
+                const rows = adhocDone
+                    .slice()
+                    .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt))
+                    .map(task => {
+                        const completedDate = formatLocalDate(new Date(task.completedAt));
+                        const min = parseInt(task.minutes, 10) || 0;
+                        return `
+                            <div style="padding: 7px 0; border-top: 1px dashed var(--border-color); font-size: 0.75rem; color: #475569;">
+                                <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+                                    <strong style="color:#0f172a;">${escapeHtml(task.title || '単発タスク')}</strong>
+                                    <span style="white-space:nowrap; color:#64748b;">${completedDate}</span>
+                                </div>
+                                <div style="margin-top:3px;">${escapeHtml(task.subject || 'その他')} ・ 優先度 ${priorityLabel[task.priority] || '中'}${min ? ` ・ ${min}分` : ''}</div>
+                                ${task.note ? `<div style="margin-top:3px; color:#64748b;">${escapeHtml(task.note)}</div>` : ''}
+                            </div>
+                        `;
+                    }).join('');
+
+                html += `
+                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <div style="font-weight: bold; color: #0f172a; margin-bottom: 6px;">✅ 単発タスク</div>
+                        <div style="display:flex; gap:12px; font-size:0.8rem; color:#475569; margin-bottom:6px;">
+                            <span>完了: <strong style="color:#14b8a6;">${totalAdhoc}</strong> 件</span>
+                            <span>時間: <strong>${Math.floor(totalAdhocMin/60)}時間${totalAdhocMin%60}分</strong></span>
+                        </div>
+                        ${rows}
+                    </div>
+                `;
+            }
             
             if (html === '') {
                 resultArea.innerHTML = `<div style="text-align: center; color: #64748b; padding: 20px;">指定された期間の実績はありません。</div>`;
@@ -3403,9 +3448,10 @@
                 const summaryHtml = `
                     <div style="background: #e0f2fe; padding: 12px; border-radius: 8px; border: 1px solid #bae6fd; margin-bottom: 16px;">
                         <div style="font-weight: bold; color: #0284c7; margin-bottom: 6px;">📊 全体の合計</div>
-                        <div style="display: flex; gap: 12px; font-size: 0.85rem; color: #0369a1;">
+                        <div style="display: flex; gap: 12px; flex-wrap:wrap; font-size: 0.85rem; color: #0369a1;">
                             <span>新規: <strong>${totalNew}</strong> 問</span>
                             <span>復習: <strong>${totalRev}</strong> 回</span>
+                            <span>単発: <strong>${totalAdhoc}</strong> 件</span>
                             <span>時間: <strong>${Math.floor(totalMin/60)}時間${totalMin%60}分</strong></span>
                         </div>
                     </div>
