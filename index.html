@@ -2459,7 +2459,9 @@
             const book = store.books[currentBookId];
             if (book && book.sections) {
                 const sec = book.sections.find(s => String(s.id) === String(secId));
-                if (sec && sec.label && String(sec.label).trim()) return String(sec.label).trim();
+                // label が明示的に登録されている場合は、空欄もそのまま尊重する。
+                // これにより編集画面の1項目目を空欄にすると §1 などを自動表示しない。
+                if (sec && Object.prototype.hasOwnProperty.call(sec, "label")) return String(sec.label || "").trim();
             }
             if (!title) return `§${secId}`;
             if (title.includes("新理系の化学問題100選") || title.includes("鎌田の化学") || title.includes("鎌田の理論") || title.includes("鎌田の有機") || title.includes("福間の無機")) return `第${secId}章`;
