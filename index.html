@@ -669,17 +669,9 @@
             </div>
             <div class="portal-plan-view-switch" id="portalPlanViewSwitch">
                 <button class="portal-plan-view-btn active" data-view="list" onclick="setPortalPlanView('list')">一覧</button>
-                <button class="portal-plan-view-btn" data-view="day" onclick="setPortalPlanView('day')">日別</button>
-            </div>
-            <div class="portal-plan-day-nav" id="portalPlanDayNav">
-                <button class="portal-plan-day-arrow" id="portalPlanCarryover" onclick="showPortalPlanCarryover()">⚠️ 積み残し</button>
-                <div class="day-main">
-                    <div class="portal-plan-day-kicker" id="portalPlanDayKicker">予定日</div>
-                    <div class="portal-plan-day-label" id="portalPlanDayLabel">-</div>
-                    <div class="portal-plan-day-sub" id="portalPlanDaySub">0件</div>
-                </div>
-                <button class="portal-plan-day-arrow" id="portalPlanNextDay" onclick="movePortalPlanDay(1)">次の予定 →</button>
-                <button class="portal-plan-day-today" id="portalPlanFuture" onclick="showPortalPlanFuture()">今日以降</button>
+                <button class="portal-plan-view-btn" data-view="carryover" onclick="setPortalPlanView('carryover')">⚠️ 積み残し</button>
+                <button class="portal-plan-view-btn" data-view="today" onclick="setPortalPlanView('today')">今日の予定</button>
+                <button class="portal-plan-view-btn" data-view="future" onclick="setPortalPlanView('future')">今日以降</button>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                 <h2 id="portalPlanListHeading" style="font-size: 0.9rem; color: #334155;">登録されているすべての学習予定</h2>
@@ -1515,7 +1507,7 @@
         let currentPlanDate = "";
         let selectedPlanCells = []; // array of { id1: secId/colId, id2: qNum/qId }
         let currentPortalPlanSubject = "all"; // 予定一覧の科目タブ
-        let currentPortalPlanView = "list"; // 'list' or 'day'
+        let currentPortalPlanView = "list"; // 'list' / 'carryover' / 'today' / 'future'
         let currentPortalPlanDay = ""; // 日別表示で選択中の日付
         let currentPortalPlanDayMode = "date"; // 'date' / 'carryover' / 'future' 
         let currentPortalPlanAvailableDates = []; // 現在の科目条件で予定がある日だけ
@@ -1729,7 +1721,7 @@
             document.getElementById("adhocTaskModalTitle").innerText = task ? "単発タスクを編集" : "単発タスクを追加";
             document.getElementById("adhocTaskTitleInput").value = task ? (task.title || "") : "";
             document.getElementById("adhocTaskSubjectInput").value = task ? (task.subject || "その他") : (currentPortalPlanSubject !== "all" ? currentPortalPlanSubject : "その他");
-            const defaultDate = currentPortalPlanView === "day" && currentPortalPlanDay ? currentPortalPlanDay : formatLocalDate(new Date());
+            const defaultDate = formatLocalDate(new Date());
             document.getElementById("adhocTaskDateInput").value = task ? (task.planDate || "") : defaultDate;
             document.getElementById("adhocTaskMinutesInput").value = task && task.minutes ? task.minutes : "";
             document.getElementById("adhocTaskPriorityInput").value = task ? (task.priority || "medium") : "medium";
@@ -2025,52 +2017,13 @@
             renderPortalPlanList();
         }
 
-        // 予定一覧の表示モード切替
+        // 予定一覧の4ビュー切替
         function setPortalPlanView(view) {
-            currentPortalPlanView = view === "day" ? "day" : "list";
+            const allowed = ["list", "carryover", "today", "future"];
+            currentPortalPlanView = allowed.includes(view) ? view : "list";
             document.querySelectorAll(".portal-plan-view-btn").forEach(btn => {
                 btn.classList.toggle("active", btn.dataset.view === currentPortalPlanView);
             });
-            renderPortalPlanList();
-        }
-
-        function movePortalPlanDay(delta) {
-            if (!currentPortalPlanAvailableDates.length) return;
-            currentPortalPlanDayMode = "date";
-            let idx = currentPortalPlanAvailableDates.indexOf(currentPortalPlanDay);
-            if (idx < 0) {
-                const today = formatLocalDate(new Date());
-                idx = currentPortalPlanAvailableDates.findIndex(d => d >= today);
-                if (idx < 0) idx = currentPortalPlanAvailableDates.length - 1;
-            }
-            const nextIdx = idx + delta;
-            if (nextIdx < 0 || nextIdx >= currentPortalPlanAvailableDates.length) return;
-            currentPortalPlanDay = currentPortalPlanAvailableDates[nextIdx];
-            renderPortalPlanList();
-        }
-
-        // 今日より前に予定日を過ぎた未完了タスクを一覧表示
-        function showPortalPlanCarryover() {
-            currentPortalPlanDayMode = "carryover";
-            renderPortalPlanList();
-        }
-
-        // 「今日以降」ボタン：ユーザー指定どおり明日以降を一覧表示
-        function showPortalPlanFuture() {
-            currentPortalPlanDayMode = "future";
-            renderPortalPlanList();
-        }
-
-        // 選択日表示へ戻す（互換用）
-        function goPortalPlanToday() {
-            const today = formatLocalDate(new Date());
-            currentPortalPlanDayMode = "date";
-            if (!currentPortalPlanAvailableDates.length) {
-                currentPortalPlanDay = "";
-            } else {
-                currentPortalPlanDay = currentPortalPlanAvailableDates.find(d => d >= today)
-                    || currentPortalPlanAvailableDates[currentPortalPlanAvailableDates.length - 1];
-            }
             renderPortalPlanList();
         }
 
@@ -2196,77 +2149,23 @@
                 ? allPlans
                 : allPlans.filter(item => item.subject === currentPortalPlanSubject);
 
-            // 表示モードUI
+            // 4ビューで絞り込み
             document.querySelectorAll(".portal-plan-view-btn").forEach(btn => {
                 btn.classList.toggle("active", btn.dataset.view === currentPortalPlanView);
             });
-            const dayNav = document.getElementById("portalPlanDayNav");
-            if (dayNav) dayNav.classList.toggle("active", currentPortalPlanView === "day");
 
-            // 日別モード：選択日 / 積み残し / 明日以降 の3表示
-            if (currentPortalPlanView === "day") {
-                const subjectDates = [...new Set(visiblePlans.map(item => item.planDate).filter(Boolean))].sort();
-                currentPortalPlanAvailableDates = subjectDates;
-                const todayLocal = formatLocalDate(new Date());
-                const tomorrowObj = new Date();
-                tomorrowObj.setDate(tomorrowObj.getDate() + 1);
-                const tomorrowLocal = formatLocalDate(tomorrowObj);
+            const todayLocal = formatLocalDate(new Date());
+            const tomorrowObj = new Date();
+            tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+            const tomorrowLocal = formatLocalDate(tomorrowObj);
 
-                if (!subjectDates.length) {
-                    currentPortalPlanDay = "";
-                } else if (!currentPortalPlanDay || !subjectDates.includes(currentPortalPlanDay)) {
-                    currentPortalPlanDay = subjectDates.find(d => d >= todayLocal) || subjectDates[subjectDates.length - 1];
-                }
-
-                const dayLabel = document.getElementById("portalPlanDayLabel");
-                const daySub = document.getElementById("portalPlanDaySub");
-                const dayKicker = document.getElementById("portalPlanDayKicker");
-                const carryBtn = document.getElementById("portalPlanCarryover");
-                const nextBtn = document.getElementById("portalPlanNextDay");
-                const futureBtn = document.getElementById("portalPlanFuture");
-
-                if (currentPortalPlanDayMode === "carryover") {
-                    visiblePlans = visiblePlans.filter(item => item.planDate < todayLocal);
-                    if (dayKicker) dayKicker.innerText = "要確認";
-                    if (dayLabel) dayLabel.innerText = "⚠️ 積み残し";
-                    if (daySub) daySub.innerText = visiblePlans.length ? `${visiblePlans.length}件の期限超過タスク` : "積み残しはありません";
-                    if (carryBtn) carryBtn.disabled = true;
-                    if (nextBtn) nextBtn.disabled = !subjectDates.some(d => d >= todayLocal);
-                    if (futureBtn) futureBtn.disabled = !subjectDates.some(d => d >= tomorrowLocal);
-                } else if (currentPortalPlanDayMode === "future") {
-                    visiblePlans = visiblePlans.filter(item => item.planDate >= tomorrowLocal);
-                    if (dayKicker) dayKicker.innerText = "今後の予定";
-                    if (dayLabel) dayLabel.innerText = "📅 明日以降";
-                    if (daySub) {
-                        const futureDates = new Set(visiblePlans.map(item => item.planDate));
-                        daySub.innerText = visiblePlans.length ? `${visiblePlans.length}件・${futureDates.size}日分の予定` : "明日以降の予定はありません";
-                    }
-                    if (carryBtn) carryBtn.disabled = !subjectDates.some(d => d < todayLocal);
-                    if (nextBtn) nextBtn.disabled = !subjectDates.some(d => d >= todayLocal);
-                    if (futureBtn) futureBtn.disabled = true;
-                } else {
-                    const selectedDate = currentPortalPlanDay;
-                    visiblePlans = selectedDate ? visiblePlans.filter(item => item.planDate === selectedDate) : [];
-                    const idx = subjectDates.indexOf(selectedDate);
-
-                    if (dayLabel) dayLabel.innerText = selectedDate ? formatPortalPlanDateLabel(selectedDate) : "予定なし";
-                    if (dayKicker) {
-                        dayKicker.innerText = selectedDate === todayLocal ? "今日の予定" : (selectedDate < todayLocal ? "過去の予定日" : "次の予定日");
-                    }
-                    if (daySub) {
-                        if (!selectedDate) daySub.innerText = "この科目には予定がありません";
-                        else {
-                            const position = idx >= 0 ? `${idx + 1} / ${subjectDates.length}日` : "";
-                            daySub.innerText = `${visiblePlans.length}件の学習予定 ・ ${position}`;
-                        }
-                    }
-                    if (carryBtn) carryBtn.disabled = !subjectDates.some(d => d < todayLocal);
-                    if (nextBtn) nextBtn.disabled = idx < 0 || idx >= subjectDates.length - 1;
-                    if (futureBtn) futureBtn.disabled = !subjectDates.some(d => d >= tomorrowLocal);
-                }
-            } else {
-                currentPortalPlanAvailableDates = [];
-                currentPortalPlanDayMode = "date";
+            if (currentPortalPlanView === "carryover") {
+                visiblePlans = visiblePlans.filter(item => item.planDate < todayLocal);
+            } else if (currentPortalPlanView === "today") {
+                visiblePlans = visiblePlans.filter(item => item.planDate === todayLocal);
+            } else if (currentPortalPlanView === "future") {
+                // 「今日以降」はユーザー指定どおり明日以降
+                visiblePlans = visiblePlans.filter(item => item.planDate >= tomorrowLocal);
             }
 
             document.querySelectorAll(".portal-plan-tab").forEach(tab => {
@@ -2275,16 +2174,13 @@
 
             const headingEl = document.getElementById("portalPlanListHeading");
             if (headingEl) {
-                if (currentPortalPlanView === "day") {
-                    if (currentPortalPlanDayMode === "carryover") {
-                        headingEl.innerText = currentPortalPlanSubject === "all" ? "積み残し一覧" : `${currentPortalPlanSubject}・積み残し一覧`;
-                    } else if (currentPortalPlanDayMode === "future") {
-                        headingEl.innerText = currentPortalPlanSubject === "all" ? "明日以降の予定一覧" : `${currentPortalPlanSubject}・明日以降の予定一覧`;
-                    } else {
-                        headingEl.innerText = currentPortalPlanSubject === "all"
-                            ? "選択日の学習予定"
-                            : `${currentPortalPlanSubject}・選択日の学習予定`;
-                    }
+                const prefix = currentPortalPlanSubject === "all" ? "" : `${currentPortalPlanSubject}・`;
+                if (currentPortalPlanView === "carryover") {
+                    headingEl.innerText = `${prefix}積み残し一覧`;
+                } else if (currentPortalPlanView === "today") {
+                    headingEl.innerText = `${prefix}今日の予定`;
+                } else if (currentPortalPlanView === "future") {
+                    headingEl.innerText = `${prefix}明日以降の予定一覧`;
                 } else {
                     headingEl.innerText = currentPortalPlanSubject === "all"
                         ? "登録されているすべての学習予定"
@@ -2295,14 +2191,12 @@
 
             if (visiblePlans.length === 0) {
                 const subjectLabel = currentPortalPlanSubject === "all" ? "" : `${currentPortalPlanSubject}の`;
-                if (currentPortalPlanView === "day") {
-                    if (currentPortalPlanDayMode === "carryover") {
-                        listEl.innerHTML = `<div class="portal-plan-day-empty">${subjectLabel}積み残しはありません。</div>`;
-                    } else if (currentPortalPlanDayMode === "future") {
-                        listEl.innerHTML = `<div class="portal-plan-day-empty">${subjectLabel}明日以降の予定はありません。</div>`;
-                    } else {
-                        listEl.innerHTML = `<div class="portal-plan-day-empty">${subjectLabel}学習予定が登録されている日はありません。</div>`;
-                    }
+                if (currentPortalPlanView === "carryover") {
+                    listEl.innerHTML = `<div class="portal-plan-day-empty">${subjectLabel}積み残しはありません。</div>`;
+                } else if (currentPortalPlanView === "today") {
+                    listEl.innerHTML = `<div class="portal-plan-day-empty">${subjectLabel}今日の予定はありません。</div>`;
+                } else if (currentPortalPlanView === "future") {
+                    listEl.innerHTML = `<div class="portal-plan-day-empty">${subjectLabel}明日以降の予定はありません。</div>`;
                 } else {
                     listEl.innerHTML = `<div style="text-align:center; padding: 40px; color: #6b7280; font-size: 0.85rem;">現在、${subjectLabel}登録されている学習予定はありません。</div>`;
                 }
@@ -2321,7 +2215,7 @@
             let lastPlanDate = null;
 
             visiblePlans.forEach(item => {
-                if ((currentPortalPlanView === "list" || (currentPortalPlanView === "day" && currentPortalPlanDayMode !== "date")) && item.planDate !== lastPlanDate) {
+                if (currentPortalPlanView !== "today" && item.planDate !== lastPlanDate) {
                     const sameDateCount = visiblePlans.filter(p => p.planDate === item.planDate).length;
                     const dateObj = new Date(item.planDate + "T00:00:00");
                     const weekNames = ["日", "月", "火", "水", "木", "金", "土"];
@@ -2373,7 +2267,7 @@
                 const pParts = item.planDate.split("-");
                 const shortPDate = pParts.length === 3 ? `${pParts[1]}/${pParts[2]}` : item.planDate;
                 
-                let planDateTag = currentPortalPlanView === "day"
+                let planDateTag = currentPortalPlanView !== "list"
                     ? `<span style="font-size:0.65rem; background:#f0fdfa; color:#0f766e; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #99f6e4;">${item.subject}</span>`
                     : `<span style="font-size:0.65rem; background:${isPastOrToday ? '#fef3c7' : '#f8fafc'}; color:${isPastOrToday ? '#b45309' : '#475569'}; padding:2px 8px; border-radius:4px; font-weight:bold; border: 1px solid ${isPastOrToday ? '#fcd34d' : '#cbd5e1'};">📅 予定: ${shortPDate}</span>`;
 
