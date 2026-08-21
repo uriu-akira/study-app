@@ -1144,11 +1144,15 @@
     <div class="modal-overlay" id="reportModal">
         <div class="modal-content" style="width: 500px; max-width: 95vw;">
             <div class="modal-header">📊 学習実績レポート</div>
-            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
                 <input type="date" class="modal-input" id="reportFrom" style="flex:1;">
                 <span style="font-weight: bold; color: var(--text-muted);">〜</span>
                 <input type="date" class="modal-input" id="reportTo" style="flex:1;">
                 <button class="btn btn-primary" onclick="generateReport()">集計</button>
+            </div>
+            <div style="display:flex; gap:8px; margin-bottom:12px;">
+                <button type="button" class="btn btn-outline" style="flex:1;" onclick="setReportPreset('today')">本日</button>
+                <button type="button" class="btn btn-outline" style="flex:1;" onclick="setReportPreset('week')">直近1週間</button>
             </div>
             <div id="reportResultArea" style="max-height: 50vh; overflow-y: auto; background: #f8fafc; border-radius: 8px; padding: 12px; border: 1px solid var(--border-color);">
                 <div style="text-align: center; color: #64748b; padding: 20px;">期間を指定して「集計」ボタンを押してください。</div>
@@ -3356,6 +3360,29 @@
         }
         
         function closeReportModal() { document.getElementById("reportModal").classList.remove("active"); }
+
+        function formatReportDate(date) {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function setReportPreset(type) {
+            const today = new Date();
+            today.setHours(12, 0, 0, 0);
+            let from = new Date(today);
+            const to = new Date(today);
+
+            if (type === 'week') {
+                // 本日を含む過去7日間 = 今日 + 過去6日
+                from.setDate(from.getDate() - 6);
+            }
+
+            document.getElementById('reportFrom').value = formatReportDate(from);
+            document.getElementById('reportTo').value = formatReportDate(to);
+            generateReport();
+        }
         
         function generateReport() {
             const fromDate = document.getElementById('reportFrom').value;
