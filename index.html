@@ -671,7 +671,7 @@
                 <button class="portal-plan-view-btn active" data-view="list" onclick="setPortalPlanView('list')">一覧</button>
                 <button class="portal-plan-view-btn" data-view="carryover" onclick="setPortalPlanView('carryover')">⚠️ 積み残し</button>
                 <button class="portal-plan-view-btn" data-view="today" onclick="setPortalPlanView('today')">今日の予定</button>
-                <button class="portal-plan-view-btn" data-view="future" onclick="setPortalPlanView('future')">今日以降</button>
+                <button class="portal-plan-view-btn" data-view="future" onclick="setPortalPlanView('future')">明日以降</button>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                 <h2 id="portalPlanListHeading" style="font-size: 0.9rem; color: #334155;">登録されているすべての学習予定</h2>
@@ -2164,7 +2164,7 @@
             } else if (currentPortalPlanView === "today") {
                 visiblePlans = visiblePlans.filter(item => item.planDate === todayLocal);
             } else if (currentPortalPlanView === "future") {
-                // 「今日以降」はユーザー指定どおり明日以降
+                // 「明日以降」はユーザー指定どおり明日以降
                 visiblePlans = visiblePlans.filter(item => item.planDate >= tomorrowLocal);
             }
 
