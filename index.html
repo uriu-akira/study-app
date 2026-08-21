@@ -520,6 +520,28 @@
 
         .modal-header { font-weight: bold; font-size: 1.1rem; color: #0f172a; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; text-align: center; }
 
+        /* 実績レポートから開いた問題セルの一時ハイライト */
+        .report-highlight-cell {
+            position: relative;
+            outline: 3px solid #0ea5e9 !important;
+            outline-offset: -3px;
+            box-shadow: inset 0 0 0 9999px rgba(14, 165, 233, 0.10), 0 0 0 2px rgba(14, 165, 233, 0.18);
+            z-index: 2;
+        }
+        .report-highlight-cell::after {
+            content: "実績";
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            padding: 1px 5px;
+            border-radius: 999px;
+            background: #0ea5e9;
+            color: white;
+            font-size: 0.55rem;
+            font-weight: 800;
+            line-height: 1.4;
+            pointer-events: none;
+        }
         .history-list-box { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 6px; font-size: 0.72rem; max-height: 90px; overflow-y: auto; }
         .history-item { 
             display: flex; justify-content: space-between; padding: 4px 6px; border-bottom: 1px dashed var(--border-color);
@@ -1694,6 +1716,29 @@
         // ----------------------------------------------------
         // 画面切り替え・表示・入力のロジック
         // ----------------------------------------------------
+        let reportHighlightState = null;
+
+        function clearReportHighlights() {
+            reportHighlightState = null;
+            document.querySelectorAll(".report-highlight-cell").forEach(el => el.classList.remove("report-highlight-cell"));
+        }
+
+        function applyReportHighlights() {
+            document.querySelectorAll(".report-highlight-cell").forEach(el => el.classList.remove("report-highlight-cell"));
+            if (!reportHighlightState || reportHighlightState.bookId !== currentBookId) return;
+            const found = [];
+            reportHighlightState.cells.forEach(item => {
+                const cell = document.getElementById(`cell_${item.secId}_${item.qNum}`);
+                if (cell) {
+                    cell.classList.add("report-highlight-cell");
+                    found.push(cell);
+                }
+            });
+            if (found.length > 0) {
+                setTimeout(() => found[0].scrollIntoView({ behavior: "smooth", block: "center", inline: "center" }), 80);
+            }
+        }
+
         function switchScreen(screenId) {
             document.querySelectorAll(".view-screen").forEach(s => s.classList.remove("active"));
             const target = document.getElementById(screenId);
@@ -1702,6 +1747,7 @@
 
         function showDashboard() {
             try {
+                clearReportHighlights();
                 renderDashboard();
                 switchScreen("dashboardScreen");
             } catch(e) {
@@ -2498,11 +2544,21 @@
 
         function showDetailScreen() { initTable(); switchScreen("detailScreen"); }
 
-        function openBookDetail(bookId) {
+        function openBookDetail(bookId, keepReportHighlight = false) {
+            if (!keepReportHighlight) clearReportHighlights();
             currentBookId = bookId;
             const book = store.books[bookId];
             document.getElementById("detailBookTitle").innerText = book.title;
             showDetailScreen();
+        }
+
+        function openReportBookDetail(bookId, encodedCells) {
+            let cells = [];
+            try { cells = JSON.parse(decodeURIComponent(encodedCells)); } catch (e) { cells = []; }
+            reportHighlightState = { bookId, cells };
+            closeReportModal();
+            openBookDetail(bookId, true);
+            requestAnimationFrame(() => applyReportHighlights());
         }
 
         function initTable() {
@@ -2596,6 +2652,7 @@
                 tbody.appendChild(trInput);
             }
             updateStats(); applyStarFilter();
+            applyReportHighlights();
         }
 
         function renderQCellContent(td, secId, qNum) {
@@ -3395,6 +3452,7 @@
             Object.keys(store.books).forEach(bId => {
                 const book = store.books[bId];
                 let bookNew = 0; let bookRev = 0; let bookMin = 0;
+                const bookCellMap = new Map();
                 
                 if(book.sections) book.sections.forEach(sec => {
                     if (book.data["sec_disabled_" + sec.id]) return;
@@ -3402,9 +3460,10 @@
                         const history = book.data[`${sec.id}_${q}_history`] || [];
                         history.forEach((h, index) => {
                             if (h && h.date >= fromDate && h.date <= toDate) {
-                                if (h.mark === "〇" || h.mark === "×" || (h.time && h.time !== "")) {
+                                if (h.mark === "〇" || h.mark === "×" || h.mark === "△" || (h.time && h.time !== "")) {
                                     if (index === 0) bookNew++; else bookRev++;
                                     if (h.time) bookMin += parseInt(h.time, 10) || 0;
+                                    bookCellMap.set(`${sec.id}_${q}`, { secId: sec.id, qNum: q });
                                 }
                             }
                         });
@@ -3413,13 +3472,19 @@
                 
                 if (bookNew > 0 || bookRev > 0 || bookMin > 0) {
                     totalNew += bookNew; totalRev += bookRev; totalMin += bookMin;
+                    const reportCells = Array.from(bookCellMap.values());
+                    const encodedReportCells = encodeURIComponent(JSON.stringify(reportCells));
                     html += `
                         <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
-                            <div style="font-weight: bold; color: #0f172a; margin-bottom: 6px;">${book.title}</div>
-                            <div style="display: flex; gap: 12px; font-size: 0.8rem; color: #475569;">
+                            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:6px;">
+                                <div style="font-weight: bold; color: #0f172a;">${book.title}</div>
+                                <button class="btn btn-outline" style="padding:5px 10px; font-size:0.72rem; white-space:nowrap;" onclick="openReportBookDetail('${bId}', '${encodedReportCells}')">明細</button>
+                            </div>
+                            <div style="display: flex; gap: 12px; flex-wrap:wrap; font-size: 0.8rem; color: #475569;">
                                 <span>🆕 新規: <strong style="color: var(--primary-color);">${bookNew}</strong> 問</span>
                                 <span>🔄 復習: <strong style="color: #f59e0b;">${bookRev}</strong> 回</span>
                                 <span>⏱️ 時間: <strong>${Math.floor(bookMin/60)}時間${bookMin%60}分</strong></span>
+                                <span>対象セル: <strong>${reportCells.length}</strong> 個</span>
                             </div>
                         </div>
                     `;
