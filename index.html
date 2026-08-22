@@ -470,6 +470,24 @@
         .adhoc-priority-medium { background:#fef3c7; color:#b45309; border-color:#fcd34d; }
         .adhoc-priority-low { background:#f1f5f9; color:#475569; border-color:#cbd5e1; }
         .adhoc-card-actions { display:flex; gap:6px; flex:0 0 auto; margin-left:10px; }
+        .priority-order-btn {
+            border: 1px solid #f59e0b; background:#fffbeb; color:#92400e; border-radius:8px;
+            padding:8px 12px; font-size:0.78rem; font-weight:800; cursor:pointer; white-space:nowrap;
+        }
+        .priority-order-btn.active { background:#f59e0b; color:#fff; box-shadow:0 0 0 3px rgba(245,158,11,.18); }
+        .priority-mode-guide {
+            display:none; margin:8px 0; padding:10px 12px; border-radius:10px; border:1px solid #fcd34d;
+            background:#fffbeb; color:#92400e; font-size:0.76rem; font-weight:700; line-height:1.55;
+        }
+        .priority-mode-guide.active { display:block; }
+        .priority-selecting { cursor:pointer; position:relative; }
+        .priority-selecting:hover { outline:3px solid rgba(245,158,11,.28); }
+        .priority-order-badge {
+            position:absolute; top:8px; right:8px; z-index:3; min-width:28px; height:28px; padding:0 7px;
+            border-radius:999px; display:flex; align-items:center; justify-content:center;
+            background:#f59e0b; color:#fff; font-size:0.72rem; font-weight:900; box-shadow:0 2px 6px rgba(0,0,0,.16);
+        }
+        .priority-order-unset { background:#e2e8f0; color:#64748b; }
         .adhoc-complete-btn {
             border:1px solid #6ee7b7; background:#ecfdf5; color:#047857; border-radius:8px;
             padding:7px 10px; font-size:0.72rem; font-weight:800; cursor:pointer;
@@ -676,7 +694,10 @@
         <div class="batsu-list-container">
             <div class="portal-plan-toolbar">
                 <div style="font-size:0.72rem; color:#64748b;">問題集・過去問の予定と、単発タスクをまとめて管理できます。</div>
-                <button class="adhoc-add-btn" type="button" onclick="openAdhocTaskModal()">＋ 単発タスク追加</button>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <button class="priority-order-btn" id="portalPriorityOrderBtn" type="button" onclick="togglePortalPriorityMode()">優先順</button>
+                    <button class="adhoc-add-btn" type="button" onclick="openAdhocTaskModal()">＋ 単発タスク追加</button>
+                </div>
             </div>
             <div class="portal-plan-tabs" id="portalPlanTabs">
                 <button class="portal-plan-tab active" data-subject="all" onclick="setPortalPlanSubject('all')">全科目</button>
@@ -694,6 +715,9 @@
                 <button class="portal-plan-view-btn" data-view="carryover" onclick="setPortalPlanView('carryover')">⚠️ 積み残し</button>
                 <button class="portal-plan-view-btn" data-view="today" onclick="setPortalPlanView('today')">今日の予定</button>
                 <button class="portal-plan-view-btn" data-view="future" onclick="setPortalPlanView('future')">明日以降</button>
+            </div>
+            <div class="priority-mode-guide" id="portalPriorityModeGuide">
+                優先順設定モードです。優先したい明細から順番にタップしてください。最初にタップした明細が「1」、次が「2」…になります。もう一度「優先順」を押すと確定して通常操作に戻ります。
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                 <h2 id="portalPlanListHeading" style="font-size: 0.9rem; color: #334155;">登録されているすべての学習予定</h2>
@@ -1514,7 +1538,7 @@
         };
 
         const STORAGE_KEY = "multi_book_progress_v45"; 
-        let store = { books: JSON.parse(JSON.stringify(defaultBooks)), pastExams: JSON.parse(JSON.stringify(defaultPastExams)), adHocTasks: [] };
+        let store = { books: JSON.parse(JSON.stringify(defaultBooks)), pastExams: JSON.parse(JSON.stringify(defaultPastExams)), adHocTasks: [], planPriorities: {} };
         
         let currentBookId = null;
         let activeTarget = { secId: null, qNum: null };
@@ -1534,6 +1558,10 @@
         let selectedPlanCells = []; // array of { id1: secId/colId, id2: qNum/qId }
         let currentPortalPlanSubject = "all"; // 予定一覧の科目タブ
         let currentPortalPlanView = "list"; // 'list' / 'carryover' / 'today' / 'future'
+        let portalPriorityEditMode = false;
+        let portalPrioritySessionStarted = false;
+        let portalPrioritySessionAssigned = [];
+        let currentPortalPriorityKeys = [];
         let currentPortalPlanDay = ""; // 日別表示で選択中の日付
         let currentPortalPlanDayMode = "date"; // 'date' / 'carryover' / 'future' 
         let currentPortalPlanAvailableDates = []; // 現在の科目条件で予定がある日だけ
@@ -1706,6 +1734,7 @@
                 });
 
                 if (!Array.isArray(store.adHocTasks)) store.adHocTasks = [];
+                if (!store.planPriorities || typeof store.planPriorities !== "object" || Array.isArray(store.planPriorities)) store.planPriorities = {};
                 saveStore();
             } catch (e) {
                 console.error("データの読み込み中にエラーが発生しました:", e);
@@ -2077,6 +2106,51 @@
             renderPortalPlanList();
         }
 
+        function getPortalPlanPriorityKey(item) {
+            if (!item) return "";
+            if (item.type === "book") return `book:${item.bookId}:${item.secId}:${item.qNum}`;
+            if (item.type === "pe") return `pe:${item.subjKey}:${item.colId}:${item.qId}`;
+            if (item.type === "adhoc") return `adhoc:${item.taskId}`;
+            return "";
+        }
+
+        function getPortalPlanPriority(item) {
+            if (!store.planPriorities || typeof store.planPriorities !== "object") store.planPriorities = {};
+            const key = getPortalPlanPriorityKey(item);
+            const rank = Number(store.planPriorities[key]);
+            return Number.isFinite(rank) && rank > 0 ? rank : null;
+        }
+
+        function togglePortalPriorityMode() {
+            portalPriorityEditMode = !portalPriorityEditMode;
+            portalPrioritySessionStarted = false;
+            portalPrioritySessionAssigned = [];
+            const btn = document.getElementById("portalPriorityOrderBtn");
+            const guide = document.getElementById("portalPriorityModeGuide");
+            if (btn) {
+                btn.classList.toggle("active", portalPriorityEditMode);
+                btn.innerText = portalPriorityEditMode ? "✓ 優先順確定" : "優先順";
+            }
+            if (guide) guide.classList.toggle("active", portalPriorityEditMode);
+            renderPortalPlanList();
+        }
+
+        function assignPortalPriority(item) {
+            const key = getPortalPlanPriorityKey(item);
+            if (!key) return;
+            if (!store.planPriorities || typeof store.planPriorities !== "object") store.planPriorities = {};
+            if (!portalPrioritySessionStarted) {
+                currentPortalPriorityKeys.forEach(k => { delete store.planPriorities[k]; });
+                portalPrioritySessionStarted = true;
+                portalPrioritySessionAssigned = [];
+            }
+            if (portalPrioritySessionAssigned.includes(key)) return;
+            portalPrioritySessionAssigned.push(key);
+            store.planPriorities[key] = portalPrioritySessionAssigned.length;
+            saveStore();
+            renderPortalPlanList();
+        }
+
         function formatLocalDate(date) {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -2222,6 +2296,8 @@
                 tab.classList.toggle("active", tab.dataset.subject === currentPortalPlanSubject);
             });
 
+            currentPortalPriorityKeys = visiblePlans.map(getPortalPlanPriorityKey).filter(Boolean);
+
             const headingEl = document.getElementById("portalPlanListHeading");
             if (headingEl) {
                 const prefix = currentPortalPlanSubject === "all" ? "" : `${currentPortalPlanSubject}・`;
@@ -2254,6 +2330,13 @@
             }
 
             visiblePlans.sort((a, b) => {
+                const pa = getPortalPlanPriority(a);
+                const pb = getPortalPlanPriority(b);
+                if (pa !== null || pb !== null) {
+                    if (pa === null) return 1;
+                    if (pb === null) return -1;
+                    if (pa !== pb) return pa - pb;
+                }
                 const dateCmp = a.planDate.localeCompare(b.planDate);
                 if (dateCmp !== 0) return dateCmp;
                 const typeCmp = a.type.localeCompare(b.type);
@@ -2282,6 +2365,8 @@
                 }
                 const card = document.createElement("div");
                 card.className = "batsu-card";
+                card.style.position = "relative";
+                if (portalPriorityEditMode) card.classList.add("priority-selecting");
                 
                 let cardBgColor = "#ffffff";
                 let meta;
@@ -2378,7 +2463,8 @@
                     `;
                     currentBookId = backup;
 
-                    card.addEventListener("click", () => { 
+                    card.addEventListener("click", () => {
+                        if (portalPriorityEditMode) { assignPortalPriority(item); return; }
                         currentBookId = item.bookId;
                         openModal(item.secId, item.qNum);
                     });
@@ -2411,12 +2497,19 @@
                         </div>
                     `;
                     card.querySelector('[data-action="complete"]').addEventListener("click", (ev) => {
-                        ev.stopPropagation(); completeAdhocTask(item.taskId);
+                        ev.stopPropagation();
+                        if (portalPriorityEditMode) { assignPortalPriority(item); return; }
+                        completeAdhocTask(item.taskId);
                     });
                     card.querySelector('[data-action="edit"]').addEventListener("click", (ev) => {
-                        ev.stopPropagation(); openAdhocTaskModal(item.taskId);
+                        ev.stopPropagation();
+                        if (portalPriorityEditMode) { assignPortalPriority(item); return; }
+                        openAdhocTaskModal(item.taskId);
                     });
-                    card.addEventListener("click", () => openAdhocTaskModal(item.taskId));
+                    card.addEventListener("click", () => {
+                        if (portalPriorityEditMode) { assignPortalPriority(item); return; }
+                        openAdhocTaskModal(item.taskId);
+                    });
                 } else {
                     let detailText = "";
                     if (item.subjKey === 'physics') {
@@ -2444,10 +2537,20 @@
                         </div>
                         <button class="btn btn-outline" style="border-color: ${meta.color}; color: var(--text-color); background: rgba(255,255,255,0.7);">記録</button>
                     `;
-                    card.addEventListener("click", () => { 
+                    card.addEventListener("click", () => {
+                        if (portalPriorityEditMode) { assignPortalPriority(item); return; }
                         currentPESubject = item.subjKey;
                         openPECellModal(item.colId, item.qId);
                     });
+                }
+
+                const priorityRank = getPortalPlanPriority(item);
+                if (priorityRank !== null || portalPriorityEditMode) {
+                    const rankBadge = document.createElement("div");
+                    rankBadge.className = "priority-order-badge" + (priorityRank === null ? " priority-order-unset" : "");
+                    rankBadge.textContent = priorityRank === null ? "未" : String(priorityRank);
+                    rankBadge.title = priorityRank === null ? "優先順未設定" : `優先順 ${priorityRank}`;
+                    card.appendChild(rankBadge);
                 }
                 
                 listEl.appendChild(card);
