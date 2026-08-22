@@ -631,6 +631,24 @@
         .filtered-out-cell {
             opacity: 0.15 !important; pointer-events: none !important; filter: grayscale(100%) !important; background-color: #f1f5f9 !important; transition: all 0.2s ease;
         }
+
+        /* 宿題進捗 */
+        .homework-wrap { max-width: 1180px; margin: 0 auto; padding: 18px; }
+        .homework-toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+        .homework-section-title { font-size:0.9rem; font-weight:800; color:#334155; margin:18px 0 8px; padding-left:8px; border-left:4px solid #2563eb; }
+        .homework-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; }
+        .homework-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+        .homework-card.done { border-color:#86efac; background:#f0fdf4; }
+        .homework-card.over { border-color:#93c5fd; }
+        .homework-meta { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 10px; color:#64748b; font-size:.72rem; }
+        .homework-chip { display:inline-flex; align-items:center; padding:2px 7px; border-radius:999px; font-size:.68rem; font-weight:700; background:#eff6ff; color:#1d4ed8; }
+        .homework-progress-row { display:flex; justify-content:space-between; align-items:end; gap:10px; margin:8px 0 5px; }
+        .homework-progress-value { font-size:1.35rem; font-weight:900; color:#0f172a; }
+        .homework-progress-track { height:14px; background:#e2e8f0; border-radius:999px; overflow:hidden; position:relative; }
+        .homework-progress-fill { height:100%; border-radius:999px; background:#2563eb; transition:width .25s ease; }
+        .homework-progress-fill.complete { background:#16a34a; }
+        .homework-over-label { margin-top:5px; font-size:.7rem; font-weight:700; color:#2563eb; }
+        @media (max-width: 600px) { .homework-grid { grid-template-columns:1fr; } }
     </style>
 </head>
 <body>
@@ -645,6 +663,7 @@
                 <div style="display: flex; gap: 6px;">
                     <button class="btn" style="background-color: #14b8a6;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" style="background-color: var(--accent-color);" onclick="openReportModal()">📊 実績</button>
+                    <button class="btn" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" onclick="openBookModal()">+ 問題集を追加</button>
                     <button class="btn" style="background-color: #8b5cf6;" onclick="showPastExamScreen()">🎓 過去問・模試管理</button>
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
@@ -724,6 +743,29 @@
                 <span id="portalPlanCountBadge" style="font-size: 0.8rem; background: #ccfbf1; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: bold; white-space: nowrap;">0件</span>
             </div>
             <div class="batsu-card-grid" id="portalPlanCardGrid"></div>
+        </div>
+    </div>
+
+    <!-- ==============================
+         画面H: 宿題進捗
+         ============================== -->
+    <div id="homeworkScreen" class="view-screen">
+        <header>
+            <div class="header-top">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
+                    <h1 style="color:#2563eb;">📈 宿題進捗</h1>
+                </div>
+                <button class="btn" style="background:#2563eb;" onclick="openHomeworkModal()">＋ 宿題登録</button>
+            </div>
+        </header>
+        <div class="homework-wrap">
+            <div class="homework-toolbar">
+                <div style="font-size:.78rem; color:#64748b;">期間内に実績が入った問題セル数を集計し、目標問題数に対する達成率を表示します。100%を超えてもそのまま表示します。</div>
+                <button class="btn btn-outline" onclick="renderHomeworkScreen()">再集計</button>
+            </div>
+            <div id="homeworkSummary"></div>
+            <div id="homeworkList"></div>
         </div>
     </div>
 
@@ -1209,6 +1251,59 @@
         </div>
     </div>
 
+    <!-- 宿題登録モーダル -->
+    <div class="modal-overlay" id="homeworkModal">
+        <div class="modal-content" style="width:520px; max-width:95vw;">
+            <div class="modal-header" id="homeworkModalTitle">📈 宿題登録</div>
+            <input type="hidden" id="homeworkIdInput">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div class="form-group">
+                    <label class="form-label">塾区分</label>
+                    <select class="modal-input" id="homeworkSchoolInput">
+                        <option value="理系">理系塾</option>
+                        <option value="文系">文系塾</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">対象種別</label>
+                    <select class="modal-input" id="homeworkTargetTypeInput" onchange="refreshHomeworkTargetOptions()">
+                        <option value="book">問題集</option>
+                        <option value="pe">過去問・模試</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">対象</label>
+                <select class="modal-input" id="homeworkTargetIdInput"></select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">宿題名（任意）</label>
+                <input type="text" class="modal-input" id="homeworkTitleInput" placeholder="例：重要問題集 今週の宿題">
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div class="form-group">
+                    <label class="form-label">開始日</label>
+                    <input type="date" class="modal-input" id="homeworkFromInput">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">終了日</label>
+                    <input type="date" class="modal-input" id="homeworkToInput">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">目標問題数</label>
+                <input type="number" min="1" class="modal-input" id="homeworkTargetCountInput" placeholder="例：10">
+            </div>
+            <div class="modal-actions" style="justify-content:space-between;">
+                <button type="button" class="btn" id="homeworkDeleteBtn" style="background:#ef4444; display:none;" onclick="deleteHomework()">削除</button>
+                <div style="display:flex; gap:8px; margin-left:auto;">
+                    <button type="button" class="btn btn-outline" onclick="closeHomeworkModal()">キャンセル</button>
+                    <button type="button" class="btn" style="background:#2563eb;" onclick="saveHomework()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 過去問 列追加モーダル -->
     <div class="modal-overlay" id="peColModal">
         <div class="modal-content">
@@ -1538,7 +1633,7 @@
         };
 
         const STORAGE_KEY = "multi_book_progress_v45"; 
-        let store = { books: JSON.parse(JSON.stringify(defaultBooks)), pastExams: JSON.parse(JSON.stringify(defaultPastExams)), adHocTasks: [], planPriorities: {} };
+        let store = { books: JSON.parse(JSON.stringify(defaultBooks)), pastExams: JSON.parse(JSON.stringify(defaultPastExams)), adHocTasks: [], planPriorities: {}, homeworks: [] };
         
         let currentBookId = null;
         let activeTarget = { secId: null, qNum: null };
@@ -1648,6 +1743,8 @@
                     store.books = loadedBooks;
                     store.pastExams = tempExams;
                     store.adHocTasks = Array.isArray(latestSave.data.adHocTasks) ? latestSave.data.adHocTasks : [];
+                    store.homeworks = Array.isArray(latestSave.data.homeworks) ? latestSave.data.homeworks : [];
+                    store.planPriorities = latestSave.data.planPriorities && typeof latestSave.data.planPriorities === "object" ? latestSave.data.planPriorities : {};
 
                     // 古いセーブデータの削除（掃除）
                     for (let i = 1; i < saves.length; i++) {
@@ -1658,7 +1755,12 @@
                     store.books = JSON.parse(JSON.stringify(defaultBooks));
                     store.pastExams = tempExams;
                     store.adHocTasks = [];
+                    store.homeworks = [];
+                    store.planPriorities = {};
                 }
+
+                if (!Array.isArray(store.homeworks)) store.homeworks = [];
+                if (!store.planPriorities || typeof store.planPriorities !== "object") store.planPriorities = {};
 
                 // 過去問のデフォルトレコードやカラム補完（常に実行）
                 if (store.pastExams) {
@@ -1734,6 +1836,8 @@
                 });
 
                 if (!Array.isArray(store.adHocTasks)) store.adHocTasks = [];
+                        if (!Array.isArray(store.homeworks)) store.homeworks = [];
+                        if (!store.planPriorities || typeof store.planPriorities !== "object") store.planPriorities = {};
                 if (!store.planPriorities || typeof store.planPriorities !== "object" || Array.isArray(store.planPriorities)) store.planPriorities = {};
                 saveStore();
             } catch (e) {
@@ -3500,6 +3604,175 @@
                 event.target.value = ""; 
             };
             reader.readAsText(file);
+        }
+
+        // ----------------------------------------------------
+        // 宿題進捗
+        // ----------------------------------------------------
+        function showHomeworkScreen() {
+            if (!Array.isArray(store.homeworks)) store.homeworks = [];
+            renderHomeworkScreen();
+            switchScreen("homeworkScreen");
+        }
+
+        function getHomeworkTargetName(hw) {
+            if (!hw) return "";
+            if (hw.targetType === "book") {
+                const b = store.books?.[hw.targetId];
+                return b ? (b.title || "問題集") : "削除された問題集";
+            }
+            const pe = store.pastExams?.[hw.targetId];
+            return pe ? `過去問・模試（${pe.title || hw.targetId}）` : "削除された過去問";
+        }
+
+        function isHomeworkHistoryEntry(h) {
+            return !!(h && h.date && ((h.mark && h.mark !== "ー") || (h.time && h.time !== "") || (h.score && h.score !== "")));
+        }
+
+        function countHomeworkActual(hw) {
+            if (!hw || !hw.fromDate || !hw.toDate) return 0;
+            const fromDate = hw.fromDate;
+            const toDate = hw.toDate;
+            let count = 0;
+            if (hw.targetType === "book") {
+                const book = store.books?.[hw.targetId];
+                if (!book || !Array.isArray(book.sections)) return 0;
+                book.sections.forEach(sec => {
+                    if (book.data?.["sec_disabled_" + sec.id]) return;
+                    for (let q=1; q<=Number(sec.count || 0); q++) {
+                        const hist = book.data?.[`${sec.id}_${q}_history`] || [];
+                        if (hist.some(h => isHomeworkHistoryEntry(h) && h.date >= fromDate && h.date <= toDate)) count++;
+                    }
+                });
+            } else if (hw.targetType === "pe") {
+                const subj = store.pastExams?.[hw.targetId];
+                if (!subj || !subj.records) return 0;
+                Object.values(subj.records).forEach(rec => {
+                    const hist = Array.isArray(rec?.history) ? rec.history : [];
+                    if (hist.some(h => isHomeworkHistoryEntry(h) && h.date >= fromDate && h.date <= toDate)) count++;
+                });
+            }
+            return count;
+        }
+
+        function getHomeworkProgress(hw) {
+            const actual = countHomeworkActual(hw);
+            const target = Math.max(1, parseInt(hw.targetCount, 10) || 1);
+            const percent = (actual / target) * 100;
+            return { actual, target, percent };
+        }
+
+        function renderHomeworkScreen() {
+            if (!Array.isArray(store.homeworks)) store.homeworks = [];
+            const list = document.getElementById("homeworkList");
+            const summary = document.getElementById("homeworkSummary");
+            if (!list || !summary) return;
+            const hws = [...store.homeworks].sort((a,b) => {
+                const schoolOrder = {"理系":0,"文系":1};
+                const sa = schoolOrder[a.school] ?? 9, sb = schoolOrder[b.school] ?? 9;
+                if (sa !== sb) return sa - sb;
+                return String(b.toDate || "").localeCompare(String(a.toDate || ""));
+            });
+            if (hws.length === 0) {
+                summary.innerHTML = '';
+                list.innerHTML = '<div style="text-align:center;color:#64748b;padding:36px;background:white;border:1px dashed #cbd5e1;border-radius:12px;">宿題がまだ登録されていません。右上の「＋ 宿題登録」から登録してください。</div>';
+                return;
+            }
+            const metrics = hws.map(hw => ({ hw, ...getHomeworkProgress(hw) }));
+            const completed = metrics.filter(x => x.percent >= 100).length;
+            const avg = metrics.length ? metrics.reduce((a,x)=>a+x.percent,0)/metrics.length : 0;
+            summary.innerHTML = `<div class="dash-summary" style="margin-bottom:14px;">
+                <div class="summary-item"><span class="summary-label">登録宿題</span><span class="summary-value">${metrics.length}件</span></div>
+                <div class="summary-item"><span class="summary-label">100%以上</span><span class="summary-value" style="color:#16a34a;">${completed}件</span></div>
+                <div class="summary-item"><span class="summary-label">平均達成率</span><span class="summary-value">${avg.toFixed(0)}%</span></div>
+            </div>`;
+            const groups = ["理系","文系"];
+            list.innerHTML = groups.map(group => {
+                const rows = metrics.filter(x => (x.hw.school || "理系") === group);
+                if (!rows.length) return '';
+                return `<div class="homework-section-title">${group}塾の宿題</div><div class="homework-grid">${rows.map(({hw,actual,target,percent}) => {
+                    const pctLabel = percent % 1 === 0 ? percent.toFixed(0) : percent.toFixed(1);
+                    const barWidth = Math.min(percent,100);
+                    const cls = percent >= 100 ? (percent > 100 ? 'homework-card done over' : 'homework-card done') : 'homework-card';
+                    const over = percent > 100 ? `<div class="homework-over-label">目標を ${actual-target}問 上回っています（+${(percent-100).toFixed(0)}%）</div>` : '';
+                    return `<div class="${cls}" onclick="openHomeworkModal('${hw.id}')" style="cursor:pointer;">
+                        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+                            <div style="font-weight:800;color:#0f172a;">${escapeHtml(hw.title || getHomeworkTargetName(hw))}</div>
+                            <span class="homework-chip">${escapeHtml(group)}塾</span>
+                        </div>
+                        <div class="homework-meta"><span>${escapeHtml(getHomeworkTargetName(hw))}</span><span>${escapeHtml(hw.fromDate)} ～ ${escapeHtml(hw.toDate)}</span></div>
+                        <div class="homework-progress-row"><div><span style="font-size:.72rem;color:#64748b;">実績 / 目標</span><br><strong>${actual} / ${target}問</strong></div><div class="homework-progress-value">${pctLabel}%</div></div>
+                        <div class="homework-progress-track"><div class="homework-progress-fill ${percent>=100?'complete':''}" style="width:${barWidth}%;"></div></div>
+                        ${over}
+                    </div>`;
+                }).join('')}</div>`;
+            }).join('');
+        }
+
+        function refreshHomeworkTargetOptions(selectedId="") {
+            const type = document.getElementById("homeworkTargetTypeInput").value;
+            const sel = document.getElementById("homeworkTargetIdInput");
+            sel.innerHTML = '';
+            if (type === "book") {
+                Object.keys(store.books || {}).forEach(id => {
+                    const b = store.books[id];
+                    const opt = document.createElement('option');
+                    opt.value=id; opt.textContent=`${b.subject || 'その他'}｜${b.title || '問題集'}`;
+                    sel.appendChild(opt);
+                });
+            } else {
+                const order=["english","math","japanese","physics","chemistry"];
+                order.forEach(id => {
+                    const p=store.pastExams?.[id]; if(!p) return;
+                    const opt=document.createElement('option'); opt.value=id; opt.textContent=`過去問・模試｜${p.title || id}`; sel.appendChild(opt);
+                });
+            }
+            if (selectedId && Array.from(sel.options).some(o=>o.value===selectedId)) sel.value=selectedId;
+        }
+
+        function openHomeworkModal(id="") {
+            if (!Array.isArray(store.homeworks)) store.homeworks=[];
+            const hw = id ? store.homeworks.find(x=>x.id===id) : null;
+            document.getElementById("homeworkIdInput").value = hw?.id || '';
+            document.getElementById("homeworkModalTitle").innerText = hw ? '📈 宿題を編集' : '📈 宿題登録';
+            document.getElementById("homeworkSchoolInput").value = hw?.school || '理系';
+            document.getElementById("homeworkTargetTypeInput").value = hw?.targetType || 'book';
+            refreshHomeworkTargetOptions(hw?.targetId || '');
+            document.getElementById("homeworkTitleInput").value = hw?.title || '';
+            const today = new Date(); today.setHours(12,0,0,0);
+            const from = new Date(today); from.setDate(from.getDate()-6);
+            document.getElementById("homeworkFromInput").value = hw?.fromDate || formatReportDate(from);
+            document.getElementById("homeworkToInput").value = hw?.toDate || formatReportDate(today);
+            document.getElementById("homeworkTargetCountInput").value = hw?.targetCount || 10;
+            document.getElementById("homeworkDeleteBtn").style.display = hw ? 'block' : 'none';
+            document.getElementById("homeworkModal").classList.add("active");
+        }
+
+        function closeHomeworkModal() { document.getElementById("homeworkModal").classList.remove("active"); }
+
+        function saveHomework() {
+            const id=document.getElementById("homeworkIdInput").value;
+            const school=document.getElementById("homeworkSchoolInput").value;
+            const targetType=document.getElementById("homeworkTargetTypeInput").value;
+            const targetId=document.getElementById("homeworkTargetIdInput").value;
+            const title=document.getElementById("homeworkTitleInput").value.trim();
+            const fromDate=document.getElementById("homeworkFromInput").value;
+            const toDate=document.getElementById("homeworkToInput").value;
+            const targetCount=parseInt(document.getElementById("homeworkTargetCountInput").value,10);
+            if(!targetId) return alert('対象を選択してください。');
+            if(!fromDate || !toDate || fromDate>toDate) return alert('期間を正しく指定してください。');
+            if(!targetCount || targetCount<1) return alert('目標問題数は1以上で入力してください。');
+            const data={id:id || `hw_${Date.now()}`,school,targetType,targetId,title,fromDate,toDate,targetCount};
+            if(id){ const idx=store.homeworks.findIndex(x=>x.id===id); if(idx>=0) store.homeworks[idx]=data; else store.homeworks.push(data); }
+            else store.homeworks.push(data);
+            saveStore(); closeHomeworkModal(); renderHomeworkScreen();
+        }
+
+        function deleteHomework() {
+            const id=document.getElementById("homeworkIdInput").value;
+            if(!id || !confirm('この宿題登録を削除しますか？')) return;
+            store.homeworks = (store.homeworks || []).filter(x=>x.id!==id);
+            saveStore(); closeHomeworkModal(); renderHomeworkScreen();
         }
 
         // ----------------------------------------------------
