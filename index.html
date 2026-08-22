@@ -3549,15 +3549,35 @@
             const toDate = document.getElementById('reportTo').value;
             const resultArea = document.getElementById('reportResultArea');
             if (!fromDate || !toDate) return alert("期間を正しく指定してください。");
-            
-            let totalNew = 0; let totalRev = 0; let totalMin = 0; let totalAdhoc = 0; let totalAdhocMin = 0; let html = '';
-            
+
+            // 学習実績レポートの表示順
+            const reportGroupOrder = ["理系科目", "文系科目", "その他"];
+            const reportSubjectOrder = {
+                "理系科目": ["数学", "物理", "化学", "生物"],
+                "文系科目": ["英語", "国語", "社会"],
+                "その他": ["その他"]
+            };
+            const getReportGroup = (subject) => {
+                if (["数学", "物理", "化学", "生物"].includes(subject)) return "理系科目";
+                if (["英語", "国語", "社会"].includes(subject)) return "文系科目";
+                return "その他";
+            };
+
+            let totalNew = 0;
+            let totalRev = 0;
+            let totalMin = 0;
+            let totalAdhoc = 0;
+            let totalAdhocMin = 0;
+            const reportItems = [];
+
             Object.keys(store.books).forEach(bId => {
                 const book = store.books[bId];
-                let bookNew = 0; let bookRev = 0; let bookMin = 0;
+                let bookNew = 0;
+                let bookRev = 0;
+                let bookMin = 0;
                 const bookCellMap = new Map();
-                
-                if(book.sections) book.sections.forEach(sec => {
+
+                if (book.sections) book.sections.forEach(sec => {
                     if (book.data["sec_disabled_" + sec.id]) return;
                     for (let q = 1; q <= sec.count; q++) {
                         const history = book.data[`${sec.id}_${q}_history`] || [];
@@ -3572,25 +3592,37 @@
                         });
                     }
                 });
-                
+
                 if (bookNew > 0 || bookRev > 0 || bookMin > 0) {
-                    totalNew += bookNew; totalRev += bookRev; totalMin += bookMin;
+                    totalNew += bookNew;
+                    totalRev += bookRev;
+                    totalMin += bookMin;
                     const reportCells = Array.from(bookCellMap.values());
                     const encodedReportCells = encodeURIComponent(JSON.stringify(reportCells));
-                    html += `
-                        <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
-                            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:6px;">
-                                <div style="font-weight: bold; color: #0f172a;">${book.title}</div>
-                                <button class="btn btn-outline" style="padding:5px 10px; font-size:0.72rem; white-space:nowrap;" onclick="openReportBookDetail('${bId}', '${encodedReportCells}')">明細</button>
+                    const subject = book.subject || "その他";
+                    reportItems.push({
+                        type: "book",
+                        group: getReportGroup(subject),
+                        subject,
+                        title: book.title || "問題集",
+                        html: `
+                            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                                <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:6px;">
+                                    <div>
+                                        <span style="font-size:0.68rem; color:#64748b; margin-right:6px;">${escapeHtml(subject)}</span>
+                                        <span style="font-weight: bold; color: #0f172a;">${escapeHtml(book.title || '問題集')}</span>
+                                    </div>
+                                    <button class="btn btn-outline" style="padding:5px 10px; font-size:0.72rem; white-space:nowrap;" onclick="openReportBookDetail('${bId}', '${encodedReportCells}')">明細</button>
+                                </div>
+                                <div style="display: flex; gap: 12px; flex-wrap:wrap; font-size: 0.8rem; color: #475569;">
+                                    <span>🆕 新規: <strong style="color: var(--primary-color);">${bookNew}</strong> 問</span>
+                                    <span>🔄 復習: <strong style="color: #f59e0b;">${bookRev}</strong> 回</span>
+                                    <span>⏱️ 時間: <strong>${Math.floor(bookMin/60)}時間${bookMin%60}分</strong></span>
+                                    <span>対象セル: <strong>${reportCells.length}</strong> 個</span>
+                                </div>
                             </div>
-                            <div style="display: flex; gap: 12px; flex-wrap:wrap; font-size: 0.8rem; color: #475569;">
-                                <span>🆕 新規: <strong style="color: var(--primary-color);">${bookNew}</strong> 問</span>
-                                <span>🔄 復習: <strong style="color: #f59e0b;">${bookRev}</strong> 回</span>
-                                <span>⏱️ 時間: <strong>${Math.floor(bookMin/60)}時間${bookMin%60}分</strong></span>
-                                <span>対象セル: <strong>${reportCells.length}</strong> 個</span>
-                            </div>
-                        </div>
-                    `;
+                        `
+                    });
                 }
             });
 
@@ -3607,54 +3639,87 @@
                 totalAdhoc = adhocDone.length;
                 totalAdhocMin = adhocDone.reduce((sum, task) => sum + (parseInt(task.minutes, 10) || 0), 0);
                 totalMin += totalAdhocMin;
-
                 const priorityLabel = { high: '高', medium: '中', low: '低' };
-                const rows = adhocDone
-                    .slice()
-                    .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt))
-                    .map(task => {
-                        const completedDate = formatLocalDate(new Date(task.completedAt));
-                        const min = parseInt(task.minutes, 10) || 0;
-                        return `
-                            <div style="padding: 7px 0; border-top: 1px dashed var(--border-color); font-size: 0.75rem; color: #475569;">
-                                <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
-                                    <strong style="color:#0f172a;">${escapeHtml(task.title || '単発タスク')}</strong>
-                                    <span style="white-space:nowrap; color:#64748b;">${completedDate}</span>
-                                </div>
-                                <div style="margin-top:3px;">${escapeHtml(task.subject || 'その他')} ・ 優先度 ${priorityLabel[task.priority] || '中'}${min ? ` ・ ${min}分` : ''}</div>
-                                ${task.note ? `<div style="margin-top:3px; color:#64748b;">${escapeHtml(task.note)}</div>` : ''}
-                            </div>
-                        `;
-                    }).join('');
 
-                html += `
-                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
-                        <div style="font-weight: bold; color: #0f172a; margin-bottom: 6px;">✅ 単発タスク</div>
-                        <div style="display:flex; gap:12px; font-size:0.8rem; color:#475569; margin-bottom:6px;">
-                            <span>完了: <strong style="color:#14b8a6;">${totalAdhoc}</strong> 件</span>
-                            <span>時間: <strong>${Math.floor(totalAdhocMin/60)}時間${totalAdhocMin%60}分</strong></span>
-                        </div>
-                        ${rows}
-                    </div>
-                `;
+                adhocDone.forEach(task => {
+                    const completedDate = formatLocalDate(new Date(task.completedAt));
+                    const min = parseInt(task.minutes, 10) || 0;
+                    const subject = task.subject || 'その他';
+                    reportItems.push({
+                        type: "adhoc",
+                        group: getReportGroup(subject),
+                        subject,
+                        title: task.title || '単発タスク',
+                        completedAt: task.completedAt,
+                        html: `
+                            <div style="background:white; padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:8px;">
+                                <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+                                    <div>
+                                        <span style="font-size:0.68rem; color:#64748b; margin-right:6px;">${escapeHtml(subject)}</span>
+                                        <strong style="color:#0f172a;">✅ ${escapeHtml(task.title || '単発タスク')}</strong>
+                                    </div>
+                                    <span style="white-space:nowrap; color:#64748b; font-size:0.75rem;">${completedDate}</span>
+                                </div>
+                                <div style="margin-top:4px; font-size:0.75rem; color:#475569;">優先度 ${priorityLabel[task.priority] || '中'}${min ? ` ・ ${min}分` : ''}</div>
+                                ${task.note ? `<div style="margin-top:3px; font-size:0.75rem; color:#64748b;">${escapeHtml(task.note)}</div>` : ''}
+                            </div>
+                        `
+                    });
+                });
             }
-            
-            if (html === '') {
+
+            if (reportItems.length === 0) {
                 resultArea.innerHTML = `<div style="text-align: center; color: #64748b; padding: 20px;">指定された期間の実績はありません。</div>`;
-            } else {
-                const summaryHtml = `
-                    <div style="background: #e0f2fe; padding: 12px; border-radius: 8px; border: 1px solid #bae6fd; margin-bottom: 16px;">
-                        <div style="font-weight: bold; color: #0284c7; margin-bottom: 6px;">📊 全体の合計</div>
-                        <div style="display: flex; gap: 12px; flex-wrap:wrap; font-size: 0.85rem; color: #0369a1;">
-                            <span>新規: <strong>${totalNew}</strong> 問</span>
-                            <span>復習: <strong>${totalRev}</strong> 回</span>
-                            <span>単発: <strong>${totalAdhoc}</strong> 件</span>
-                            <span>時間: <strong>${Math.floor(totalMin/60)}時間${totalMin%60}分</strong></span>
-                        </div>
-                    </div>
-                `;
-                resultArea.innerHTML = summaryHtml + html;
+                return;
             }
+
+            const subjectRank = (group, subject) => {
+                const order = reportSubjectOrder[group] || ["その他"];
+                const idx = order.indexOf(subject);
+                return idx >= 0 ? idx : 999;
+            };
+
+            reportItems.sort((a, b) => {
+                const ga = reportGroupOrder.indexOf(a.group);
+                const gb = reportGroupOrder.indexOf(b.group);
+                if (ga !== gb) return ga - gb;
+                const sa = subjectRank(a.group, a.subject);
+                const sb = subjectRank(b.group, b.subject);
+                if (sa !== sb) return sa - sb;
+                if (a.type !== b.type) return a.type === "book" ? -1 : 1;
+                if (a.type === "adhoc" && b.type === "adhoc") return new Date(a.completedAt) - new Date(b.completedAt);
+                return String(a.title).localeCompare(String(b.title), 'ja');
+            });
+
+            let detailHtml = '';
+            reportGroupOrder.forEach(group => {
+                const groupItems = reportItems.filter(item => item.group === group);
+                if (!groupItems.length) return;
+
+                const groupIcon = group === "理系科目" ? "🔬" : (group === "文系科目" ? "📚" : "📌");
+                detailHtml += `<div style="margin:18px 0 8px; font-weight:bold; color:#0f172a; font-size:0.95rem; border-bottom:2px solid #cbd5e1; padding-bottom:6px;">${groupIcon} ${group}</div>`;
+
+                const subjects = [...new Set(groupItems.map(item => item.subject))].sort((a, b) => subjectRank(group, a) - subjectRank(group, b));
+                subjects.forEach(subject => {
+                    const subjectItems = groupItems.filter(item => item.subject === subject);
+                    const meta = subjectMeta[subject] || subjectMeta["その他"];
+                    detailHtml += `<div style="margin:10px 0 7px; font-weight:bold; font-size:0.82rem; color:${meta.text || '#475569'};">${meta.icon || '📌'} ${escapeHtml(subject)}</div>`;
+                    detailHtml += subjectItems.map(item => item.html).join('');
+                });
+            });
+
+            const summaryHtml = `
+                <div style="background: #e0f2fe; padding: 12px; border-radius: 8px; border: 1px solid #bae6fd; margin-bottom: 16px;">
+                    <div style="font-weight: bold; color: #0284c7; margin-bottom: 6px;">📊 全体の合計</div>
+                    <div style="display: flex; gap: 12px; flex-wrap:wrap; font-size: 0.85rem; color: #0369a1;">
+                        <span>新規: <strong>${totalNew}</strong> 問</span>
+                        <span>復習: <strong>${totalRev}</strong> 回</span>
+                        <span>単発: <strong>${totalAdhoc}</strong> 件</span>
+                        <span>時間: <strong>${Math.floor(totalMin/60)}時間${totalMin%60}分</strong></span>
+                    </div>
+                </div>
+            `;
+            resultArea.innerHTML = summaryHtml + detailHtml;
         }
 
         // ----------------------------------------------------
