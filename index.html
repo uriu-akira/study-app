@@ -635,6 +635,11 @@
         /* 宿題進捗 */
         .homework-wrap { max-width: 1180px; margin: 0 auto; padding: 18px; }
         .homework-toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+        .homework-filter-tabs { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 14px; }
+        .homework-filter-btn { border:1px solid #cbd5e1; background:#fff; color:#475569; border-radius:999px; padding:7px 16px; font-size:.78rem; font-weight:800; cursor:pointer; }
+        .homework-filter-btn.active { background:#334155; border-color:#334155; color:#fff; }
+        .homework-filter-btn[data-filter="science"].active { background:#2563eb; border-color:#2563eb; }
+        .homework-filter-btn[data-filter="humanities"].active { background:#db2777; border-color:#db2777; }
         .homework-section-title { font-size:0.9rem; font-weight:800; color:#334155; margin:18px 0 8px; padding-left:8px; border-left:4px solid #2563eb; }
         .homework-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; }
         .homework-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
@@ -773,6 +778,11 @@
             <div class="homework-toolbar">
                 <div style="font-size:.78rem; color:#64748b;">まず塾種別と授業日を大枠として登録し、その枠の中に宿題を追加します。宿題期間は授業日を含む直近7日間を自動設定します。</div>
                 <button class="btn btn-outline" onclick="renderHomeworkScreen()">再集計</button>
+            </div>
+            <div class="homework-filter-tabs" aria-label="宿題進捗の表示切替">
+                <button class="homework-filter-btn active" data-filter="all" onclick="setHomeworkFilter('all')">すべて</button>
+                <button class="homework-filter-btn" data-filter="humanities" onclick="setHomeworkFilter('humanities')">文系</button>
+                <button class="homework-filter-btn" data-filter="science" onclick="setHomeworkFilter('science')">理系</button>
             </div>
             <div id="homeworkSummary"></div>
             <div id="homeworkList"></div>
@@ -1691,7 +1701,7 @@
         let currentPlanDate = "";
         let selectedPlanCells = []; // array of { id1: secId/colId, id2: qNum/qId }
         let currentPortalPlanSubject = "all"; // 予定一覧の科目タブ
-        let currentPortalPlanView = "list"; // 'list' / 'carryover' / 'today' / 'future'
+        let currentPortalPlanView = "today"; // 'list' / 'carryover' / 'today' / 'future'
         let portalPriorityEditMode = false;
         let portalPrioritySessionStarted = false;
         let portalPrioritySessionAssigned = [];
@@ -1699,6 +1709,7 @@
         let currentPortalPlanDay = ""; // 日別表示で選択中の日付
         let currentPortalPlanDayMode = "date"; // 'date' / 'carryover' / 'future' 
         let currentPortalPlanAvailableDates = []; // 現在の科目条件で予定がある日だけ
+        let currentHomeworkFilter = "all"; // all / humanities / science
 
         const subjectMeta = {
             "数学": { icon: "📐", color: "#0ea5e9", bg: "#e0f2fe", text: "#0284c7" },
@@ -1934,6 +1945,7 @@
         }
 
         function showPortalPlanListScreen() {
+            currentPortalPlanView = "today";
             renderPortalPlanList();
             switchScreen("portalPlanListScreen");
         }
@@ -3759,22 +3771,43 @@
             return { actual, target, percent:(actual/target)*100 };
         }
 
+        function setHomeworkFilter(filter) {
+            const allowed = ["all", "humanities", "science"];
+            currentHomeworkFilter = allowed.includes(filter) ? filter : "all";
+            document.querySelectorAll(".homework-filter-btn").forEach(btn => {
+                btn.classList.toggle("active", btn.dataset.filter === currentHomeworkFilter);
+            });
+            renderHomeworkScreen();
+        }
+
         function renderHomeworkScreen() {
             migrateLegacyHomeworkGroups();
+            document.querySelectorAll(".homework-filter-btn").forEach(btn => {
+                btn.classList.toggle("active", btn.dataset.filter === currentHomeworkFilter);
+            });
             const list=document.getElementById('homeworkList'), summary=document.getElementById('homeworkSummary');
             if(!list||!summary) return;
-            const metrics=(store.homeworks||[]).map(hw=>({hw,...getHomeworkProgress(hw)}));
+            const allMetrics=(store.homeworks||[]).map(hw=>({hw,...getHomeworkProgress(hw)}));
+            const allGroups=[...(store.lessonGroups||[])];
+            const groupMatchesFilter = g => {
+                if (currentHomeworkFilter === "all") return true;
+                const isScience = String(g?.type || "").startsWith("理系塾");
+                return currentHomeworkFilter === "science" ? isScience : !isScience;
+            };
+            // 授業日程の早い順。同日なら塾種別名順。
+            const groups=allGroups.filter(groupMatchesFilter).sort((a,b)=>String(a.lessonDate).localeCompare(String(b.lessonDate)) || String(a.type).localeCompare(String(b.type),'ja'));
+            const visibleGroupIds = new Set(groups.map(g=>g.id));
+            const metrics=allMetrics.filter(x=>visibleGroupIds.has(x.hw.groupId));
             const completed=metrics.filter(x=>x.percent>=100).length;
             const avg=metrics.length?metrics.reduce((a,x)=>a+x.percent,0)/metrics.length:0;
             summary.innerHTML=`<div class="dash-summary" style="margin-bottom:14px;">
-                <div class="summary-item"><span class="summary-label">塾日程</span><span class="summary-value">${(store.lessonGroups||[]).length}件</span></div>
+                <div class="summary-item"><span class="summary-label">塾日程</span><span class="summary-value">${groups.length}件</span></div>
                 <div class="summary-item"><span class="summary-label">登録宿題</span><span class="summary-value">${metrics.length}件</span></div>
                 <div class="summary-item"><span class="summary-label">100%以上</span><span class="summary-value" style="color:#16a34a;">${completed}件</span></div>
                 <div class="summary-item"><span class="summary-label">平均達成率</span><span class="summary-value">${avg.toFixed(0)}%</span></div>
             </div>`;
-            const groups=[...(store.lessonGroups||[])].sort((a,b)=>String(b.lessonDate).localeCompare(String(a.lessonDate)) || String(a.type).localeCompare(String(b.type),'ja'));
             if(!groups.length){
-                list.innerHTML='<div style="text-align:center;color:#64748b;padding:36px;background:white;border:1px dashed #cbd5e1;border-radius:12px;">塾日程がまだありません。右上の「＋ 塾日程」から登録してください。</div>';
+                list.innerHTML=`<div style="text-align:center;color:#64748b;padding:36px;background:white;border:1px dashed #cbd5e1;border-radius:12px;">${currentHomeworkFilter === 'all' ? '塾日程がまだありません。右上の「＋ 塾日程」から登録してください。' : '選択した区分の塾日程はありません。'}</div>`;
                 return;
             }
             list.innerHTML=groups.map(g=>{
