@@ -648,6 +648,10 @@
         .homework-progress-fill { height:100%; border-radius:999px; background:#2563eb; transition:width .25s ease; }
         .homework-progress-fill.complete { background:#16a34a; }
         .homework-over-label { margin-top:5px; font-size:.7rem; font-weight:700; color:#2563eb; }
+        .lesson-group { background:#fff; border:2px solid #cbd5e1; border-radius:16px; padding:14px; margin:0 0 16px; }
+        .lesson-group-header { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; border-bottom:1px solid #e2e8f0; padding-bottom:10px; margin-bottom:12px; }
+        .lesson-group-title { font-size:1.05rem; font-weight:900; color:#0f172a; }
+        .lesson-group-sub { font-size:.72rem; color:#64748b; margin-top:2px; }
         @media (max-width: 600px) { .homework-grid { grid-template-columns:1fr; } }
     </style>
 </head>
@@ -756,12 +760,12 @@
                     <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
                     <h1 style="color:#2563eb;">📈 宿題進捗</h1>
                 </div>
-                <button class="btn" style="background:#2563eb;" onclick="openHomeworkModal()">＋ 宿題登録</button>
+                <button class="btn" style="background:#2563eb;" onclick="openLessonGroupModal()">＋ 塾日程</button>
             </div>
         </header>
         <div class="homework-wrap">
             <div class="homework-toolbar">
-                <div style="font-size:.78rem; color:#64748b;">期間内に実績が入った問題セル数を集計し、目標問題数に対する達成率を表示します。100%を超えてもそのまま表示します。</div>
+                <div style="font-size:.78rem; color:#64748b;">まず塾種別と授業日を大枠として登録し、その枠の中に宿題を追加します。宿題期間は授業日を含む直近7日間を自動設定します。</div>
                 <button class="btn btn-outline" onclick="renderHomeworkScreen()">再集計</button>
             </div>
             <div id="homeworkSummary"></div>
@@ -1251,20 +1255,42 @@
         </div>
     </div>
 
+    <!-- 塾日程登録モーダル -->
+    <div class="modal-overlay" id="lessonGroupModal">
+        <div class="modal-content" style="width:460px; max-width:95vw;">
+            <div class="modal-header" id="lessonGroupModalTitle">🏫 塾日程登録</div>
+            <input type="hidden" id="lessonGroupIdInput">
+            <div class="form-group">
+                <label class="form-label">塾種別</label>
+                <select class="modal-input" id="lessonGroupTypeInput">
+                    <option value="理系塾（通常）">理系塾（通常）</option>
+                    <option value="理系塾（特別講習）">理系塾（特別講習）</option>
+                    <option value="文系塾（通常）">文系塾（通常）</option>
+                    <option value="文系塾（特別講習）">文系塾（特別講習）</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">授業日程</label>
+                <input type="date" class="modal-input" id="lessonGroupDateInput">
+            </div>
+            <div class="modal-actions" style="justify-content:space-between;">
+                <button type="button" class="btn" id="lessonGroupDeleteBtn" style="background:#ef4444; display:none;" onclick="deleteLessonGroup()">削除</button>
+                <div style="display:flex; gap:8px; margin-left:auto;">
+                    <button type="button" class="btn btn-outline" onclick="closeLessonGroupModal()">キャンセル</button>
+                    <button type="button" class="btn" style="background:#2563eb;" onclick="saveLessonGroup()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 宿題登録モーダル -->
     <div class="modal-overlay" id="homeworkModal">
         <div class="modal-content" style="width:520px; max-width:95vw;">
             <div class="modal-header" id="homeworkModalTitle">📈 宿題登録</div>
             <input type="hidden" id="homeworkIdInput">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <div class="form-group">
-                    <label class="form-label">塾区分</label>
-                    <select class="modal-input" id="homeworkSchoolInput">
-                        <option value="理系">理系塾</option>
-                        <option value="文系">文系塾</option>
-                    </select>
-                </div>
-                <div class="form-group">
+            <input type="hidden" id="homeworkGroupIdInput">
+            <div id="homeworkGroupContext" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:9px 11px;margin-bottom:10px;font-weight:800;color:#1e40af;"></div>
+            <div class="form-group">
                     <label class="form-label">対象種別</label>
                     <select class="modal-input" id="homeworkTargetTypeInput" onchange="refreshHomeworkTargetOptions()">
                         <option value="book">問題集</option>
@@ -1272,17 +1298,11 @@
                         <option value="prework">事前課題</option>
                         <option value="free">フリー入力</option>
                     </select>
-                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">対象</label>
                 <select class="modal-input" id="homeworkTargetIdInput"></select>
                 <input type="text" class="modal-input" id="homeworkTargetFreeInput" placeholder="例：夏期講習 事前課題プリント" style="display:none; margin-top:0;">
-            </div>
-            <div class="form-group">
-                <label class="form-label">塾の日程（授業日）</label>
-                <input type="date" class="modal-input" id="homeworkLessonDateInput">
-                <div style="font-size:.7rem;color:#64748b;margin-top:4px;">夏期講習など週2回ある場合も、宿題ごとに実際の授業日を登録できます。</div>
             </div>
             <div class="form-group">
                 <label class="form-label">宿題名（任意）</label>
@@ -1291,11 +1311,11 @@
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                 <div class="form-group">
                     <label class="form-label">開始日</label>
-                    <input type="date" class="modal-input" id="homeworkFromInput">
+                    <input type="date" class="modal-input" id="homeworkFromInput" readonly style="background:#f8fafc;">
                 </div>
                 <div class="form-group">
                     <label class="form-label">終了日</label>
-                    <input type="date" class="modal-input" id="homeworkToInput">
+                    <input type="date" class="modal-input" id="homeworkToInput" readonly style="background:#f8fafc;">
                 </div>
             </div>
             <div class="form-group">
@@ -1646,7 +1666,7 @@
         };
 
         const STORAGE_KEY = "multi_book_progress_v45"; 
-        let store = { books: JSON.parse(JSON.stringify(defaultBooks)), pastExams: JSON.parse(JSON.stringify(defaultPastExams)), adHocTasks: [], planPriorities: {}, homeworks: [] };
+        let store = { books: JSON.parse(JSON.stringify(defaultBooks)), pastExams: JSON.parse(JSON.stringify(defaultPastExams)), adHocTasks: [], planPriorities: {}, homeworks: [], lessonGroups: [] };
         
         let currentBookId = null;
         let activeTarget = { secId: null, qNum: null };
@@ -1757,6 +1777,7 @@
                     store.pastExams = tempExams;
                     store.adHocTasks = Array.isArray(latestSave.data.adHocTasks) ? latestSave.data.adHocTasks : [];
                     store.homeworks = Array.isArray(latestSave.data.homeworks) ? latestSave.data.homeworks : [];
+                    store.lessonGroups = Array.isArray(latestSave.data.lessonGroups) ? latestSave.data.lessonGroups : [];
                     store.planPriorities = latestSave.data.planPriorities && typeof latestSave.data.planPriorities === "object" ? latestSave.data.planPriorities : {};
 
                     // 古いセーブデータの削除（掃除）
@@ -1769,10 +1790,13 @@
                     store.pastExams = tempExams;
                     store.adHocTasks = [];
                     store.homeworks = [];
+                    store.lessonGroups = [];
                     store.planPriorities = {};
                 }
 
                 if (!Array.isArray(store.homeworks)) store.homeworks = [];
+                if (!Array.isArray(store.lessonGroups)) store.lessonGroups = [];
+                migrateLegacyHomeworkGroups();
                 if (!store.planPriorities || typeof store.planPriorities !== "object") store.planPriorities = {};
 
                 // 過去問のデフォルトレコードやカラム補完（常に実行）
@@ -1850,6 +1874,8 @@
 
                 if (!Array.isArray(store.adHocTasks)) store.adHocTasks = [];
                         if (!Array.isArray(store.homeworks)) store.homeworks = [];
+                        if (!Array.isArray(store.lessonGroups)) store.lessonGroups = [];
+                        migrateLegacyHomeworkGroups();
                         if (!store.planPriorities || typeof store.planPriorities !== "object") store.planPriorities = {};
                 if (!store.planPriorities || typeof store.planPriorities !== "object" || Array.isArray(store.planPriorities)) store.planPriorities = {};
                 saveStore();
@@ -3600,6 +3626,9 @@
                     if (importedStore && importedStore.books) {
                         store = importedStore;
                         if (!Array.isArray(store.adHocTasks)) store.adHocTasks = [];
+                        if (!Array.isArray(store.homeworks)) store.homeworks = [];
+                        if (!Array.isArray(store.lessonGroups)) store.lessonGroups = [];
+                        migrateLegacyHomeworkGroups();
                         
                         // インポートに成功したら、ローカルにある過去のセーブデータをすべて掃除する
                         const allKeys = Object.keys(localStorage);
@@ -3622,8 +3651,52 @@
         // ----------------------------------------------------
         // 宿題進捗
         // ----------------------------------------------------
+        function getLessonGroupBaseSchool(type) {
+            return String(type || '').startsWith('文系') ? '文系' : '理系';
+        }
+
+        function formatLessonDateJP(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr + 'T12:00:00');
+            if (Number.isNaN(d.getTime())) return dateStr;
+            const wd = ['日','月','火','水','木','金','土'][d.getDay()];
+            return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}（${wd}）`;
+        }
+
+        function getSevenDayRange(endDate) {
+            const end = new Date(endDate + 'T12:00:00');
+            const from = new Date(end);
+            from.setDate(from.getDate() - 6);
+            return { fromDate: formatReportDate(from), toDate: formatReportDate(end) };
+        }
+
+        function migrateLegacyHomeworkGroups() {
+            if (!Array.isArray(store.lessonGroups)) store.lessonGroups = [];
+            if (!Array.isArray(store.homeworks)) store.homeworks = [];
+            const groupMap = new Map(store.lessonGroups.map(g => [`${g.type}|${g.lessonDate}`, g.id]));
+            store.homeworks.forEach(hw => {
+                if (hw.groupId && store.lessonGroups.some(g => g.id === hw.groupId)) return;
+                const lessonDate = hw.lessonDate || hw.toDate;
+                if (!lessonDate) return;
+                const base = hw.school === '文系' ? '文系' : '理系';
+                const type = `${base}塾（通常）`;
+                const key = `${type}|${lessonDate}`;
+                let gid = groupMap.get(key);
+                if (!gid) {
+                    gid = `lg_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+                    store.lessonGroups.push({id:gid, type, lessonDate});
+                    groupMap.set(key,gid);
+                }
+                hw.groupId = gid;
+                hw.school = base;
+                hw.lessonDate = lessonDate;
+            });
+        }
+
         function showHomeworkScreen() {
             if (!Array.isArray(store.homeworks)) store.homeworks = [];
+            if (!Array.isArray(store.lessonGroups)) store.lessonGroups = [];
+            migrateLegacyHomeworkGroups();
             renderHomeworkScreen();
             switchScreen("homeworkScreen");
         }
@@ -3651,8 +3724,7 @@
 
         function countHomeworkActual(hw) {
             if (!hw || !hw.fromDate || !hw.toDate) return 0;
-            const fromDate = hw.fromDate;
-            const toDate = hw.toDate;
+            const fromDate = hw.fromDate, toDate = hw.toDate;
             let count = 0;
             if (hw.targetType === "book") {
                 const book = store.books?.[hw.targetId];
@@ -3671,147 +3743,142 @@
                     const hist = Array.isArray(rec?.history) ? rec.history : [];
                     if (hist.some(h => isHomeworkHistoryEntry(h) && h.date >= fromDate && h.date <= toDate)) count++;
                 });
-            } else {
-                count = Math.max(0, parseInt(hw.manualActual, 10) || 0);
-            }
+            } else count = Math.max(0, parseInt(hw.manualActual,10) || 0);
             return count;
         }
 
         function getHomeworkProgress(hw) {
             const actual = countHomeworkActual(hw);
             const target = Math.max(1, parseInt(hw.targetCount, 10) || 1);
-            const percent = (actual / target) * 100;
-            return { actual, target, percent };
+            return { actual, target, percent:(actual/target)*100 };
         }
 
         function renderHomeworkScreen() {
-            if (!Array.isArray(store.homeworks)) store.homeworks = [];
-            const list = document.getElementById("homeworkList");
-            const summary = document.getElementById("homeworkSummary");
-            if (!list || !summary) return;
-            const hws = [...store.homeworks].sort((a,b) => {
-                const schoolOrder = {"理系":0,"文系":1};
-                const sa = schoolOrder[a.school] ?? 9, sb = schoolOrder[b.school] ?? 9;
-                if (sa !== sb) return sa - sb;
-                const da = a.lessonDate || a.toDate || "";
-                const db = b.lessonDate || b.toDate || "";
-                return String(db).localeCompare(String(da));
-            });
-            if (hws.length === 0) {
-                summary.innerHTML = '';
-                list.innerHTML = '<div style="text-align:center;color:#64748b;padding:36px;background:white;border:1px dashed #cbd5e1;border-radius:12px;">宿題がまだ登録されていません。右上の「＋ 宿題登録」から登録してください。</div>';
-                return;
-            }
-            const metrics = hws.map(hw => ({ hw, ...getHomeworkProgress(hw) }));
-            const completed = metrics.filter(x => x.percent >= 100).length;
-            const avg = metrics.length ? metrics.reduce((a,x)=>a+x.percent,0)/metrics.length : 0;
-            summary.innerHTML = `<div class="dash-summary" style="margin-bottom:14px;">
+            migrateLegacyHomeworkGroups();
+            const list=document.getElementById('homeworkList'), summary=document.getElementById('homeworkSummary');
+            if(!list||!summary) return;
+            const metrics=(store.homeworks||[]).map(hw=>({hw,...getHomeworkProgress(hw)}));
+            const completed=metrics.filter(x=>x.percent>=100).length;
+            const avg=metrics.length?metrics.reduce((a,x)=>a+x.percent,0)/metrics.length:0;
+            summary.innerHTML=`<div class="dash-summary" style="margin-bottom:14px;">
+                <div class="summary-item"><span class="summary-label">塾日程</span><span class="summary-value">${(store.lessonGroups||[]).length}件</span></div>
                 <div class="summary-item"><span class="summary-label">登録宿題</span><span class="summary-value">${metrics.length}件</span></div>
                 <div class="summary-item"><span class="summary-label">100%以上</span><span class="summary-value" style="color:#16a34a;">${completed}件</span></div>
                 <div class="summary-item"><span class="summary-label">平均達成率</span><span class="summary-value">${avg.toFixed(0)}%</span></div>
             </div>`;
-            const groups = ["理系","文系"];
-            list.innerHTML = groups.map(group => {
-                const rows = metrics.filter(x => (x.hw.school || "理系") === group);
-                if (!rows.length) return '';
-                return `<div class="homework-section-title">${group}塾の宿題</div><div class="homework-grid">${rows.map(({hw,actual,target,percent}) => {
-                    const pctLabel = percent % 1 === 0 ? percent.toFixed(0) : percent.toFixed(1);
-                    const barWidth = Math.min(percent,100);
-                    const cls = percent >= 100 ? (percent > 100 ? 'homework-card done over' : 'homework-card done') : 'homework-card';
-                    const over = percent > 100 ? `<div class="homework-over-label">目標を ${actual-target}問 上回っています（+${(percent-100).toFixed(0)}%）</div>` : '';
-                    return `<div class="${cls}" onclick="openHomeworkModal('${hw.id}')" style="cursor:pointer;">
-                        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
-                            <div style="font-weight:800;color:#0f172a;">${escapeHtml(hw.title || getHomeworkTargetName(hw))}</div>
-                            <span class="homework-chip">${escapeHtml(group)}塾</span>
+            const groups=[...(store.lessonGroups||[])].sort((a,b)=>String(b.lessonDate).localeCompare(String(a.lessonDate)) || String(a.type).localeCompare(String(b.type),'ja'));
+            if(!groups.length){
+                list.innerHTML='<div style="text-align:center;color:#64748b;padding:36px;background:white;border:1px dashed #cbd5e1;border-radius:12px;">塾日程がまだありません。右上の「＋ 塾日程」から登録してください。</div>';
+                return;
+            }
+            list.innerHTML=groups.map(g=>{
+                const rows=metrics.filter(x=>x.hw.groupId===g.id);
+                return `<div class="lesson-group">
+                    <div class="lesson-group-header">
+                        <div onclick="openLessonGroupModal('${g.id}')" style="cursor:pointer;">
+                            <div class="lesson-group-title">${escapeHtml(g.type)}　${escapeHtml(formatLessonDateJP(g.lessonDate))}</div>
+                            <div class="lesson-group-sub">宿題期間：${escapeHtml(getSevenDayRange(g.lessonDate).fromDate)} ～ ${escapeHtml(g.lessonDate)}　・クリックで日程編集</div>
                         </div>
-                        <div class="homework-meta"><span>${escapeHtml(getHomeworkTargetTypeLabel(hw.targetType))}｜${escapeHtml(getHomeworkTargetName(hw))}</span><span>${escapeHtml(hw.fromDate)} ～ ${escapeHtml(hw.toDate)}</span>${hw.lessonDate?`<span>授業日：${escapeHtml(hw.lessonDate)}</span>`:''}</div>
-                        <div class="homework-progress-row"><div><span style="font-size:.72rem;color:#64748b;">実績 / 目標</span><br><strong>${actual} / ${target}問</strong></div><div class="homework-progress-value">${pctLabel}%</div></div>
-                        <div class="homework-progress-track"><div class="homework-progress-fill ${percent>=100?'complete':''}" style="width:${barWidth}%;"></div></div>
-                        ${over}
-                    </div>`;
-                }).join('')}</div>`;
+                        <button class="btn" style="background:#2563eb;" onclick="event.stopPropagation();openHomeworkModal('', '${g.id}')">＋ 宿題登録</button>
+                    </div>
+                    ${rows.length?`<div class="homework-grid">${rows.map(({hw,actual,target,percent})=>{
+                        const pct=percent%1===0?percent.toFixed(0):percent.toFixed(1);
+                        const cls=percent>=100?(percent>100?'homework-card done over':'homework-card done'):'homework-card';
+                        const over=percent>100?`<div class="homework-over-label">目標を ${actual-target}問 上回っています（+${(percent-100).toFixed(0)}%）</div>`:'';
+                        return `<div class="${cls}" onclick="openHomeworkModal('${hw.id}','${g.id}')" style="cursor:pointer;">
+                            <div style="font-weight:800;color:#0f172a;">${escapeHtml(hw.title||getHomeworkTargetName(hw))}</div>
+                            <div class="homework-meta"><span>${escapeHtml(getHomeworkTargetTypeLabel(hw.targetType))}｜${escapeHtml(getHomeworkTargetName(hw))}</span><span>${escapeHtml(hw.fromDate)} ～ ${escapeHtml(hw.toDate)}</span></div>
+                            <div class="homework-progress-row"><div><span style="font-size:.72rem;color:#64748b;">実績 / 目標</span><br><strong>${actual} / ${target}問</strong></div><div class="homework-progress-value">${pct}%</div></div>
+                            <div class="homework-progress-track"><div class="homework-progress-fill ${percent>=100?'complete':''}" style="width:${Math.min(percent,100)}%;"></div></div>${over}
+                        </div>`;
+                    }).join('')}</div>`:'<div style="color:#94a3b8;font-size:.78rem;padding:8px 2px;">この授業日に登録された宿題はまだありません。</div>'}
+                </div>`;
             }).join('');
         }
 
+        function openLessonGroupModal(id='') {
+            const g=id?(store.lessonGroups||[]).find(x=>x.id===id):null;
+            document.getElementById('lessonGroupIdInput').value=g?.id||'';
+            document.getElementById('lessonGroupModalTitle').innerText=g?'🏫 塾日程を編集':'🏫 塾日程登録';
+            document.getElementById('lessonGroupTypeInput').value=g?.type||'理系塾（通常）';
+            document.getElementById('lessonGroupDateInput').value=g?.lessonDate||formatReportDate(new Date());
+            document.getElementById('lessonGroupDeleteBtn').style.display=g?'block':'none';
+            document.getElementById('lessonGroupModal').classList.add('active');
+        }
+        function closeLessonGroupModal(){document.getElementById('lessonGroupModal').classList.remove('active');}
+        function saveLessonGroup(){
+            const id=document.getElementById('lessonGroupIdInput').value;
+            const type=document.getElementById('lessonGroupTypeInput').value;
+            const lessonDate=document.getElementById('lessonGroupDateInput').value;
+            if(!lessonDate) return alert('授業日程を入力してください。');
+            if((store.lessonGroups||[]).some(g=>g.id!==id&&g.type===type&&g.lessonDate===lessonDate)) return alert('同じ塾種別・授業日の大枠がすでに登録されています。');
+            const data={id:id||`lg_${Date.now()}`,type,lessonDate};
+            if(id){const i=store.lessonGroups.findIndex(x=>x.id===id); if(i>=0) store.lessonGroups[i]=data; else store.lessonGroups.push(data);}
+            else store.lessonGroups.push(data);
+            // 日程変更時は配下宿題の期間も自動更新
+            const range=getSevenDayRange(lessonDate);
+            (store.homeworks||[]).filter(h=>h.groupId===data.id).forEach(h=>{h.school=getLessonGroupBaseSchool(type);h.lessonDate=lessonDate;h.fromDate=range.fromDate;h.toDate=range.toDate;});
+            saveStore(); closeLessonGroupModal(); renderHomeworkScreen();
+        }
+        function deleteLessonGroup(){
+            const id=document.getElementById('lessonGroupIdInput').value;
+            if(!id) return;
+            const childCount=(store.homeworks||[]).filter(h=>h.groupId===id).length;
+            if(!confirm(`この塾日程を削除しますか？${childCount?`\n配下の宿題 ${childCount}件も削除されます。`:''}`)) return;
+            store.lessonGroups=(store.lessonGroups||[]).filter(g=>g.id!==id);
+            store.homeworks=(store.homeworks||[]).filter(h=>h.groupId!==id);
+            saveStore(); closeLessonGroupModal(); renderHomeworkScreen();
+        }
+
         function refreshHomeworkTargetOptions(selectedId="", selectedText="") {
-            const type = document.getElementById("homeworkTargetTypeInput").value;
-            const sel = document.getElementById("homeworkTargetIdInput");
-            const free = document.getElementById("homeworkTargetFreeInput");
-            const manualGroup = document.getElementById("homeworkManualActualGroup");
-            const isLinked = type === "book" || type === "pe";
-            sel.style.display = isLinked ? "block" : "none";
-            free.style.display = isLinked ? "none" : "block";
-            manualGroup.style.display = isLinked ? "none" : "block";
-            sel.innerHTML = '';
-            if (type === "book") {
-                Object.keys(store.books || {}).forEach(id => {
-                    const b = store.books[id];
-                    const opt = document.createElement('option');
-                    opt.value=id; opt.textContent=`${b.subject || 'その他'}｜${b.title || '問題集'}`;
-                    sel.appendChild(opt);
-                });
-            } else if (type === "pe") {
-                const order=["english","math","japanese","physics","chemistry"];
-                order.forEach(id => {
-                    const p=store.pastExams?.[id]; if(!p) return;
-                    const opt=document.createElement('option'); opt.value=id; opt.textContent=`過去問・模試｜${p.title || id}`; sel.appendChild(opt);
-                });
-            }
-            if (selectedId && Array.from(sel.options).some(o=>o.value===selectedId)) sel.value=selectedId;
-            if (!isLinked) free.value = selectedText || '';
+            const type=document.getElementById('homeworkTargetTypeInput').value;
+            const sel=document.getElementById('homeworkTargetIdInput'), free=document.getElementById('homeworkTargetFreeInput'), manual=document.getElementById('homeworkManualActualGroup');
+            const linked=type==='book'||type==='pe';
+            sel.style.display=linked?'block':'none'; free.style.display=linked?'none':'block'; manual.style.display=linked?'none':'block'; sel.innerHTML='';
+            if(type==='book') Object.keys(store.books||{}).forEach(id=>{const b=store.books[id];const o=document.createElement('option');o.value=id;o.textContent=`${b.subject||'その他'}｜${b.title||'問題集'}`;sel.appendChild(o);});
+            else if(type==='pe') ['english','math','japanese','physics','chemistry'].forEach(id=>{const p=store.pastExams?.[id];if(!p)return;const o=document.createElement('option');o.value=id;o.textContent=`過去問・模試｜${p.title||id}`;sel.appendChild(o);});
+            if(selectedId&&Array.from(sel.options).some(o=>o.value===selectedId))sel.value=selectedId;
+            if(!linked)free.value=selectedText||'';
         }
 
-        function openHomeworkModal(id="") {
-            if (!Array.isArray(store.homeworks)) store.homeworks=[];
-            const hw = id ? store.homeworks.find(x=>x.id===id) : null;
-            document.getElementById("homeworkIdInput").value = hw?.id || '';
-            document.getElementById("homeworkModalTitle").innerText = hw ? '📈 宿題を編集' : '📈 宿題登録';
-            document.getElementById("homeworkSchoolInput").value = hw?.school || '理系';
-            document.getElementById("homeworkTargetTypeInput").value = hw?.targetType || 'book';
-            refreshHomeworkTargetOptions(hw?.targetId || '', hw?.targetText || '');
-            document.getElementById("homeworkTitleInput").value = hw?.title || '';
-            document.getElementById("homeworkLessonDateInput").value = hw?.lessonDate || '';
-            const today = new Date(); today.setHours(12,0,0,0);
-            const from = new Date(today); from.setDate(from.getDate()-6);
-            document.getElementById("homeworkFromInput").value = hw?.fromDate || formatReportDate(from);
-            document.getElementById("homeworkToInput").value = hw?.toDate || formatReportDate(today);
-            document.getElementById("homeworkTargetCountInput").value = hw?.targetCount || 10;
-            document.getElementById("homeworkManualActualInput").value = hw?.manualActual ?? 0;
-            document.getElementById("homeworkDeleteBtn").style.display = hw ? 'block' : 'none';
-            document.getElementById("homeworkModal").classList.add("active");
+        function openHomeworkModal(id="", groupId="") {
+            const hw=id?(store.homeworks||[]).find(x=>x.id===id):null;
+            const gid=hw?.groupId||groupId;
+            const g=(store.lessonGroups||[]).find(x=>x.id===gid);
+            if(!g) return alert('先に塾日程の大枠を選択してください。');
+            const range=getSevenDayRange(g.lessonDate);
+            document.getElementById('homeworkIdInput').value=hw?.id||'';
+            document.getElementById('homeworkGroupIdInput').value=g.id;
+            document.getElementById('homeworkGroupContext').innerText=`${g.type}　${formatLessonDateJP(g.lessonDate)}`;
+            document.getElementById('homeworkModalTitle').innerText=hw?'📈 宿題を編集':'📈 宿題登録';
+            document.getElementById('homeworkTargetTypeInput').value=hw?.targetType||'book';
+            refreshHomeworkTargetOptions(hw?.targetId||'',hw?.targetText||'');
+            document.getElementById('homeworkTitleInput').value=hw?.title||'';
+            document.getElementById('homeworkFromInput').value=range.fromDate;
+            document.getElementById('homeworkToInput').value=range.toDate;
+            document.getElementById('homeworkTargetCountInput').value=hw?.targetCount||10;
+            document.getElementById('homeworkManualActualInput').value=hw?.manualActual??0;
+            document.getElementById('homeworkDeleteBtn').style.display=hw?'block':'none';
+            document.getElementById('homeworkModal').classList.add('active');
         }
-
-        function closeHomeworkModal() { document.getElementById("homeworkModal").classList.remove("active"); }
-
-        function saveHomework() {
-            const id=document.getElementById("homeworkIdInput").value;
-            const school=document.getElementById("homeworkSchoolInput").value;
-            const targetType=document.getElementById("homeworkTargetTypeInput").value;
-            const linked = targetType === "book" || targetType === "pe";
-            const targetId=linked ? document.getElementById("homeworkTargetIdInput").value : '';
-            const targetText=linked ? '' : document.getElementById("homeworkTargetFreeInput").value.trim();
-            const title=document.getElementById("homeworkTitleInput").value.trim();
-            const lessonDate=document.getElementById("homeworkLessonDateInput").value;
-            const fromDate=document.getElementById("homeworkFromInput").value;
-            const toDate=document.getElementById("homeworkToInput").value;
-            const targetCount=parseInt(document.getElementById("homeworkTargetCountInput").value,10);
-            const manualActual=linked ? 0 : Math.max(0, parseInt(document.getElementById("homeworkManualActualInput").value,10) || 0);
-            if(linked && !targetId) return alert('対象を選択してください。');
-            if(!linked && !targetText) return alert('対象を入力してください。');
-            if(!fromDate || !toDate || fromDate>toDate) return alert('期間を正しく指定してください。');
-            if(!targetCount || targetCount<1) return alert('目標数は1以上で入力してください。');
-            const data={id:id || `hw_${Date.now()}`,school,lessonDate,targetType,targetId,targetText,title,fromDate,toDate,targetCount,manualActual};
-            if(id){ const idx=store.homeworks.findIndex(x=>x.id===id); if(idx>=0) store.homeworks[idx]=data; else store.homeworks.push(data); }
-            else store.homeworks.push(data);
-            saveStore(); closeHomeworkModal(); renderHomeworkScreen();
+        function closeHomeworkModal(){document.getElementById('homeworkModal').classList.remove('active');}
+        function saveHomework(){
+            const id=document.getElementById('homeworkIdInput').value;
+            const groupId=document.getElementById('homeworkGroupIdInput').value;
+            const g=(store.lessonGroups||[]).find(x=>x.id===groupId); if(!g)return alert('塾日程が見つかりません。');
+            const targetType=document.getElementById('homeworkTargetTypeInput').value, linked=targetType==='book'||targetType==='pe';
+            const targetId=linked?document.getElementById('homeworkTargetIdInput').value:'';
+            const targetText=linked?'':document.getElementById('homeworkTargetFreeInput').value.trim();
+            const title=document.getElementById('homeworkTitleInput').value.trim();
+            const range=getSevenDayRange(g.lessonDate);
+            const targetCount=parseInt(document.getElementById('homeworkTargetCountInput').value,10);
+            const manualActual=linked?0:Math.max(0,parseInt(document.getElementById('homeworkManualActualInput').value,10)||0);
+            if(linked&&!targetId)return alert('対象を選択してください。'); if(!linked&&!targetText)return alert('対象を入力してください。'); if(!targetCount||targetCount<1)return alert('目標数は1以上で入力してください。');
+            const data={id:id||`hw_${Date.now()}`,groupId,school:getLessonGroupBaseSchool(g.type),lessonDate:g.lessonDate,targetType,targetId,targetText,title,fromDate:range.fromDate,toDate:range.toDate,targetCount,manualActual};
+            if(id){const i=store.homeworks.findIndex(x=>x.id===id);if(i>=0)store.homeworks[i]=data;else store.homeworks.push(data);} else store.homeworks.push(data);
+            saveStore();closeHomeworkModal();renderHomeworkScreen();
         }
-
-        function deleteHomework() {
-            const id=document.getElementById("homeworkIdInput").value;
-            if(!id || !confirm('この宿題登録を削除しますか？')) return;
-            store.homeworks = (store.homeworks || []).filter(x=>x.id!==id);
-            saveStore(); closeHomeworkModal(); renderHomeworkScreen();
-        }
+        function deleteHomework(){const id=document.getElementById('homeworkIdInput').value;if(!id||!confirm('この宿題登録を削除しますか？'))return;store.homeworks=(store.homeworks||[]).filter(x=>x.id!==id);saveStore();closeHomeworkModal();renderHomeworkScreen();}
 
         // ----------------------------------------------------
         // 9. レポート画面
