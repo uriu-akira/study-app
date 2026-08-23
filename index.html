@@ -2285,8 +2285,15 @@
                 selectedPlanCells.forEach(item => {
                     if (currentPlanDate) {
                         book.data[`${item.id1}_${item.id2}_plan`] = currentPlanDate;
+                        // この予定を登録した時点の実績回数を保存。
+                        // 以後に追加された実績だけを、この予定に対する実績として扱う。
+                        const currentHistory = Array.isArray(book.data[`${item.id1}_${item.id2}_history`])
+                            ? book.data[`${item.id1}_${item.id2}_history`]
+                            : [];
+                        book.data[`${item.id1}_${item.id2}_planBaseline`] = currentHistory.filter(h => h && h.mark && h.mark !== "ー").length;
                     } else {
                         delete book.data[`${item.id1}_${item.id2}_plan`];
+                        delete book.data[`${item.id1}_${item.id2}_planBaseline`];
                     }
                 });
             } else {
@@ -2295,9 +2302,13 @@
                 selectedPlanCells.forEach(item => {
                     if (!subj.records[`${item.id1}_${item.id2}`]) subj.records[`${item.id1}_${item.id2}`] = { history: [] };
                     if (currentPlanDate) {
-                        subj.records[`${item.id1}_${item.id2}`].plan = currentPlanDate;
+                        const rec = subj.records[`${item.id1}_${item.id2}`];
+                        rec.plan = currentPlanDate;
+                        const currentHistory = Array.isArray(rec.history) ? rec.history : [];
+                        rec.planBaseline = currentHistory.filter(h => h && h.mark && h.mark !== "ー").length;
                     } else {
                         delete subj.records[`${item.id1}_${item.id2}`].plan;
+                        delete subj.records[`${item.id1}_${item.id2}`].planBaseline;
                     }
                 });
             }
@@ -2529,7 +2540,15 @@
                 return !!(task && task.completed);
             }
             const history = Array.isArray(item.history) ? item.history : [];
-            // 予定日以降に有効な解答実績があれば、その予定は完了扱い。
+            const validCount = history.filter(h => h && h.mark && h.mark !== "ー").length;
+
+            // 新仕様: 予定登録時点の実績回数より、有効実績が1件以上増えたら予定消化。
+            // 予定日より前倒しで取り組んだ場合も正しく実績として数える。
+            if (Number.isInteger(item.planBaseline)) {
+                return validCount > item.planBaseline;
+            }
+
+            // 旧データ互換: baseline が存在しない既存予定は従来の判定も利用する。
             return history.some(h => h && h.date && h.date >= item.planDate && h.mark && h.mark !== "ー");
         }
 
@@ -2629,7 +2648,10 @@
                                     secName: sec.name,
                                     diff: getDifficultyBook(bId, sec.id, q),
                                     latest: getLatestEntryBook(bId, sec.id, q),
-                                    history: getHistoryArrayBook(bId, sec.id, q)
+                                    history: getHistoryArrayBook(bId, sec.id, q),
+                                    planBaseline: Number.isInteger(book.data[`${sec.id}_${q}_planBaseline`])
+                                        ? book.data[`${sec.id}_${q}_planBaseline`]
+                                        : null
                                 });
                             }
                         }
@@ -2662,7 +2684,8 @@
                                     planDate: rec.plan,
                                     rec: rec,
                                     latest: latest,
-                                    history: history
+                                    history: history,
+                                    planBaseline: Number.isInteger(rec.planBaseline) ? rec.planBaseline : null
                                 });
                             }
                         });
@@ -3784,13 +3807,20 @@
                 date: document.getElementById("modalDate").value
             };
 
+            const book = store.books[currentBookId];
             if (selectedIdx < history.length) {
                 history[selectedIdx] = newEntry;
             } else {
+                // 旧データの予定に baseline が無い場合は、今回の新規実績追加直前を基準にする。
+                const planKey = `${secId}_${qNum}_plan`;
+                const baselineKey = `${secId}_${qNum}_planBaseline`;
+                if (book && book.data && book.data[planKey] && !Number.isInteger(book.data[baselineKey])) {
+                    const validBefore = history.filter(h => h && h.mark && h.mark !== "ー").length;
+                    book.data[baselineKey] = validBefore;
+                }
                 history.push(newEntry);
             }
 
-            const book = store.books[currentBookId];
             book.data[`${secId}_${qNum}_history`] = history;
             
 
@@ -5122,6 +5152,9 @@
             if (selectedIdx < rec.history.length) {
                 rec.history[selectedIdx] = attemptData;
             } else {
+                if (rec.plan && !Number.isInteger(rec.planBaseline)) {
+                    rec.planBaseline = rec.history.filter(h => h && h.mark && h.mark !== "ー").length;
+                }
                 rec.history.push(attemptData);
             }
             
