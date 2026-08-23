@@ -488,6 +488,26 @@
             background:#f59e0b; color:#fff; font-size:0.72rem; font-weight:900; box-shadow:0 2px 6px rgba(0,0,0,.16);
         }
         .priority-order-unset { background:#e2e8f0; color:#64748b; }
+        .reschedule-btn {
+            border:1px solid #0ea5e9; background:#f0f9ff; color:#0369a1; border-radius:8px;
+            padding:8px 12px; font-size:0.78rem; font-weight:800; cursor:pointer; white-space:nowrap;
+        }
+        .reschedule-btn.active { background:#0ea5e9; color:#fff; box-shadow:0 0 0 3px rgba(14,165,233,.18); }
+        .reschedule-guide {
+            display:none; margin:8px 0; padding:10px 12px; border-radius:10px; border:1px solid #7dd3fc;
+            background:#f0f9ff; color:#075985; font-size:0.76rem; font-weight:700; line-height:1.55;
+        }
+        .reschedule-guide.active { display:block; }
+        .reschedule-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px; }
+        .reschedule-controls input[type="date"] { border:1px solid #7dd3fc; border-radius:8px; padding:7px 9px; font-size:0.78rem; background:#fff; }
+        .reschedule-apply-btn { border:none; background:#0284c7; color:#fff; border-radius:8px; padding:8px 12px; font-size:.76rem; font-weight:800; cursor:pointer; }
+        .reschedule-cancel-btn { border:1px solid #bae6fd; background:#fff; color:#0369a1; border-radius:8px; padding:7px 11px; font-size:.76rem; font-weight:800; cursor:pointer; }
+        .reschedule-selecting { cursor:pointer; }
+        .reschedule-selected { outline:3px solid rgba(14,165,233,.48); box-shadow:0 0 0 4px rgba(14,165,233,.10); }
+        .reschedule-selected-badge {
+            position:absolute; top:8px; left:8px; z-index:4; border-radius:999px; background:#0284c7; color:#fff;
+            padding:3px 8px; font-size:.66rem; font-weight:900; box-shadow:0 2px 6px rgba(0,0,0,.14);
+        }
         .adhoc-complete-btn {
             border:1px solid #6ee7b7; background:#ecfdf5; color:#047857; border-radius:8px;
             padding:7px 10px; font-size:0.72rem; font-weight:800; cursor:pointer;
@@ -730,6 +750,7 @@
                 <div style="font-size:0.72rem; color:#64748b;">問題集・過去問の予定と、単発タスクをまとめて管理できます。</div>
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                     <button class="priority-order-btn" id="portalPriorityOrderBtn" type="button" onclick="togglePortalPriorityMode()">優先順</button>
+                    <button class="reschedule-btn" id="portalRescheduleBtn" type="button" onclick="togglePortalRescheduleMode()">予定日変更</button>
                     <button class="adhoc-add-btn" type="button" onclick="openAdhocTaskModal()">＋ 単発タスク追加</button>
                 </div>
             </div>
@@ -752,6 +773,15 @@
             </div>
             <div class="priority-mode-guide" id="portalPriorityModeGuide">
                 優先順設定モードです。優先したい明細から順番にタップしてください。最初にタップした明細が「1」、次が「2」…になります。もう一度「優先順」を押すと確定して通常操作に戻ります。
+            </div>
+            <div class="reschedule-guide" id="portalRescheduleGuide">
+                予定日変更モードです。変更したい明細をタップして複数選択し、新しい予定日を指定して「一括更新」を押してください。
+                <div class="reschedule-controls">
+                    <span id="portalRescheduleSelectedCount">0件選択</span>
+                    <input type="date" id="portalRescheduleDate">
+                    <button type="button" class="reschedule-apply-btn" onclick="applyPortalReschedule()">一括更新</button>
+                    <button type="button" class="reschedule-cancel-btn" onclick="cancelPortalRescheduleMode()">キャンセル</button>
+                </div>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                 <h2 id="portalPlanListHeading" style="font-size: 0.9rem; color: #334155;">登録されているすべての学習予定</h2>
@@ -1707,6 +1737,9 @@
         let portalPrioritySessionStarted = false;
         let portalPrioritySessionAssigned = [];
         let currentPortalPriorityKeys = [];
+        let portalRescheduleMode = false;
+        let portalRescheduleSelectedKeys = [];
+        let portalRescheduleItemsByKey = {};
         let currentPortalPlanDay = ""; // 日別表示で選択中の日付
         let currentPortalPlanDayMode = "date"; // 'date' / 'carryover' / 'future' 
         let currentPortalPlanAvailableDates = []; // 現在の科目条件で予定がある日だけ
@@ -2284,6 +2317,15 @@
         }
 
         function togglePortalPriorityMode() {
+            if (!portalPriorityEditMode && portalRescheduleMode) {
+                portalRescheduleMode = false;
+                portalRescheduleSelectedKeys = [];
+                portalRescheduleItemsByKey = {};
+                const rbtn = document.getElementById("portalRescheduleBtn");
+                const rguide = document.getElementById("portalRescheduleGuide");
+                if (rbtn) { rbtn.classList.remove("active"); rbtn.textContent = "予定日変更"; }
+                if (rguide) rguide.classList.remove("active");
+            }
             portalPriorityEditMode = !portalPriorityEditMode;
             portalPrioritySessionStarted = false;
             portalPrioritySessionAssigned = [];
@@ -2328,6 +2370,116 @@
             return parts.length === 3
                 ? `${parseInt(parts[0],10)}年${parseInt(parts[1],10)}月${parseInt(parts[2],10)}日（${weekNames[dateObj.getDay()]}）`
                 : dateStr;
+        }
+
+        function getPortalPlanItemKey(item) {
+            if (!item) return "";
+            if (item.type === "book") return `book:${item.bookId}:${item.secId}:${item.qNum}`;
+            if (item.type === "pe") return `pe:${item.subjKey}:${item.colId}:${item.qId}`;
+            if (item.type === "adhoc") return `adhoc:${item.taskId}`;
+            return "";
+        }
+
+        function updatePortalRescheduleGuide() {
+            const count = document.getElementById("portalRescheduleSelectedCount");
+            if (count) count.textContent = `${portalRescheduleSelectedKeys.length}件選択`;
+        }
+
+        function togglePortalRescheduleMode() {
+            portalRescheduleMode = !portalRescheduleMode;
+            if (portalRescheduleMode) {
+                // 優先順モードとは同時に使わない
+                if (portalPriorityEditMode) togglePortalPriorityMode();
+                portalRescheduleSelectedKeys = [];
+                portalRescheduleItemsByKey = {};
+                const dateInput = document.getElementById("portalRescheduleDate");
+                if (dateInput) dateInput.value = "";
+            }
+            const btn = document.getElementById("portalRescheduleBtn");
+            const guide = document.getElementById("portalRescheduleGuide");
+            if (btn) {
+                btn.classList.toggle("active", portalRescheduleMode);
+                btn.textContent = portalRescheduleMode ? "✓ 予定日変更中" : "予定日変更";
+            }
+            if (guide) guide.classList.toggle("active", portalRescheduleMode);
+            updatePortalRescheduleGuide();
+            renderPortalPlanList();
+        }
+
+        function cancelPortalRescheduleMode() {
+            portalRescheduleMode = false;
+            portalRescheduleSelectedKeys = [];
+            portalRescheduleItemsByKey = {};
+            const btn = document.getElementById("portalRescheduleBtn");
+            const guide = document.getElementById("portalRescheduleGuide");
+            if (btn) { btn.classList.remove("active"); btn.textContent = "予定日変更"; }
+            if (guide) guide.classList.remove("active");
+            updatePortalRescheduleGuide();
+            renderPortalPlanList();
+        }
+
+        function togglePortalRescheduleItem(item) {
+            const key = getPortalPlanItemKey(item);
+            if (!key) return;
+            portalRescheduleItemsByKey[key] = item;
+            const idx = portalRescheduleSelectedKeys.indexOf(key);
+            if (idx >= 0) {
+                portalRescheduleSelectedKeys.splice(idx, 1);
+                delete portalRescheduleItemsByKey[key];
+            } else {
+                portalRescheduleSelectedKeys.push(key);
+                const dateInput = document.getElementById("portalRescheduleDate");
+                if (dateInput && !dateInput.value && item.planDate) dateInput.value = item.planDate;
+            }
+            updatePortalRescheduleGuide();
+            renderPortalPlanList();
+        }
+
+        function applyPortalReschedule() {
+            if (!portalRescheduleMode) return;
+            if (portalRescheduleSelectedKeys.length === 0) { alert("予定日を変更する明細を選択してください。"); return; }
+            const dateInput = document.getElementById("portalRescheduleDate");
+            const newDate = dateInput ? dateInput.value : "";
+            if (!newDate) { alert("変更後の予定日を入力してください。"); return; }
+
+            let changed = 0;
+            portalRescheduleSelectedKeys.forEach(key => {
+                const item = portalRescheduleItemsByKey[key];
+                if (!item) return;
+                if (item.type === "book") {
+                    const book = store.books[item.bookId];
+                    if (book) {
+                        if (!book.data) book.data = {};
+                        book.data[`${item.secId}_${item.qNum}_plan`] = newDate;
+                        changed++;
+                    }
+                } else if (item.type === "pe") {
+                    const subj = store.pastExams[item.subjKey];
+                    if (subj) {
+                        if (!subj.records) subj.records = {};
+                        const recKey = `${item.colId}_${item.qId}`;
+                        if (!subj.records[recKey]) subj.records[recKey] = { history: [] };
+                        subj.records[recKey].plan = newDate;
+                        changed++;
+                    }
+                } else if (item.type === "adhoc") {
+                    if (!Array.isArray(store.adHocTasks)) store.adHocTasks = [];
+                    const task = store.adHocTasks.find(t => t && t.id === item.taskId);
+                    if (task) { task.planDate = newDate; changed++; }
+                }
+            });
+
+            saveStore();
+            portalRescheduleMode = false;
+            portalRescheduleSelectedKeys = [];
+            portalRescheduleItemsByKey = {};
+            const btn = document.getElementById("portalRescheduleBtn");
+            const guide = document.getElementById("portalRescheduleGuide");
+            if (btn) { btn.classList.remove("active"); btn.textContent = "予定日変更"; }
+            if (guide) guide.classList.remove("active");
+            updatePortalRescheduleGuide();
+            renderPortalPlanList();
+            alert(`${changed}件の予定日を ${newDate} に変更しました。`);
         }
 
         // ポータル画面の予定一覧表示
@@ -2529,6 +2681,10 @@
                 card.className = "batsu-card";
                 card.style.position = "relative";
                 if (portalPriorityEditMode) card.classList.add("priority-selecting");
+                const rescheduleKey = getPortalPlanItemKey(item);
+                const isRescheduleSelected = portalRescheduleSelectedKeys.includes(rescheduleKey);
+                if (portalRescheduleMode) card.classList.add("reschedule-selecting");
+                if (isRescheduleSelected) card.classList.add("reschedule-selected");
                 
                 let cardBgColor = "#ffffff";
                 let meta;
@@ -2626,6 +2782,7 @@
                     currentBookId = backup;
 
                     card.addEventListener("click", () => {
+                        if (portalRescheduleMode) { togglePortalRescheduleItem(item); return; }
                         if (portalPriorityEditMode) { assignPortalPriority(item); return; }
                         currentBookId = item.bookId;
                         openModal(item.secId, item.qNum);
@@ -2660,15 +2817,18 @@
                     `;
                     card.querySelector('[data-action="complete"]').addEventListener("click", (ev) => {
                         ev.stopPropagation();
+                        if (portalRescheduleMode) { togglePortalRescheduleItem(item); return; }
                         if (portalPriorityEditMode) { assignPortalPriority(item); return; }
                         completeAdhocTask(item.taskId);
                     });
                     card.querySelector('[data-action="edit"]').addEventListener("click", (ev) => {
                         ev.stopPropagation();
+                        if (portalRescheduleMode) { togglePortalRescheduleItem(item); return; }
                         if (portalPriorityEditMode) { assignPortalPriority(item); return; }
                         openAdhocTaskModal(item.taskId);
                     });
                     card.addEventListener("click", () => {
+                        if (portalRescheduleMode) { togglePortalRescheduleItem(item); return; }
                         if (portalPriorityEditMode) { assignPortalPriority(item); return; }
                         openAdhocTaskModal(item.taskId);
                     });
@@ -2700,10 +2860,18 @@
                         <button class="btn btn-outline" style="border-color: ${meta.color}; color: var(--text-color); background: rgba(255,255,255,0.7);">記録</button>
                     `;
                     card.addEventListener("click", () => {
+                        if (portalRescheduleMode) { togglePortalRescheduleItem(item); return; }
                         if (portalPriorityEditMode) { assignPortalPriority(item); return; }
                         currentPESubject = item.subjKey;
                         openPECellModal(item.colId, item.qId);
                     });
+                }
+
+                if (isRescheduleSelected) {
+                    const selectedBadge = document.createElement("div");
+                    selectedBadge.className = "reschedule-selected-badge";
+                    selectedBadge.textContent = "選択中";
+                    card.appendChild(selectedBadge);
                 }
 
                 const priorityRank = getPortalPlanPriority(item);
