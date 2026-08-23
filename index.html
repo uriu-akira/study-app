@@ -2551,13 +2551,18 @@
             const chips = [];
             grouped.forEach(v => {
                 const active = selected === v.key ? " active" : "";
-                chips.push(`<button type="button" class="plan-date-summary-chip${active}" onclick="togglePortalPlanDateGroup('${escapeHtml(planDate)}','${escapeHtml(v.key)}',event)">${escapeHtml(v.label)} ${v.count}問</button>`);
+                // 同じ日・同じ対象に登録された予定のうち、実績が入っている問題数を表示する。
+                // 明細自体は従来どおり未完了のみ展開する。
+                const targetPlans = plans.filter(p => p.type !== "adhoc" && getPortalPlanSummaryKey(p) === v.key);
+                const totalCount = targetPlans.length;
+                const actualCount = targetPlans.filter(p => isPortalPlanCompleted(p)).length;
+                chips.push(`<button type="button" class="plan-date-summary-chip${active}" onclick="togglePortalPlanDateGroup('${escapeHtml(planDate)}','${escapeHtml(v.key)}',event)">${escapeHtml(v.label)} 予定${totalCount}問 ／ 実績${actualCount}問</button>`);
             });
             adhocItems.forEach(item => {
                 const key = getPortalPlanSummaryKey(item);
                 const active = selected === key ? " active" : "";
                 const title = String(item.title || "単発タスク").trim() || "単発タスク";
-                chips.push(`<button type="button" class="plan-date-summary-chip adhoc${active}" onclick="togglePortalPlanDateGroup('${escapeHtml(planDate)}','${escapeHtml(key)}',event)">単発：${escapeHtml(title)}</button>`);
+                chips.push(`<button type="button" class="plan-date-summary-chip adhoc${active}" onclick="togglePortalPlanDateGroup('${escapeHtml(planDate)}','${escapeHtml(key)}',event)">単発：${escapeHtml(title)} ／ 実績 未完了</button>`);
             });
             return chips.join("");
         }
