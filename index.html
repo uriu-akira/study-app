@@ -1345,7 +1345,8 @@
             </div>
             <div class="modal-actions" style="justify-content:space-between;">
                 <button type="button" class="btn" id="homeworkDeleteBtn" style="background:#ef4444; display:none;" onclick="deleteHomework()">削除</button>
-                <div style="display:flex; gap:8px; margin-left:auto;">
+                <div style="display:flex; gap:8px; margin-left:auto; flex-wrap:wrap;">
+                    <button type="button" class="btn" id="homeworkPlanBtn" style="background:#f59e0b; display:none;" onclick="startHomeworkPlanRegistration()">📅 予定登録</button>
                     <button type="button" class="btn btn-outline" onclick="closeHomeworkModal()">キャンセル</button>
                     <button type="button" class="btn" style="background:#2563eb;" onclick="saveHomework()">保存</button>
                 </div>
@@ -2145,9 +2146,9 @@
         // ==========================================
         // 学習予定入力機能
         // ==========================================
-        function openPlanDateModal(type) {
+        function openPlanDateModal(type, defaultDate = "") {
             currentPlanType = type;
-            document.getElementById("planDateInput").value = new Date().toISOString().split('T')[0];
+            document.getElementById("planDateInput").value = defaultDate || new Date().toISOString().split('T')[0];
             document.getElementById("planDateModal").classList.add("active");
         }
 
@@ -3780,6 +3781,36 @@
             renderHomeworkScreen();
         }
 
+
+        function countHomeworkPlannedCells(hw) {
+            if (!hw || hw.targetType !== 'book' || !hw.targetId) return null;
+            const book = store.books?.[hw.targetId];
+            if (!book || !book.data) return 0;
+            const from = String(hw.fromDate || '');
+            const to = String(hw.toDate || '');
+            let count = 0;
+            (book.sections || []).forEach(sec => {
+                if (!sec || book.data['sec_disabled_' + sec.id]) return;
+                for (let q = 1; q <= (sec.count || 0); q++) {
+                    const d = book.data[`${sec.id}_${q}_plan`];
+                    if (d && (!from || d >= from) && (!to || d <= to)) count++;
+                }
+            });
+            return count;
+        }
+
+        function startHomeworkPlanRegistration() {
+            const hwId = document.getElementById('homeworkIdInput').value;
+            const hw = (store.homeworks || []).find(x => x.id === hwId);
+            if (!hw || hw.targetType !== 'book' || !hw.targetId) {
+                alert('予定登録は、登録済み問題集を対象にした宿題で利用できます。');
+                return;
+            }
+            closeHomeworkModal();
+            openBookDetail(hw.targetId);
+            setTimeout(() => openPlanDateModal('book', hw.toDate || hw.lessonDate || ''), 0);
+        }
+
         function renderHomeworkScreen() {
             migrateLegacyHomeworkGroups();
             document.querySelectorAll(".homework-filter-btn").forEach(btn => {
@@ -3829,9 +3860,11 @@
                         const over=percent>100?`<div class="homework-over-label">目標を ${actual-target}問 上回っています（+${(percent-100).toFixed(0)}%）</div>`:'';
                         const linkedBook=hw.targetType==='book' ? store.books?.[hw.targetId] : null;
                         const homeworkCardStyle=linkedBook?.bgColor ? `background:${linkedBook.bgColor};` : '';
+                        const plannedCount = countHomeworkPlannedCells(hw);
+                        const plannedInfo = plannedCount === null ? '' : `<span class="homework-chip" style="background:rgba(255,255,255,.78);color:#334155;border:1px solid rgba(100,116,139,.25);">📅 期間内の予定 ${plannedCount}件</span>`;
                         return `<div class="${cls}" onclick="openHomeworkModal('${hw.id}','${g.id}')" style="cursor:pointer;${homeworkCardStyle}">
                             <div style="font-weight:800;color:#0f172a;">${escapeHtml(hw.title||getHomeworkTargetName(hw))}</div>
-                            <div class="homework-meta"><span>${escapeHtml(getHomeworkTargetTypeLabel(hw.targetType))}｜${escapeHtml(getHomeworkTargetName(hw))}</span><span>${escapeHtml(hw.fromDate)} ～ ${escapeHtml(hw.toDate)}</span></div>
+                            <div class="homework-meta"><span>${escapeHtml(getHomeworkTargetTypeLabel(hw.targetType))}｜${escapeHtml(getHomeworkTargetName(hw))}</span><span>${escapeHtml(hw.fromDate)} ～ ${escapeHtml(hw.toDate)}</span>${plannedInfo}</div>
                             <div class="homework-progress-row"><div><span style="font-size:.72rem;color:#64748b;">実績 / 目標</span><br><strong>${actual} / ${target}問</strong></div><div class="homework-progress-value">${pct}%</div></div>
                             <div class="homework-progress-track"><div class="homework-progress-fill ${percent>=100?'complete':''}" style="width:${Math.min(percent,100)}%;"></div></div>${over}
                         </div>`;
@@ -3903,6 +3936,8 @@
             document.getElementById('homeworkTargetCountInput').value=hw?.targetCount||10;
             document.getElementById('homeworkManualActualInput').value=hw?.manualActual??0;
             document.getElementById('homeworkDeleteBtn').style.display=hw?'block':'none';
+            const planBtn = document.getElementById('homeworkPlanBtn');
+            if (planBtn) planBtn.style.display = (hw && hw.targetType === 'book' && hw.targetId) ? 'inline-block' : 'none';
             document.getElementById('homeworkModal').classList.add('active');
         }
         function closeHomeworkModal(){document.getElementById('homeworkModal').classList.remove('active');}
