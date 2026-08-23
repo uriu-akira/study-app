@@ -535,6 +535,16 @@
             margin-left: auto; font-size: 0.68rem; padding: 2px 8px;
             border-radius: 999px; background: #ffffff; color: #0f766e; border: 1px solid #99f6e4;
         }
+        .plan-date-group-header-wrap { display:flex; flex-direction:column; gap:5px; min-width:0; flex:1; }
+        .plan-date-group-main { display:flex; align-items:center; gap:10px; min-width:0; }
+        .plan-date-group-summary { display:flex; flex-wrap:wrap; gap:5px 8px; font-size:0.72rem; font-weight:700; color:#115e59; line-height:1.45; }
+        .plan-date-summary-chip { background:rgba(255,255,255,.78); border:1px solid #99f6e4; border-radius:999px; padding:2px 8px; white-space:normal; }
+        .plan-date-summary-chip.adhoc { background:#faf5ff; border-color:#ddd6fe; color:#6d28d9; }
+        @media (max-width:650px) {
+            .plan-date-group-header { align-items:flex-start; }
+            .plan-date-group-main { flex-wrap:wrap; }
+            .plan-date-group-count { margin-left:0; }
+        }
         .batsu-card { background: var(--card-bg); border: 1px solid #cbd5e1; border-left: 5px solid #9ca3af; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.15s; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .batsu-card:hover { filter: brightness(0.97); }
         .batsu-info { display: flex; flex-direction: column; gap: 4px; }
@@ -2483,6 +2493,43 @@
         }
 
         // ポータル画面の予定一覧表示
+        function buildPortalPlanDateSummary(plans) {
+            const grouped = new Map();
+            const adhocTitles = [];
+
+            plans.forEach(item => {
+                if (item.type === "adhoc") {
+                    const title = String(item.title || "単発タスク").trim();
+                    adhocTitles.push(title || "単発タスク");
+                    return;
+                }
+
+                if (item.type === "book") {
+                    const title = String(item.title || (store.books[item.bookId] && store.books[item.bookId].title) || "問題集").trim();
+                    const key = `book:${item.bookId || title}`;
+                    const current = grouped.get(key) || { label: `【問題集：${title}】`, count: 0 };
+                    current.count += 1;
+                    grouped.set(key, current);
+                    return;
+                }
+
+                const title = String(item.title || "過去問・模試").trim();
+                const key = `exam:${item.subjKey || ""}:${title}`;
+                const current = grouped.get(key) || { label: `【過去問・模試：${title}】`, count: 0 };
+                current.count += 1;
+                grouped.set(key, current);
+            });
+
+            const chips = [];
+            grouped.forEach(v => {
+                chips.push(`<span class="plan-date-summary-chip">${escapeHtml(v.label)} ${v.count}問</span>`);
+            });
+            adhocTitles.forEach(title => {
+                chips.push(`<span class="plan-date-summary-chip adhoc">単発：${escapeHtml(title)}</span>`);
+            });
+            return chips.join("");
+        }
+
         function renderPortalPlanList() {
             const listEl = document.getElementById("portalPlanCardGrid");
             const badgeEl = document.getElementById("portalPlanCountBadge");
@@ -2671,9 +2718,19 @@
                         ? `${parseInt(parts[0], 10)}年${parseInt(parts[1], 10)}月${parseInt(parts[2], 10)}日（${weekNames[dateObj.getDay()]}）`
                         : item.planDate;
                     const relativeLabel = item.planDate === todayStr ? "今日" : (item.planDate < todayStr ? "期限超過" : "予定");
+                    const sameDatePlans = visiblePlans.filter(p => p.planDate === item.planDate);
+                    const summaryHtml = buildPortalPlanDateSummary(sameDatePlans);
                     const header = document.createElement("div");
                     header.className = "plan-date-group-header";
-                    header.innerHTML = `<span>📅 ${dateLabel}</span><span style="font-size:0.68rem; font-weight:700; opacity:0.8;">${relativeLabel}</span><span class="plan-date-group-count">${sameDateCount}件</span>`;
+                    header.innerHTML = `
+                        <div class="plan-date-group-header-wrap">
+                            <div class="plan-date-group-main">
+                                <span>📅 ${dateLabel}</span>
+                                <span style="font-size:0.68rem; font-weight:700; opacity:0.8;">${relativeLabel}</span>
+                                <span class="plan-date-group-count">${sameDateCount}件</span>
+                            </div>
+                            <div class="plan-date-group-summary">${summaryHtml}</div>
+                        </div>`;
                     listEl.appendChild(header);
                     lastPlanDate = item.planDate;
                 }
