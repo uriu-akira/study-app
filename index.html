@@ -544,26 +544,24 @@
         .plan-date-summary-chip.adhoc { background:#faf5ff; border-color:#ddd6fe; color:#6d28d9; }
         .plan-date-summary-chip.adhoc.active { background:#6d28d9; color:#fff; border-color:#6d28d9; }
         .plan-date-summary-chip.completed {
-            position:relative; min-width:210px; min-height:66px; padding:8px 14px;
+            position:relative;
             cursor:not-allowed; pointer-events:none; opacity:1 !important;
-            border:3px solid #16a34a !important;
-            box-shadow:inset 0 0 0 2px rgba(255,255,255,.62), 0 3px 8px rgba(22,163,74,.18);
-            display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
-            filter:saturate(.78) brightness(.98);
+            border:2px solid #16a34a !important;
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,.45);
+            filter:saturate(.72) brightness(.99);
         }
         .plan-date-summary-chip.completed::after {
             content:"✓ 完了";
             position:absolute; inset:0;
             display:flex; align-items:center; justify-content:center;
-            background:rgba(220,252,231,.88);
+            background:rgba(220,252,231,.56);
             color:#166534;
-            font-size:1.28rem; font-weight:1000; letter-spacing:.08em;
+            font-size:.92rem; font-weight:1000; letter-spacing:.08em;
             border-radius:inherit;
-            text-shadow:0 1px 0 rgba(255,255,255,.85);
+            text-shadow:0 1px 0 rgba(255,255,255,.9);
         }
         .plan-date-summary-chip.completed .completed-task-label,
-        .plan-date-summary-chip.completed .completed-main,
-        .plan-date-summary-chip.completed .completed-count { opacity:.16; }
+        .plan-date-summary-chip.completed .completed-count { opacity:.48; }
         .plan-date-group-header { cursor:pointer; }
         .plan-date-group-header.expanded { box-shadow:0 0 0 2px rgba(20,184,166,.16), 0 2px 5px rgba(15,118,110,0.08); }
         .plan-date-group-toggle-hint { font-size:.64rem; font-weight:700; opacity:.72; }
@@ -2290,7 +2288,7 @@
                         const currentHistory = Array.isArray(book.data[`${item.id1}_${item.id2}_history`])
                             ? book.data[`${item.id1}_${item.id2}_history`]
                             : [];
-                        book.data[`${item.id1}_${item.id2}_planBaseline`] = currentHistory.filter(h => h && h.mark && h.mark !== "ー").length;
+                        book.data[`${item.id1}_${item.id2}_planBaseline`] = currentHistory.length;
                     } else {
                         delete book.data[`${item.id1}_${item.id2}_plan`];
                         delete book.data[`${item.id1}_${item.id2}_planBaseline`];
@@ -2305,7 +2303,7 @@
                         const rec = subj.records[`${item.id1}_${item.id2}`];
                         rec.plan = currentPlanDate;
                         const currentHistory = Array.isArray(rec.history) ? rec.history : [];
-                        rec.planBaseline = currentHistory.filter(h => h && h.mark && h.mark !== "ー").length;
+                        rec.planBaseline = currentHistory.length;
                     } else {
                         delete subj.records[`${item.id1}_${item.id2}`].plan;
                         delete subj.records[`${item.id1}_${item.id2}`].planBaseline;
@@ -2572,7 +2570,7 @@
 
             plans.forEach(item => {
                 if (item.type === "adhoc") {
-                    if (!isPortalPlanCompleted(item)) adhocItems.push(item);
+                    adhocItems.push(item);
                     return;
                 }
                 const key = getPortalPlanSummaryKey(item);
@@ -2607,7 +2605,7 @@
                 }
                 const isComplete = totalCount > 0 && actualCount >= totalCount;
                 if (isComplete) {
-                    chips.push(`<button type="button" class="plan-date-summary-chip completed"${chipStyle} disabled aria-disabled="true" title="完了済みのため操作できません"><span class="completed-task-label">${escapeHtml(v.label)}</span><span class="completed-main">完了済み</span><span class="completed-count">予定${totalCount}問 ／ 実績${actualCount}問</span></button>`);
+                    chips.push(`<button type="button" class="plan-date-summary-chip completed"${chipStyle} disabled aria-disabled="true" title="完了済みのため操作できません"><span class="completed-task-label">${escapeHtml(v.label)} </span><span class="completed-count">予定${totalCount}問 ／ 実績${actualCount}問</span></button>`);
                 } else {
                     chips.push(`<button type="button" class="plan-date-summary-chip${active}"${chipStyle} onclick="togglePortalPlanDateGroup('${escapeHtml(planDate)}','${escapeHtml(v.key)}',event)">${escapeHtml(v.label)} 予定${totalCount}問 ／ 実績${actualCount}問</button>`);
                 }
@@ -2616,7 +2614,12 @@
                 const key = getPortalPlanSummaryKey(item);
                 const active = selected === key ? " active" : "";
                 const title = String(item.title || "単発タスク").trim() || "単発タスク";
-                chips.push(`<button type="button" class="plan-date-summary-chip adhoc${active}" onclick="togglePortalPlanDateGroup('${escapeHtml(planDate)}','${escapeHtml(key)}',event)">単発：${escapeHtml(title)} ／ 実績 未完了</button>`);
+                const completed = isPortalPlanCompleted(item);
+                if (completed) {
+                    chips.push(`<button type="button" class="plan-date-summary-chip adhoc completed" disabled aria-disabled="true" title="完了済みのため操作できません"><span class="completed-task-label">単発：${escapeHtml(title)} ／ </span><span class="completed-count">実績 完了</span></button>`);
+                } else {
+                    chips.push(`<button type="button" class="plan-date-summary-chip adhoc${active}" onclick="togglePortalPlanDateGroup('${escapeHtml(planDate)}','${escapeHtml(key)}',event)">単発：${escapeHtml(title)} ／ 実績 未完了</button>`);
+                }
             });
             return chips.join("");
         }
@@ -2693,10 +2696,10 @@
                 }
             });
 
-            // 単発タスク（未完了のみ）
+            // 単発タスク（完了済みもヘッダ表示用に保持。明細は isPortalPlanCompleted で非表示）
             if (!Array.isArray(store.adHocTasks)) store.adHocTasks = [];
             store.adHocTasks.forEach(task => {
-                if (!task || task.completed || !task.planDate) return;
+                if (!task || !task.planDate) return;
                 allPlans.push({
                     type: 'adhoc',
                     subject: task.subject || "その他",
