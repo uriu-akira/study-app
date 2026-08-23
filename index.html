@@ -540,6 +540,9 @@
         .plan-date-group-summary { display:flex; flex-wrap:wrap; gap:5px 8px; font-size:0.72rem; font-weight:700; color:#115e59; line-height:1.45; }
         .plan-date-summary-chip { background:rgba(255,255,255,.9); border:1px solid #99f6e4; border-radius:999px; padding:4px 9px; white-space:normal; cursor:pointer; font:inherit; color:inherit; font-weight:800; }
         .plan-date-summary-chip:hover { filter:brightness(.97); transform:translateY(-1px); }
+        .plan-date-summary-chip.priority-selecting { outline:2px dashed #f59e0b; outline-offset:2px; cursor:pointer; }
+        .plan-date-summary-chip .task-priority-rank { display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 5px; margin-right:5px; border-radius:999px; background:#f59e0b; color:#fff; font-size:.66rem; font-weight:900; vertical-align:middle; }
+        .plan-date-summary-chip .task-priority-unset { background:#e2e8f0; color:#64748b; }
         .plan-date-summary-chip.active { background:#0f766e; color:#fff; border-color:#0f766e; }
         .plan-date-summary-chip.adhoc { background:#faf5ff; border-color:#ddd6fe; color:#6d28d9; }
         .plan-date-summary-chip.adhoc.active { background:#6d28d9; color:#fff; border-color:#6d28d9; }
@@ -807,7 +810,7 @@
                 <button class="portal-plan-view-btn" data-view="future" onclick="setPortalPlanView('future')">明日以降</button>
             </div>
             <div class="priority-mode-guide" id="portalPriorityModeGuide">
-                優先順設定モードです。優先したい明細から順番にタップしてください。最初にタップした明細が「1」、次が「2」…になります。もう一度「優先順」を押すと確定して通常操作に戻ります。
+                優先順設定モードです。日付ヘッダ内のタスクボタンを、優先したい順にタップしてください。最初が「1」、次が「2」…になります。設定後は優先順位が高いタスクから左上→右下の順に並びます。完了済みタスクは対象外です。もう一度「優先順」を押すと確定します。
             </div>
             <div class="reschedule-guide" id="portalRescheduleGuide">
                 予定日変更モードです。変更したい明細をタップして複数選択し、新しい予定日を指定して「一括更新」を押してください。
@@ -2557,6 +2560,33 @@
             return `exam:${item.subjKey || ""}:${item.title || ""}`;
         }
 
+        function getPortalTaskPriorityKey(planDate, summaryKey) {
+            return `task:${planDate}:${summaryKey}`;
+        }
+
+        function getPortalTaskPriority(planDate, summaryKey) {
+            if (!store.planPriorities || typeof store.planPriorities !== "object") store.planPriorities = {};
+            const rank = Number(store.planPriorities[getPortalTaskPriorityKey(planDate, summaryKey)]);
+            return Number.isFinite(rank) && rank > 0 ? rank : null;
+        }
+
+        function assignPortalTaskPriority(planDate, summaryKey, ev) {
+            if (ev) ev.stopPropagation();
+            if (!portalPriorityEditMode) return;
+            const key = getPortalTaskPriorityKey(planDate, summaryKey);
+            if (!store.planPriorities || typeof store.planPriorities !== "object") store.planPriorities = {};
+            if (!portalPrioritySessionStarted) {
+                currentPortalPriorityKeys.forEach(k => { delete store.planPriorities[k]; });
+                portalPrioritySessionStarted = true;
+                portalPrioritySessionAssigned = [];
+            }
+            if (portalPrioritySessionAssigned.includes(key)) return;
+            portalPrioritySessionAssigned.push(key);
+            store.planPriorities[key] = portalPrioritySessionAssigned.length;
+            saveStore();
+            renderPortalPlanList();
+        }
+
         function togglePortalPlanDateGroup(planDate, key, ev) {
             if (ev) ev.stopPropagation();
             const current = portalPlanExpandedByDate[planDate] || "";
@@ -2569,59 +2599,68 @@
             const adhocItems = [];
 
             plans.forEach(item => {
-                if (item.type === "adhoc") {
-                    adhocItems.push(item);
-                    return;
-                }
+                if (item.type === "adhoc") { adhocItems.push(item); return; }
                 const key = getPortalPlanSummaryKey(item);
                 if (item.type === "book") {
                     const title = String(item.title || (store.books[item.bookId] && store.books[item.bookId].title) || "問題集").trim();
-                    const current = grouped.get(key) || { label: `【問題集：${title}】`, count: 0, key };
-                    current.count += 1; grouped.set(key, current);
+                    const current = grouped.get(key) || { label: `【問題集：${title}】`, key, type:"book" };
+                    grouped.set(key, current);
                 } else {
                     const title = String(item.title || "過去問・模試").trim();
-                    const current = grouped.get(key) || { label: `【過去問・模試：${title}】`, count: 0, key };
-                    current.count += 1; grouped.set(key, current);
+                    const current = grouped.get(key) || { label: `【過去問・模試：${title}】`, key, type:"pe" };
+                    grouped.set(key, current);
                 }
             });
 
             const selected = portalPlanExpandedByDate[planDate] || "";
-            const chips = [];
+            const entries = [];
             grouped.forEach(v => {
-                const active = selected === v.key ? " active" : "";
-                // 同じ日・同じ対象に登録された予定のうち、実績が入っている問題数を表示する。
-                // 明細自体は従来どおり未完了のみ展開する。
                 const targetPlans = plans.filter(p => p.type !== "adhoc" && getPortalPlanSummaryKey(p) === v.key);
                 const totalCount = targetPlans.length;
                 const actualCount = targetPlans.filter(p => isPortalPlanCompleted(p)).length;
-                // 問題集は問題集登録時の背景色をボタンにも反映する。
-                // 過去問・模試は従来のボタン色を維持する。
-                let chipStyle = "";
-                const firstTarget = targetPlans[0];
-                if (firstTarget && firstTarget.type === "book") {
-                    const book = store.books[firstTarget.bookId];
-                    const bg = (book && book.bgColor) ? book.bgColor : "#ffffff";
-                    chipStyle = ` style="background:${escapeHtml(bg)}; border-color:rgba(71,85,105,.35); color:#334155;"`;
-                }
-                const isComplete = totalCount > 0 && actualCount >= totalCount;
-                if (isComplete) {
-                    chips.push(`<button type="button" class="plan-date-summary-chip completed"${chipStyle} disabled aria-disabled="true" title="完了済みのため操作できません"><span class="completed-task-label">${escapeHtml(v.label)} </span><span class="completed-count">予定${totalCount}問 ／ 実績${actualCount}問</span></button>`);
-                } else {
-                    chips.push(`<button type="button" class="plan-date-summary-chip${active}"${chipStyle} onclick="togglePortalPlanDateGroup('${escapeHtml(planDate)}','${escapeHtml(v.key)}',event)">${escapeHtml(v.label)} 予定${totalCount}問 ／ 実績${actualCount}問</button>`);
-                }
+                entries.push({ ...v, targetPlans, totalCount, actualCount, completed: totalCount > 0 && actualCount >= totalCount });
             });
-            adhocItems.forEach(item => {
-                const key = getPortalPlanSummaryKey(item);
-                const active = selected === key ? " active" : "";
-                const title = String(item.title || "単発タスク").trim() || "単発タスク";
-                const completed = isPortalPlanCompleted(item);
-                if (completed) {
-                    chips.push(`<button type="button" class="plan-date-summary-chip adhoc completed" disabled aria-disabled="true" title="完了済みのため操作できません"><span class="completed-task-label">単発：${escapeHtml(title)} ／ </span><span class="completed-count">実績 完了</span></button>`);
-                } else {
-                    chips.push(`<button type="button" class="plan-date-summary-chip adhoc${active}" onclick="togglePortalPlanDateGroup('${escapeHtml(planDate)}','${escapeHtml(key)}',event)">単発：${escapeHtml(title)} ／ 実績 未完了</button>`);
+            adhocItems.forEach(item => entries.push({
+                key:getPortalPlanSummaryKey(item), type:"adhoc", item,
+                label:`単発：${String(item.title || "単発タスク").trim() || "単発タスク"}`,
+                totalCount:1, actualCount:isPortalPlanCompleted(item) ? 1 : 0,
+                completed:isPortalPlanCompleted(item)
+            }));
+
+            entries.sort((a,b) => {
+                const pa=getPortalTaskPriority(planDate,a.key), pb=getPortalTaskPriority(planDate,b.key);
+                if (pa !== null || pb !== null) {
+                    if (pa === null) return 1;
+                    if (pb === null) return -1;
+                    if (pa !== pb) return pa-pb;
                 }
+                if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                return String(a.label).localeCompare(String(b.label),"ja");
             });
-            return chips.join("");
+
+            return entries.map(v => {
+                const rank=getPortalTaskPriority(planDate,v.key);
+                const rankHtml = portalPriorityEditMode
+                    ? `<span class="task-priority-rank${rank===null?' task-priority-unset':''}">${rank===null?'未':rank}</span>`
+                    : (rank!==null ? `<span class="task-priority-rank">${rank}</span>` : "");
+                let chipStyle="";
+                if (v.type === "book" && v.targetPlans && v.targetPlans[0]) {
+                    const book=store.books[v.targetPlans[0].bookId];
+                    const bg=(book && book.bgColor) ? book.bgColor : "#ffffff";
+                    chipStyle=` style="background:${escapeHtml(bg)}; border-color:rgba(71,85,105,.35); color:#334155;"`;
+                }
+                if (v.completed) {
+                    const countText = v.type === "adhoc" ? "実績 完了" : `予定${v.totalCount}問 ／ 実績${v.actualCount}問`;
+                    return `<button type="button" class="plan-date-summary-chip${v.type==='adhoc'?' adhoc':''} completed"${chipStyle} disabled aria-disabled="true"><span class="completed-task-label">${rankHtml}${escapeHtml(v.label)} </span><span class="completed-count">${countText}</span></button>`;
+                }
+                const active=selected===v.key ? " active" : "";
+                const modeClass=portalPriorityEditMode ? " priority-selecting" : "";
+                const handler=portalPriorityEditMode
+                    ? `assignPortalTaskPriority('${escapeHtml(planDate)}','${escapeHtml(v.key)}',event)`
+                    : `togglePortalPlanDateGroup('${escapeHtml(planDate)}','${escapeHtml(v.key)}',event)`;
+                const countText = v.type === "adhoc" ? "実績 未完了" : `予定${v.totalCount}問 ／ 実績${v.actualCount}問`;
+                return `<button type="button" class="plan-date-summary-chip${v.type==='adhoc'?' adhoc':''}${active}${modeClass}"${chipStyle} onclick="${handler}">${rankHtml}${escapeHtml(v.label)} ／ ${countText}</button>`;
+            }).join("");
         }
 
         function renderPortalPlanList() {
@@ -2755,7 +2794,7 @@
                 tab.classList.toggle("active", tab.dataset.subject === currentPortalPlanSubject);
             });
 
-            currentPortalPriorityKeys = visiblePlans.map(getPortalPlanPriorityKey).filter(Boolean);
+            currentPortalPriorityKeys = Array.from(new Set(visiblePlans.map(item => getPortalTaskPriorityKey(item.planDate, getPortalPlanSummaryKey(item))).filter(Boolean)));
 
             const headingEl = document.getElementById("portalPlanListHeading");
             if (headingEl) {
@@ -2789,13 +2828,6 @@
             }
 
             visiblePlans.sort((a, b) => {
-                const pa = getPortalPlanPriority(a);
-                const pb = getPortalPlanPriority(b);
-                if (pa !== null || pb !== null) {
-                    if (pa === null) return 1;
-                    if (pb === null) return -1;
-                    if (pa !== pb) return pa - pb;
-                }
                 const dateCmp = a.planDate.localeCompare(b.planDate);
                 if (dateCmp !== 0) return dateCmp;
                 const typeCmp = a.type.localeCompare(b.type);
@@ -2839,7 +2871,7 @@
                 const card = document.createElement("div");
                 card.className = "batsu-card";
                 card.style.position = "relative";
-                if (portalPriorityEditMode) card.classList.add("priority-selecting");
+                
                 const rescheduleKey = getPortalPlanItemKey(item);
                 const isRescheduleSelected = portalRescheduleSelectedKeys.includes(rescheduleKey);
                 if (portalRescheduleMode) card.classList.add("reschedule-selecting");
@@ -2942,7 +2974,7 @@
 
                     card.addEventListener("click", () => {
                         if (portalRescheduleMode) { togglePortalRescheduleItem(item); return; }
-                        if (portalPriorityEditMode) { assignPortalPriority(item); return; }
+                        if (portalPriorityEditMode) { return; }
                         currentBookId = item.bookId;
                         openModal(item.secId, item.qNum);
                     });
@@ -2977,18 +3009,18 @@
                     card.querySelector('[data-action="complete"]').addEventListener("click", (ev) => {
                         ev.stopPropagation();
                         if (portalRescheduleMode) { togglePortalRescheduleItem(item); return; }
-                        if (portalPriorityEditMode) { assignPortalPriority(item); return; }
+                        if (portalPriorityEditMode) { return; }
                         completeAdhocTask(item.taskId);
                     });
                     card.querySelector('[data-action="edit"]').addEventListener("click", (ev) => {
                         ev.stopPropagation();
                         if (portalRescheduleMode) { togglePortalRescheduleItem(item); return; }
-                        if (portalPriorityEditMode) { assignPortalPriority(item); return; }
+                        if (portalPriorityEditMode) { return; }
                         openAdhocTaskModal(item.taskId);
                     });
                     card.addEventListener("click", () => {
                         if (portalRescheduleMode) { togglePortalRescheduleItem(item); return; }
-                        if (portalPriorityEditMode) { assignPortalPriority(item); return; }
+                        if (portalPriorityEditMode) { return; }
                         openAdhocTaskModal(item.taskId);
                     });
                 } else {
@@ -3020,7 +3052,7 @@
                     `;
                     card.addEventListener("click", () => {
                         if (portalRescheduleMode) { togglePortalRescheduleItem(item); return; }
-                        if (portalPriorityEditMode) { assignPortalPriority(item); return; }
+                        if (portalPriorityEditMode) { return; }
                         currentPESubject = item.subjKey;
                         openPECellModal(item.colId, item.qId);
                     });
@@ -3033,19 +3065,10 @@
                     card.appendChild(selectedBadge);
                 }
 
-                const priorityRank = getPortalPlanPriority(item);
-                if (priorityRank !== null || portalPriorityEditMode) {
-                    const rankBadge = document.createElement("div");
-                    rankBadge.className = "priority-order-badge" + (priorityRank === null ? " priority-order-unset" : "");
-                    rankBadge.textContent = priorityRank === null ? "未" : String(priorityRank);
-                    rankBadge.title = priorityRank === null ? "優先順未設定" : `優先順 ${priorityRank}`;
-                    card.appendChild(rankBadge);
-                }
-                
                 const expandedKeyForDate = portalPlanExpandedByDate[item.planDate] || "";
                 const summaryKeyForItem = getPortalPlanSummaryKey(item);
                 const showForHeaderFilter = !!expandedKeyForDate && (expandedKeyForDate === "all" || expandedKeyForDate === summaryKeyForItem);
-                const showForEditMode = portalPriorityEditMode || portalRescheduleMode;
+                const showForEditMode = portalRescheduleMode;
                 const completedForDisplay = isPortalPlanCompleted(item);
                 card.style.display = (!completedForDisplay && (showForHeaderFilter || showForEditMode)) ? "flex" : "none";
                 listEl.appendChild(card);
