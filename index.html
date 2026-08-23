@@ -3681,8 +3681,6 @@
                 const book = store.books[currentBookId];
                 book.data[`${secId}_${qNum}_history`] = history;
                 
-                // もし予定が入っていたら削除
-                if (book.data[`${secId}_${qNum}_plan`]) delete book.data[`${secId}_${qNum}_plan`];
 
                 const td = document.getElementById(`cell_${secId}_${qNum}`);
                 if (td) renderCellContent(td, secId, qNum, null);
@@ -3795,10 +3793,6 @@
             const book = store.books[currentBookId];
             book.data[`${secId}_${qNum}_history`] = history;
             
-            // 予定が入っていた場合は消化したとみなして削除
-            if (book.data[`${secId}_${qNum}_plan`]) {
-                delete book.data[`${secId}_${qNum}_plan`];
-            }
 
             const td = document.getElementById(`cell_${secId}_${qNum}`);
             if (td) renderCellContent(td, secId, qNum, null);
@@ -5076,8 +5070,6 @@
             if (selectedIdx < rec.history.length) {
                 rec.history.splice(selectedIdx, 1);
                 
-                // もし予定が入っていたら削除
-                if (rec.plan) delete rec.plan;
 
                 saveStore();
                 closePECellModal();
@@ -5133,10 +5125,6 @@
                 rec.history.push(attemptData);
             }
             
-            // 予定が入っていた場合は消化したとみなして削除
-            if (rec.plan) {
-                delete rec.plan;
-            }
             
             if (inputDate) lastUsedPEDate = inputDate;
             saveStore();
