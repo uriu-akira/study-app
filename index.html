@@ -567,6 +567,9 @@
         .plan-date-summary-chip.completed .completed-count { opacity:.48; }
         .plan-date-group-header { cursor:pointer; }
         .plan-date-group-header.expanded { box-shadow:0 0 0 2px rgba(20,184,166,.16), 0 2px 5px rgba(15,118,110,0.08); }
+        .plan-date-group-header.priority-date-selectable { outline:2px dashed #f59e0b; outline-offset:2px; }
+        .plan-date-group-header.priority-date-selected { border-color:#f59e0b; border-left-color:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.18); background:linear-gradient(90deg,#fef3c7 0%,#fffbeb 100%); color:#92400e; }
+        .plan-date-group-header.priority-date-selected .plan-date-group-toggle-hint { font-weight:900; opacity:1; }
         .plan-date-group-toggle-hint { font-size:.64rem; font-weight:700; opacity:.72; }
         @media (max-width:650px) {
             .plan-date-group-header { align-items:flex-start; }
@@ -810,7 +813,7 @@
                 <button class="portal-plan-view-btn" data-view="future" onclick="setPortalPlanView('future')">明日以降</button>
             </div>
             <div class="priority-mode-guide" id="portalPriorityModeGuide">
-                優先順設定モードです。日付ヘッダ内のタスクボタンを、優先したい順にタップしてください。最初が「1」、次が「2」…になります。設定後は優先順位が高いタスクから左上→右下の順に並びます。完了済みタスクは対象外です。もう一度「優先順」を押すと確定します。
+                優先順設定モードです。まず優先順位を設定したい日のヘッダをタップしてください。その日のタスクボタンだけが設定対象になります。未設定のボタンを押すと次の順位を付与し、設定済みのボタンをもう一度押すとその順位を解除して後ろの順位を自動で詰めます。途中で何度でも修正できます。
             </div>
             <div class="reschedule-guide" id="portalRescheduleGuide">
                 予定日変更モードです。変更したい明細をタップして複数選択し、新しい予定日を指定して「一括更新」を押してください。
@@ -1774,6 +1777,7 @@
         let portalPriorityEditMode = false;
         let portalPrioritySessionStarted = false;
         let portalPrioritySessionAssigned = [];
+        let portalPrioritySelectedDate = "";
         let currentPortalPriorityKeys = [];
         let portalRescheduleMode = false;
         let portalRescheduleSelectedKeys = [];
@@ -2380,6 +2384,7 @@
             portalPriorityEditMode = !portalPriorityEditMode;
             portalPrioritySessionStarted = false;
             portalPrioritySessionAssigned = [];
+            portalPrioritySelectedDate = "";
             const btn = document.getElementById("portalPriorityOrderBtn");
             const guide = document.getElementById("portalPriorityModeGuide");
             if (btn) {
@@ -2570,19 +2575,40 @@
             return Number.isFinite(rank) && rank > 0 ? rank : null;
         }
 
-        function assignPortalTaskPriority(planDate, summaryKey, ev) {
+        function selectPortalPriorityDate(planDate, ev) {
             if (ev) ev.stopPropagation();
             if (!portalPriorityEditMode) return;
-            const key = getPortalTaskPriorityKey(planDate, summaryKey);
+            portalPrioritySelectedDate = planDate;
+            renderPortalPlanList();
+        }
+
+        function assignPortalTaskPriority(planDate, summaryKey, ev) {
+            if (ev) ev.stopPropagation();
+            if (!portalPriorityEditMode || portalPrioritySelectedDate !== planDate) return;
             if (!store.planPriorities || typeof store.planPriorities !== "object") store.planPriorities = {};
-            if (!portalPrioritySessionStarted) {
-                currentPortalPriorityKeys.forEach(k => { delete store.planPriorities[k]; });
-                portalPrioritySessionStarted = true;
-                portalPrioritySessionAssigned = [];
+
+            const key = getPortalTaskPriorityKey(planDate, summaryKey);
+            const prefix = `task:${planDate}:`;
+            const existing = Number(store.planPriorities[key]);
+
+            // 設定済みを再タップした場合は解除し、その後ろの順位を1つずつ詰める
+            if (Number.isFinite(existing) && existing > 0) {
+                delete store.planPriorities[key];
+                Object.keys(store.planPriorities).forEach(k => {
+                    if (!k.startsWith(prefix)) return;
+                    const rank = Number(store.planPriorities[k]);
+                    if (Number.isFinite(rank) && rank > existing) store.planPriorities[k] = rank - 1;
+                });
+            } else {
+                // 未設定は、その日の現在の最大順位の次に追加
+                let maxRank = 0;
+                Object.keys(store.planPriorities).forEach(k => {
+                    if (!k.startsWith(prefix)) return;
+                    const rank = Number(store.planPriorities[k]);
+                    if (Number.isFinite(rank) && rank > maxRank) maxRank = rank;
+                });
+                store.planPriorities[key] = maxRank + 1;
             }
-            if (portalPrioritySessionAssigned.includes(key)) return;
-            portalPrioritySessionAssigned.push(key);
-            store.planPriorities[key] = portalPrioritySessionAssigned.length;
             saveStore();
             renderPortalPlanList();
         }
@@ -2640,9 +2666,10 @@
 
             return entries.map(v => {
                 const rank=getPortalTaskPriority(planDate,v.key);
-                const rankHtml = portalPriorityEditMode
+                const isPriorityDate = portalPriorityEditMode && portalPrioritySelectedDate === planDate;
+                const rankHtml = isPriorityDate
                     ? `<span class="task-priority-rank${rank===null?' task-priority-unset':''}">${rank===null?'未':rank}</span>`
-                    : (rank!==null ? `<span class="task-priority-rank">${rank}</span>` : "");
+                    : (!portalPriorityEditMode && rank!==null ? `<span class="task-priority-rank">${rank}</span>` : "");
                 let chipStyle="";
                 if (v.type === "book" && v.targetPlans && v.targetPlans[0]) {
                     const book=store.books[v.targetPlans[0].bookId];
@@ -2654,9 +2681,9 @@
                     return `<button type="button" class="plan-date-summary-chip${v.type==='adhoc'?' adhoc':''} completed"${chipStyle} disabled aria-disabled="true"><span class="completed-task-label">${rankHtml}${escapeHtml(v.label)} </span><span class="completed-count">${countText}</span></button>`;
                 }
                 const active=selected===v.key ? " active" : "";
-                const modeClass=portalPriorityEditMode ? " priority-selecting" : "";
+                const modeClass=isPriorityDate ? " priority-selecting" : "";
                 const handler=portalPriorityEditMode
-                    ? `assignPortalTaskPriority('${escapeHtml(planDate)}','${escapeHtml(v.key)}',event)`
+                    ? (isPriorityDate ? `assignPortalTaskPriority('${escapeHtml(planDate)}','${escapeHtml(v.key)}',event)` : `event.stopPropagation()`)
                     : `togglePortalPlanDateGroup('${escapeHtml(planDate)}','${escapeHtml(v.key)}',event)`;
                 const countText = v.type === "adhoc" ? "実績 未完了" : `予定${v.totalCount}問 ／ 実績${v.actualCount}問`;
                 return `<button type="button" class="plan-date-summary-chip${v.type==='adhoc'?' adhoc':''}${active}${modeClass}"${chipStyle} onclick="${handler}">${rankHtml}${escapeHtml(v.label)} ／ ${countText}</button>`;
@@ -2853,18 +2880,23 @@
                     const summaryHtml = buildPortalPlanDateSummary(sameDatePlans, item.planDate);
                     const expandedKey = portalPlanExpandedByDate[item.planDate] || "";
                     const header = document.createElement("div");
-                    header.className = "plan-date-group-header" + (expandedKey ? " expanded" : "");
+                    header.className = "plan-date-group-header" + (expandedKey ? " expanded" : "")
+                        + (portalPriorityEditMode ? " priority-date-selectable" : "")
+                        + (portalPriorityEditMode && portalPrioritySelectedDate === item.planDate ? " priority-date-selected" : "");
                     header.innerHTML = `
                         <div class="plan-date-group-header-wrap">
                             <div class="plan-date-group-main">
                                 <span>📅 ${dateLabel}</span>
                                 <span style="font-size:0.68rem; font-weight:700; opacity:0.8;">${relativeLabel}</span>
                                 <span class="plan-date-group-count">未完了 ${openSameDatePlans.length}件</span>
-                                <span class="plan-date-group-toggle-hint">${expandedKey ? "▲ 明細を閉じる" : "▼ ここをタップで全明細"}</span>
+                                <span class="plan-date-group-toggle-hint">${portalPriorityEditMode ? (portalPrioritySelectedDate === item.planDate ? "★ この日の優先順を編集中" : "☆ タップしてこの日を選択") : (expandedKey ? "▲ 明細を閉じる" : "▼ ここをタップで全明細")}</span>
                             </div>
                             <div class="plan-date-group-summary">${summaryHtml}</div>
                         </div>`;
-                    header.addEventListener("click", () => togglePortalPlanDateGroup(item.planDate, "all"));
+                    header.addEventListener("click", (ev) => {
+                        if (portalPriorityEditMode) { selectPortalPriorityDate(item.planDate, ev); return; }
+                        togglePortalPlanDateGroup(item.planDate, "all");
+                    });
                     listEl.appendChild(header);
                     lastPlanDate = item.planDate;
                 }
