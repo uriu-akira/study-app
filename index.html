@@ -538,8 +538,14 @@
         .plan-date-group-header-wrap { display:flex; flex-direction:column; gap:5px; min-width:0; flex:1; }
         .plan-date-group-main { display:flex; align-items:center; gap:10px; min-width:0; }
         .plan-date-group-summary { display:flex; flex-wrap:wrap; gap:5px 8px; font-size:0.72rem; font-weight:700; color:#115e59; line-height:1.45; }
-        .plan-date-summary-chip { background:rgba(255,255,255,.78); border:1px solid #99f6e4; border-radius:999px; padding:2px 8px; white-space:normal; }
+        .plan-date-summary-chip { background:rgba(255,255,255,.9); border:1px solid #99f6e4; border-radius:999px; padding:4px 9px; white-space:normal; cursor:pointer; font:inherit; color:inherit; font-weight:800; }
+        .plan-date-summary-chip:hover { filter:brightness(.97); transform:translateY(-1px); }
+        .plan-date-summary-chip.active { background:#0f766e; color:#fff; border-color:#0f766e; }
         .plan-date-summary-chip.adhoc { background:#faf5ff; border-color:#ddd6fe; color:#6d28d9; }
+        .plan-date-summary-chip.adhoc.active { background:#6d28d9; color:#fff; border-color:#6d28d9; }
+        .plan-date-group-header { cursor:pointer; }
+        .plan-date-group-header.expanded { box-shadow:0 0 0 2px rgba(20,184,166,.16), 0 2px 5px rgba(15,118,110,0.08); }
+        .plan-date-group-toggle-hint { font-size:.64rem; font-weight:700; opacity:.72; }
         @media (max-width:650px) {
             .plan-date-group-header { align-items:flex-start; }
             .plan-date-group-main { flex-wrap:wrap; }
@@ -1750,6 +1756,8 @@
         let portalRescheduleMode = false;
         let portalRescheduleSelectedKeys = [];
         let portalRescheduleItemsByKey = {};
+        // 日付ヘッダの展開状態。値は "all" または対象キー。未設定なら明細は閉じる。
+        let portalPlanExpandedByDate = {};
         let currentPortalPlanDay = ""; // 日別表示で選択中の日付
         let currentPortalPlanDayMode = "date"; // 'date' / 'carryover' / 'future' 
         let currentPortalPlanAvailableDates = []; // 現在の科目条件で予定がある日だけ
@@ -2493,39 +2501,63 @@
         }
 
         // ポータル画面の予定一覧表示
-        function buildPortalPlanDateSummary(plans) {
-            const grouped = new Map();
-            const adhocTitles = [];
+        function isPortalPlanCompleted(item) {
+            if (!item) return true;
+            if (item.type === "adhoc") {
+                const task = Array.isArray(store.adHocTasks) ? store.adHocTasks.find(t => t && t.id === item.taskId) : null;
+                return !!(task && task.completed);
+            }
+            const history = Array.isArray(item.history) ? item.history : [];
+            // 予定日以降に有効な解答実績があれば、その予定は完了扱い。
+            return history.some(h => h && h.date && h.date >= item.planDate && h.mark && h.mark !== "ー");
+        }
 
-            plans.forEach(item => {
+        function getPortalPlanSummaryKey(item) {
+            if (!item) return "";
+            if (item.type === "book") return `book:${item.bookId || item.title || ""}`;
+            if (item.type === "adhoc") return `adhoc:${item.taskId || item.title || ""}`;
+            return `exam:${item.subjKey || ""}:${item.title || ""}`;
+        }
+
+        function togglePortalPlanDateGroup(planDate, key, ev) {
+            if (ev) ev.stopPropagation();
+            const current = portalPlanExpandedByDate[planDate] || "";
+            portalPlanExpandedByDate[planDate] = current === key ? "" : key;
+            renderPortalPlanList();
+        }
+
+        function buildPortalPlanDateSummary(plans, planDate) {
+            const grouped = new Map();
+            const adhocItems = [];
+
+            plans.filter(item => !isPortalPlanCompleted(item)).forEach(item => {
                 if (item.type === "adhoc") {
-                    const title = String(item.title || "単発タスク").trim();
-                    adhocTitles.push(title || "単発タスク");
+                    adhocItems.push(item);
                     return;
                 }
-
+                const key = getPortalPlanSummaryKey(item);
                 if (item.type === "book") {
                     const title = String(item.title || (store.books[item.bookId] && store.books[item.bookId].title) || "問題集").trim();
-                    const key = `book:${item.bookId || title}`;
-                    const current = grouped.get(key) || { label: `【問題集：${title}】`, count: 0 };
-                    current.count += 1;
-                    grouped.set(key, current);
-                    return;
+                    const current = grouped.get(key) || { label: `【問題集：${title}】`, count: 0, key };
+                    current.count += 1; grouped.set(key, current);
+                } else {
+                    const title = String(item.title || "過去問・模試").trim();
+                    const current = grouped.get(key) || { label: `【過去問・模試：${title}】`, count: 0, key };
+                    current.count += 1; grouped.set(key, current);
                 }
-
-                const title = String(item.title || "過去問・模試").trim();
-                const key = `exam:${item.subjKey || ""}:${title}`;
-                const current = grouped.get(key) || { label: `【過去問・模試：${title}】`, count: 0 };
-                current.count += 1;
-                grouped.set(key, current);
             });
 
+            const selected = portalPlanExpandedByDate[planDate] || "";
             const chips = [];
             grouped.forEach(v => {
-                chips.push(`<span class="plan-date-summary-chip">${escapeHtml(v.label)} ${v.count}問</span>`);
+                const active = selected === v.key ? " active" : "";
+                chips.push(`<button type="button" class="plan-date-summary-chip${active}" onclick="togglePortalPlanDateGroup('${escapeHtml(planDate)}','${escapeHtml(v.key)}',event)">${escapeHtml(v.label)} ${v.count}問</button>`);
             });
-            adhocTitles.forEach(title => {
-                chips.push(`<span class="plan-date-summary-chip adhoc">単発：${escapeHtml(title)}</span>`);
+            adhocItems.forEach(item => {
+                const key = getPortalPlanSummaryKey(item);
+                const active = selected === key ? " active" : "";
+                const title = String(item.title || "単発タスク").trim() || "単発タスク";
+                chips.push(`<button type="button" class="plan-date-summary-chip adhoc${active}" onclick="togglePortalPlanDateGroup('${escapeHtml(planDate)}','${escapeHtml(key)}',event)">単発：${escapeHtml(title)}</button>`);
             });
             return chips.join("");
         }
@@ -2674,7 +2706,7 @@
                         : `${currentPortalPlanSubject}の学習予定`;
                 }
             }
-            badgeEl.innerText = `${visiblePlans.length}件`;
+            badgeEl.innerText = `${visiblePlans.filter(p => !isPortalPlanCompleted(p)).length}件`;
 
             if (visiblePlans.length === 0) {
                 const subjectLabel = currentPortalPlanSubject === "all" ? "" : `${currentPortalPlanSubject}の`;
@@ -2709,7 +2741,7 @@
             let lastPlanDate = null;
 
             visiblePlans.forEach(item => {
-                if (currentPortalPlanView !== "today" && item.planDate !== lastPlanDate) {
+                if (item.planDate !== lastPlanDate) {
                     const sameDateCount = visiblePlans.filter(p => p.planDate === item.planDate).length;
                     const dateObj = new Date(item.planDate + "T00:00:00");
                     const weekNames = ["日", "月", "火", "水", "木", "金", "土"];
@@ -2719,18 +2751,22 @@
                         : item.planDate;
                     const relativeLabel = item.planDate === todayStr ? "今日" : (item.planDate < todayStr ? "期限超過" : "予定");
                     const sameDatePlans = visiblePlans.filter(p => p.planDate === item.planDate);
-                    const summaryHtml = buildPortalPlanDateSummary(sameDatePlans);
+                    const openSameDatePlans = sameDatePlans.filter(p => !isPortalPlanCompleted(p));
+                    const summaryHtml = buildPortalPlanDateSummary(sameDatePlans, item.planDate);
+                    const expandedKey = portalPlanExpandedByDate[item.planDate] || "";
                     const header = document.createElement("div");
-                    header.className = "plan-date-group-header";
+                    header.className = "plan-date-group-header" + (expandedKey ? " expanded" : "");
                     header.innerHTML = `
                         <div class="plan-date-group-header-wrap">
                             <div class="plan-date-group-main">
                                 <span>📅 ${dateLabel}</span>
                                 <span style="font-size:0.68rem; font-weight:700; opacity:0.8;">${relativeLabel}</span>
-                                <span class="plan-date-group-count">${sameDateCount}件</span>
+                                <span class="plan-date-group-count">未完了 ${openSameDatePlans.length}件</span>
+                                <span class="plan-date-group-toggle-hint">${expandedKey ? "▲ 明細を閉じる" : "▼ ここをタップで全明細"}</span>
                             </div>
                             <div class="plan-date-group-summary">${summaryHtml}</div>
                         </div>`;
+                    header.addEventListener("click", () => togglePortalPlanDateGroup(item.planDate, "all"));
                     listEl.appendChild(header);
                     lastPlanDate = item.planDate;
                 }
@@ -2940,6 +2976,12 @@
                     card.appendChild(rankBadge);
                 }
                 
+                const expandedKeyForDate = portalPlanExpandedByDate[item.planDate] || "";
+                const summaryKeyForItem = getPortalPlanSummaryKey(item);
+                const showForHeaderFilter = !!expandedKeyForDate && (expandedKeyForDate === "all" || expandedKeyForDate === summaryKeyForItem);
+                const showForEditMode = portalPriorityEditMode || portalRescheduleMode;
+                const completedForDisplay = isPortalPlanCompleted(item);
+                card.style.display = (!completedForDisplay && (showForHeaderFilter || showForEditMode)) ? "flex" : "none";
                 listEl.appendChild(card);
             });
         }
