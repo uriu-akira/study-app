@@ -3332,6 +3332,15 @@
         function renderCellContent(td, secId, qNum, planDate) {
             const history = getHistoryArray(secId, qNum);
             const latest = getLatestEntry(secId, qNum);
+            const book = store.books[currentBookId];
+            const storedPlanDate = book?.data?.[`${secId}_${qNum}_plan`] || planDate || "";
+            const planBaseline = book?.data?.[`${secId}_${qNum}_planBaseline`];
+            const planValidCount = history.filter(h => h && h.mark && h.mark !== "ー").length;
+            const planConsumed = Number.isInteger(planBaseline) && planValidCount > planBaseline;
+
+            // 予定登録の黒反転は未消化の予定だけ。実績登録/取消の直後にもここで再判定する。
+            td.classList.remove("planned-cell");
+            if (storedPlanDate && !planConsumed) td.classList.add("planned-cell");
 
             const validHistory = history.filter(h => h && h.mark && h.mark !== "ー");
             const latestValidMark = validHistory.length > 0 ? validHistory[validHistory.length - 1].mark : "ー";
@@ -3374,9 +3383,9 @@
             if (latest.time) latestStatus += `${latestStatus ? ' ' : ''}${latest.time}分`;
 
             let planBadge = "";
-            if (planDate && !planConsumed) {
-                const pParts = planDate.split("-");
-                const shortPDate = pParts.length === 3 ? `${pParts[1]}/${pParts[2]}` : planDate;
+            if (storedPlanDate && !planConsumed) {
+                const pParts = storedPlanDate.split("-");
+                const shortPDate = pParts.length === 3 ? `${pParts[1]}/${pParts[2]}` : storedPlanDate;
                 planBadge = `<div class="planned-date-badge">📅 ${shortPDate}</div>`;
             }
 
