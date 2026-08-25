@@ -847,7 +847,7 @@
         </header>
         <div class="homework-wrap">
             <div class="homework-toolbar">
-                <div style="font-size:.78rem; color:#64748b;">まず塾種別と授業日を大枠として登録し、その枠の中に宿題を追加します。宿題期間は授業日を含む直近7日間を自動設定します。</div>
+                <div style="font-size:.78rem; color:#64748b;">まず塾種別・授業日・集計期間を大枠として登録し、その枠の中に宿題を追加します。集計期間の初期値は授業日を含む直近7日間です。</div>
                 <button class="btn btn-outline" onclick="renderHomeworkScreen()">再集計</button>
             </div>
             <div class="homework-filter-tabs" aria-label="宿題進捗の表示切替">
@@ -1358,7 +1358,16 @@
             </div>
             <div class="form-group">
                 <label class="form-label">授業日程</label>
-                <input type="date" class="modal-input" id="lessonGroupDateInput">
+                <input type="date" class="modal-input" id="lessonGroupDateInput" onchange="setLessonGroupDefaultRange()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">集計期間</label>
+                <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:center;">
+                    <input type="date" class="modal-input" id="lessonGroupFromInput">
+                    <span style="font-weight:800;color:#64748b;">～</span>
+                    <input type="date" class="modal-input" id="lessonGroupToInput">
+                </div>
+                <div style="font-size:.68rem;color:#64748b;margin-top:5px;">初期値は授業日を含む直近7日間です。必要に応じて変更できます。</div>
             </div>
             <div class="modal-actions" style="justify-content:space-between;">
                 <button type="button" class="btn" id="lessonGroupDeleteBtn" style="background:#ef4444; display:none;" onclick="deleteLessonGroup()">削除</button>
@@ -4267,7 +4276,7 @@
                     <div class="lesson-group-header ${bandClass}">
                         <div onclick="openLessonGroupModal('${g.id}')" style="cursor:pointer;">
                             <div class="lesson-group-title">${escapeHtml(g.type)}　${escapeHtml(formatLessonDateJP(g.lessonDate))}</div>
-                            <div class="lesson-group-sub">宿題期間：${escapeHtml(getSevenDayRange(g.lessonDate).fromDate)} ～ ${escapeHtml(g.lessonDate)}　・クリックで日程編集</div>
+                            <div class="lesson-group-sub">集計期間：${escapeHtml(getLessonGroupRange(g).fromDate)} ～ ${escapeHtml(getLessonGroupRange(g).toDate)}　・クリックで日程編集</div>
                         </div>
                         <button class="btn" style="background:${registerBtnBg};" onclick="event.stopPropagation();openHomeworkModal('', '${g.id}')">＋ 宿題登録</button>
                     </div>
@@ -4290,12 +4299,35 @@
             }).join('');
         }
 
+        function setLessonGroupDefaultRange() {
+            const lessonDate = document.getElementById('lessonGroupDateInput')?.value || '';
+            if (!lessonDate) return;
+            const range = getSevenDayRange(lessonDate);
+            const fromEl = document.getElementById('lessonGroupFromInput');
+            const toEl = document.getElementById('lessonGroupToInput');
+            if (fromEl) fromEl.value = range.fromDate;
+            if (toEl) toEl.value = range.toDate;
+        }
+
+        function getLessonGroupRange(g) {
+            if (!g) return {fromDate:'', toDate:''};
+            const fallback = getSevenDayRange(g.lessonDate);
+            return {
+                fromDate: g.fromDate || fallback.fromDate,
+                toDate: g.toDate || fallback.toDate
+            };
+        }
+
         function openLessonGroupModal(id='') {
             const g=id?(store.lessonGroups||[]).find(x=>x.id===id):null;
+            const lessonDate = g?.lessonDate || formatReportDate(new Date());
+            const range = g ? getLessonGroupRange(g) : getSevenDayRange(lessonDate);
             document.getElementById('lessonGroupIdInput').value=g?.id||'';
             document.getElementById('lessonGroupModalTitle').innerText=g?'🏫 塾日程を編集':'🏫 塾日程登録';
             document.getElementById('lessonGroupTypeInput').value=g?.type||'理系塾（通常）';
-            document.getElementById('lessonGroupDateInput').value=g?.lessonDate||formatReportDate(new Date());
+            document.getElementById('lessonGroupDateInput').value=lessonDate;
+            document.getElementById('lessonGroupFromInput').value=range.fromDate;
+            document.getElementById('lessonGroupToInput').value=range.toDate;
             document.getElementById('lessonGroupDeleteBtn').style.display=g?'block':'none';
             document.getElementById('lessonGroupModal').classList.add('active');
         }
@@ -4304,14 +4336,23 @@
             const id=document.getElementById('lessonGroupIdInput').value;
             const type=document.getElementById('lessonGroupTypeInput').value;
             const lessonDate=document.getElementById('lessonGroupDateInput').value;
+            const fromDate=document.getElementById('lessonGroupFromInput').value;
+            const toDate=document.getElementById('lessonGroupToInput').value;
             if(!lessonDate) return alert('授業日程を入力してください。');
+            if(!fromDate || !toDate) return alert('集計期間のFROM・TOを入力してください。');
+            if(fromDate > toDate) return alert('集計期間はFROMがTO以前になるように入力してください。');
             if((store.lessonGroups||[]).some(g=>g.id!==id&&g.type===type&&g.lessonDate===lessonDate)) return alert('同じ塾種別・授業日の大枠がすでに登録されています。');
-            const data={id:id||`lg_${Date.now()}`,type,lessonDate};
+            const data={id:id||`lg_${Date.now()}`,type,lessonDate,fromDate,toDate};
             if(id){const i=store.lessonGroups.findIndex(x=>x.id===id); if(i>=0) store.lessonGroups[i]=data; else store.lessonGroups.push(data);}
             else store.lessonGroups.push(data);
-            // 日程変更時は配下宿題の期間も自動更新
-            const range=getSevenDayRange(lessonDate);
-            (store.homeworks||[]).filter(h=>h.groupId===data.id).forEach(h=>{h.school=getLessonGroupBaseSchool(type);h.lessonDate=lessonDate;h.fromDate=range.fromDate;h.toDate=range.toDate;});
+
+            // 大枠の集計期間を配下の宿題にも反映する
+            (store.homeworks||[]).filter(h=>h.groupId===data.id).forEach(h=>{
+                h.school=getLessonGroupBaseSchool(type);
+                h.lessonDate=lessonDate;
+                h.fromDate=fromDate;
+                h.toDate=toDate;
+            });
             saveStore(); closeLessonGroupModal(); renderHomeworkScreen();
         }
         function deleteLessonGroup(){
@@ -4340,7 +4381,7 @@
             const gid=hw?.groupId||groupId;
             const g=(store.lessonGroups||[]).find(x=>x.id===gid);
             if(!g) return alert('先に塾日程の大枠を選択してください。');
-            const range=getSevenDayRange(g.lessonDate);
+            const range=getLessonGroupRange(g);
             document.getElementById('homeworkIdInput').value=hw?.id||'';
             document.getElementById('homeworkGroupIdInput').value=g.id;
             document.getElementById('homeworkGroupContext').innerText=`${g.type}　${formatLessonDateJP(g.lessonDate)}`;
@@ -4366,7 +4407,7 @@
             const targetId=linked?document.getElementById('homeworkTargetIdInput').value:'';
             const targetText=linked?'':document.getElementById('homeworkTargetFreeInput').value.trim();
             const title=document.getElementById('homeworkTitleInput').value.trim();
-            const range=getSevenDayRange(g.lessonDate);
+            const range=getLessonGroupRange(g);
             const targetCount=parseInt(document.getElementById('homeworkTargetCountInput').value,10);
             const manualActual=linked?0:Math.max(0,parseInt(document.getElementById('homeworkManualActualInput').value,10)||0);
             if(linked&&!targetId)return alert('対象を選択してください。'); if(!linked&&!targetText)return alert('対象を入力してください。'); if(!targetCount||targetCount<1)return alert('目標数は1以上で入力してください。');
