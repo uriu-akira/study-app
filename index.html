@@ -3276,7 +3276,15 @@
                         
                         // 予定日の取得
                         const planDate = book.data[`${sec.id}_${qNum}_plan`];
-                        if (planDate) {
+                        const planBaseline = book.data[`${sec.id}_${qNum}_planBaseline`];
+                        const planHistory = Array.isArray(book.data[`${sec.id}_${qNum}_history`])
+                            ? book.data[`${sec.id}_${qNum}_history`]
+                            : [];
+                        const planValidCount = planHistory.filter(h => h && h.mark && h.mark !== "ー").length;
+                        // 予定登録後に実績が増えていれば、予定は保持したまま黒反転のみ解除。
+                        // 予定日と実績日の前後関係は判定に使わない（前倒し学習対応）。
+                        const planConsumed = Number.isInteger(planBaseline) && planValidCount > planBaseline;
+                        if (planDate && !planConsumed) {
                             tdInput.classList.add("planned-cell");
                         }
                         
@@ -4924,11 +4932,13 @@
                             let latestMarkClass = "";
                             if(latest.mark === "〇") latestMarkClass = "maru";
                             else if(latest.mark === "×") latestMarkClass = "batsu";
-                            else if(latest.mark === "△") latestMarkClass = "tri";
-
-                            // 予定日の取得
+                            else if(latest.mark === "△") latestMarkClass = "tri";                            // 予定日の取得。予定登録後に実績が増えていれば黒反転のみ解除する。
+                            // 実績日が予定日より前でも消化済みとして扱う。
                             const planDate = rec.plan;
-                            let plannedClass = planDate ? "planned-cell" : "";
+                            const planBaseline = rec.planBaseline;
+                            const planValidCount = history.filter(h => h && h.mark && h.mark !== "ー").length;
+                            const planConsumed = Number.isInteger(planBaseline) && planValidCount > planBaseline;
+                            let plannedClass = (planDate && !planConsumed) ? "planned-cell" : "";
 
                             let planBadge = "";
                             if (planDate) {
