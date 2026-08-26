@@ -848,7 +848,10 @@
         <div class="homework-wrap">
             <div class="homework-toolbar">
                 <div style="font-size:.78rem; color:#64748b;">まず塾種別・授業日・集計期間を大枠として登録し、その枠の中に宿題を追加します。集計期間の初期値は授業日を含む直近7日間です。</div>
-                <button class="btn btn-outline" onclick="renderHomeworkScreen()">再集計</button>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span id="homeworkRecalcStatus" style="font-size:.68rem; color:#64748b;"></span>
+                    <button class="btn btn-outline" onclick="recalculateHomeworkScreen()">再集計</button>
+                </div>
             </div>
             <div class="homework-filter-tabs" aria-label="宿題進捗の表示切替">
                 <button class="homework-filter-btn active" data-filter="all" onclick="setHomeworkFilter('all')">すべて</button>
@@ -4107,7 +4110,9 @@
         function migrateLegacyHomeworkGroups() {
             if (!Array.isArray(store.lessonGroups)) store.lessonGroups = [];
             if (!Array.isArray(store.homeworks)) store.homeworks = [];
+            let changed = false;
             const groupMap = new Map(store.lessonGroups.map(g => [`${g.type}|${g.lessonDate}`, g.id]));
+
             store.homeworks.forEach(hw => {
                 if (hw.groupId && store.lessonGroups.some(g => g.id === hw.groupId)) return;
                 const lessonDate = hw.lessonDate || hw.toDate;
@@ -4116,15 +4121,37 @@
                 const type = `${base}塾（通常）`;
                 const key = `${type}|${lessonDate}`;
                 let gid = groupMap.get(key);
+
                 if (!gid) {
                     gid = `lg_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
-                    store.lessonGroups.push({id:gid, type, lessonDate});
-                    groupMap.set(key,gid);
+                    const fallbackRange = getSevenDayRange(lessonDate);
+                    store.lessonGroups.push({
+                        id: gid,
+                        type,
+                        lessonDate,
+                        fromDate: hw.fromDate || fallbackRange.fromDate,
+                        toDate: hw.toDate || fallbackRange.toDate
+                    });
+                    groupMap.set(key, gid);
+                    changed = true;
                 }
+
                 hw.groupId = gid;
                 hw.school = base;
                 hw.lessonDate = lessonDate;
+                changed = true;
             });
+
+            // 既存の塾日程に集計期間がない場合も補完して永続化する。
+            store.lessonGroups.forEach(g => {
+                if (!g || !g.lessonDate) return;
+                const fallbackRange = getSevenDayRange(g.lessonDate);
+                if (!g.fromDate) { g.fromDate = fallbackRange.fromDate; changed = true; }
+                if (!g.toDate) { g.toDate = fallbackRange.toDate; changed = true; }
+            });
+
+            if (changed) saveStore();
+            return changed;
         }
 
         function showHomeworkScreen() {
@@ -4205,8 +4232,26 @@
 
         function getHomeworkProgress(hw) {
             const actual = countHomeworkActual(hw);
-            const target = Math.max(1, parseInt(hw.targetCount, 10) || 1);
-            return { actual, target, percent:(actual/target)*100 };
+            const target = Math.max(1, parseInt(hw?.targetCount, 10) || 1);
+            const percent = Number.isFinite(actual) ? (actual / target) * 100 : 0;
+            return { actual:Number.isFinite(actual) ? actual : 0, target, percent:Number.isFinite(percent) ? percent : 0 };
+        }
+
+        function recalculateHomeworkScreen() {
+            migrateLegacyHomeworkGroups();
+            renderHomeworkScreen();
+            const status = document.getElementById('homeworkRecalcStatus');
+            if (status) {
+                const now = new Date();
+                const hh = String(now.getHours()).padStart(2, '0');
+                const mm = String(now.getMinutes()).padStart(2, '0');
+                const ss = String(now.getSeconds()).padStart(2, '0');
+                status.textContent = `再集計済み ${hh}:${mm}:${ss}`;
+                clearTimeout(recalculateHomeworkScreen._timer);
+                recalculateHomeworkScreen._timer = setTimeout(() => {
+                    if (status) status.textContent = '';
+                }, 5000);
+            }
         }
 
         function setHomeworkFilter(filter) {
@@ -4220,20 +4265,35 @@
 
 
         function countHomeworkPlannedCells(hw) {
-            if (!hw || hw.targetType !== 'book' || !hw.targetId) return null;
-            const book = store.books?.[hw.targetId];
-            if (!book || !book.data) return 0;
+            if (!hw || !hw.targetId) return null;
             const from = String(hw.fromDate || '');
             const to = String(hw.toDate || '');
             let count = 0;
-            (book.sections || []).forEach(sec => {
-                if (!sec || book.data['sec_disabled_' + sec.id]) return;
-                for (let q = 1; q <= (sec.count || 0); q++) {
-                    const d = book.data[`${sec.id}_${q}_plan`];
+
+            if (hw.targetType === 'book') {
+                const book = store.books?.[hw.targetId];
+                if (!book || !book.data) return 0;
+                (book.sections || []).forEach(sec => {
+                    if (!sec || book.data['sec_disabled_' + sec.id]) return;
+                    for (let q = 1; q <= Number(sec.count || 0); q++) {
+                        const d = String(book.data[`${sec.id}_${q}_plan`] || '');
+                        if (d && (!from || d >= from) && (!to || d <= to)) count++;
+                    }
+                });
+                return count;
+            }
+
+            if (hw.targetType === 'pe') {
+                const subj = store.pastExams?.[hw.targetId];
+                if (!subj || !subj.records) return 0;
+                Object.values(subj.records).forEach(rec => {
+                    const d = String(rec?.plan || '');
                     if (d && (!from || d >= from) && (!to || d <= to)) count++;
-                }
-            });
-            return count;
+                });
+                return count;
+            }
+
+            return null;
         }
 
         function startHomeworkPlanRegistration() {
@@ -4298,7 +4358,7 @@
                         const linkedBook=hw.targetType==='book' ? store.books?.[hw.targetId] : null;
                         const homeworkCardStyle=linkedBook?.bgColor ? `background:${linkedBook.bgColor};` : '';
                         const plannedCount = countHomeworkPlannedCells(hw);
-                        const plannedInfo = plannedCount === null ? '' : `<span class="homework-chip" style="background:rgba(255,255,255,.78);color:#334155;border:1px solid rgba(100,116,139,.25);">📅 期間内の予定 ${plannedCount}件</span>`;
+                        const plannedInfo = plannedCount === null ? '' : `<span class="homework-chip" style="background:rgba(255,255,255,.78);color:#334155;border:1px solid rgba(100,116,139,.25);">📅 期間内の予定 ${plannedCount}問</span>`;
                         return `<div class="${cls}" onclick="openHomeworkModal('${hw.id}','${g.id}')" style="cursor:pointer;${homeworkCardStyle}">
                             <div style="font-weight:800;color:#0f172a;">${escapeHtml(hw.title||getHomeworkTargetName(hw))}</div>
                             <div class="homework-meta"><span>${escapeHtml(getHomeworkTargetTypeLabel(hw.targetType))}｜${escapeHtml(getHomeworkTargetName(hw))}</span><span>${escapeHtml(hw.fromDate)} ～ ${escapeHtml(hw.toDate)}</span>${plannedInfo}</div>
