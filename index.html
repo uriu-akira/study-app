@@ -4160,18 +4160,25 @@
             if (!hw || !hw.fromDate || !hw.toDate) return 0;
             const fromDate = String(hw.fromDate), toDate = String(hw.toDate);
             let count = 0;
+
             if (hw.targetType === "book") {
                 const book = store.books?.[hw.targetId];
                 if (!book || !Array.isArray(book.sections) || !book.data) return 0;
                 book.sections.forEach(sec => {
                     if (book.data["sec_disabled_" + sec.id]) return;
-                    for (let q=1; q<=Number(sec.count || 0); q++) {
+                    for (let q = 1; q <= Number(sec.count || 0); q++) {
                         const planDate = String(book.data[`${sec.id}_${q}_plan`] || "");
-                        if (!planDate || planDate < fromDate || planDate > toDate) continue;
-                        const baseline = book.data[`${sec.id}_${q}_planBaseline`];
-                        const hist = Array.isArray(book.data[`${sec.id}_${q}_history`]) ? book.data[`${sec.id}_${q}_history`] : [];
-                        const validCount = hist.filter(h => isHomeworkHistoryEntry(h)).length;
-                        if (Number.isInteger(baseline) && validCount > baseline) count++;
+
+                        // 除外条件：予定日が集計期間TOより未来なら、期間内に実績があっても今回の宿題実績には含めない。
+                        if (planDate && planDate > toDate) continue;
+
+                        const hist = Array.isArray(book.data[`${sec.id}_${q}_history`])
+                            ? book.data[`${sec.id}_${q}_history`]
+                            : [];
+                        const hasActualInRange = hist.some(h =>
+                            isHomeworkHistoryEntry(h) && h.date >= fromDate && h.date <= toDate
+                        );
+                        if (hasActualInRange) count++;
                     }
                 });
             } else if (hw.targetType === "pe") {
@@ -4180,14 +4187,18 @@
                 Object.values(subj.records).forEach(rec => {
                     if (!rec) return;
                     const planDate = String(rec.plan || "");
-                    if (!planDate || planDate < fromDate || planDate > toDate) return;
-                    const baseline = rec.planBaseline;
+
+                    // 過去問・模試も同じ除外条件。
+                    if (planDate && planDate > toDate) return;
+
                     const hist = Array.isArray(rec.history) ? rec.history : [];
-                    const validCount = hist.filter(h => isHomeworkHistoryEntry(h)).length;
-                    if (Number.isInteger(baseline) && validCount > baseline) count++;
+                    const hasActualInRange = hist.some(h =>
+                        isHomeworkHistoryEntry(h) && h.date >= fromDate && h.date <= toDate
+                    );
+                    if (hasActualInRange) count++;
                 });
             } else {
-                count = Math.max(0, parseInt(hw.manualActual,10) || 0);
+                count = Math.max(0, parseInt(hw.manualActual, 10) || 0);
             }
             return count;
         }
