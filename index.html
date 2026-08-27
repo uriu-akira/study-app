@@ -933,9 +933,10 @@
             <div class="portal-plan-toolbar">
                 <div style="font-size:0.72rem; color:#64748b;">問題集・過去問の予定と、単発タスクをまとめて管理できます。</div>
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                    <button class="priority-order-btn" id="portalPriorityOrderBtn" type="button" onclick="togglePortalPriorityMode()">優先順</button>
-                    <button class="reschedule-btn" id="portalRescheduleBtn" type="button" onclick="togglePortalRescheduleMode()">予定日変更</button>
+                    <button class="btn" type="button" style="background:#14b8a6;color:#fff;" onclick="openPortalPlanTargetModal()">📅 予定登録</button>
                     <button class="adhoc-add-btn" type="button" onclick="openAdhocTaskModal()">＋ 単発タスク追加</button>
+                    <button class="reschedule-btn" id="portalRescheduleBtn" type="button" onclick="togglePortalRescheduleMode()">予定日変更</button>
+                    <button class="priority-order-btn" id="portalPriorityOrderBtn" type="button" onclick="togglePortalPriorityMode()">優先順</button>
                 </div>
             </div>
             <div class="portal-plan-tabs" id="portalPlanTabs">
@@ -1709,6 +1710,20 @@
             </div>
         </div>
     </div>
+    <!-- 学習予定リスト：予定登録対象選択モーダル -->
+    <div class="modal-overlay" id="portalPlanTargetModal">
+        <div class="modal-content" style="width:560px;max-width:95vw;">
+            <div class="modal-header">📅 予定登録する対象を選択</div>
+            <div style="font-size:.75rem;color:#64748b;margin-bottom:12px;">
+                問題集または過去問・模試を選択すると対象画面へ移動し、そのまま学習予定日の指定画面を開きます。
+            </div>
+            <div id="portalPlanTargetList" style="display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow:auto;"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" onclick="closePortalPlanTargetModal()">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 単発タスク追加・編集モーダル -->
     <div class="modal-overlay" id="adhocTaskModal">
         <div class="modal-content" style="width:420px; max-width:94vw;">
@@ -2719,6 +2734,72 @@
             if (item.type === "pe") return `pe:${item.subjKey}:${item.colId}:${item.qId}`;
             if (item.type === "adhoc") return `adhoc:${item.taskId}`;
             return "";
+        }
+
+        function openPortalPlanTargetModal() {
+            const list = document.getElementById("portalPlanTargetList");
+            if (!list) return;
+            list.innerHTML = "";
+
+            const subjectOrder = getDashboardSubjectOrder(
+                Array.from(new Set(Object.values(store.books || {}).map(b => b?.subject || "その他")))
+            );
+            subjectOrder.forEach(subject => {
+                const ids = Object.keys(store.books || {}).filter(id => (store.books[id]?.subject || "その他") === subject);
+                if (!ids.length) return;
+                const title = document.createElement("div");
+                title.style.cssText = "font-size:.75rem;font-weight:900;color:#475569;margin-top:4px;";
+                title.textContent = `【${subject}】問題集`;
+                list.appendChild(title);
+
+                getDashboardBookOrder(subject, ids).forEach(bookId => {
+                    const book = store.books[bookId];
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "btn btn-outline";
+                    btn.style.cssText = "width:100%;text-align:left;justify-content:flex-start;padding:9px 12px;";
+                    btn.textContent = `📘 ${book?.title || bookId}`;
+                    btn.onclick = () => startPortalBookPlanRegistration(bookId);
+                    list.appendChild(btn);
+                });
+            });
+
+            const peMap = {english:"英語", math:"数学", physics:"物理", chemistry:"化学", japanese:"国語"};
+            const peKeys = ["english","math","physics","chemistry","japanese"].filter(k => store.pastExams?.[k]);
+            if (peKeys.length) {
+                const title = document.createElement("div");
+                title.style.cssText = "font-size:.75rem;font-weight:900;color:#475569;margin-top:10px;";
+                title.textContent = "【過去問・模試】";
+                list.appendChild(title);
+                peKeys.forEach(key => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "btn btn-outline";
+                    btn.style.cssText = "width:100%;text-align:left;justify-content:flex-start;padding:9px 12px;";
+                    btn.textContent = `🎓 ${store.pastExams[key]?.title || peMap[key] || key}`;
+                    btn.onclick = () => startPortalPEPlanRegistration(key);
+                    list.appendChild(btn);
+                });
+            }
+
+            document.getElementById("portalPlanTargetModal").classList.add("active");
+        }
+
+        function closePortalPlanTargetModal() {
+            document.getElementById("portalPlanTargetModal").classList.remove("active");
+        }
+
+        function startPortalBookPlanRegistration(bookId) {
+            closePortalPlanTargetModal();
+            openBookDetail(bookId);
+            setTimeout(() => openPlanDateModal("book"), 0);
+        }
+
+        function startPortalPEPlanRegistration(subjectKey) {
+            closePortalPlanTargetModal();
+            currentPESubject = subjectKey;
+            showPastExamScreen();
+            setTimeout(() => openPlanDateModal("pe"), 0);
         }
 
         function updatePortalRescheduleGuide() {
