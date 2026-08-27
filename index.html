@@ -2237,9 +2237,19 @@
         // ==========================================
         // 学習予定入力機能
         // ==========================================
+        function getLocalTodayString() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, "0");
+            const d = String(now.getDate()).padStart(2, "0");
+            return `${y}-${m}-${d}`;
+        }
+
         function openPlanDateModal(type, defaultDate = "") {
             currentPlanType = type;
-            document.getElementById("planDateInput").value = defaultDate || new Date().toISOString().split('T')[0];
+            // 呼び出し元に関係なく、学習予定日の初期値は必ず当日のローカル日付にする。
+            // defaultDate は互換性のため引数として残すが、初期値には使用しない。
+            document.getElementById("planDateInput").value = getLocalTodayString();
             document.getElementById("planDateModal").classList.add("active");
         }
 
