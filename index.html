@@ -139,23 +139,109 @@
         .summary-label { font-size: 0.7rem; font-weight: bold; color: var(--text-muted); }
         .summary-value { font-size: 1.4rem; font-weight: 800; color: #0f172a; }
 
-        .subject-section { margin-bottom: 32px; }
+        .subject-section { margin-bottom: 12px; }
         .subject-title {
             font-size: 1.1rem;
             font-weight: 800;
             color: #1e293b;
-            margin-bottom: 12px;
+            margin-bottom: 0;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 8px;
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 6px;
+            border: 1px solid #e2e8f0;
+            border-left: 5px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px 12px;
+            background: #ffffff;
+            cursor: pointer;
+            user-select: none;
+        }
+        .subject-title-main {
+            display:flex;
+            align-items:center;
+            gap:8px;
+            min-width:0;
+        }
+        .subject-title-count {
+            font-size:.72rem;
+            color:#64748b;
+            font-weight:800;
+            margin-left:4px;
+        }
+        .subject-toggle-btn {
+            width:32px;
+            height:32px;
+            min-width:32px;
+            border-radius:50%;
+            border:1px solid #cbd5e1;
+            background:#f8fafc;
+            color:#334155;
+            font-size:1.25rem;
+            font-weight:900;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            cursor:pointer;
+            line-height:1;
+        }
+        .subject-section.open .subject-title {
+            margin-bottom:12px;
+        }
+        .subject-section.open .subject-toggle-btn {
+            background:#e2e8f0;
         }
 
         .book-grid {
-            display: grid;
+            display: none;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 16px;
+        }
+        .subject-section.open .book-grid {
+            display:grid;
+        }
+
+        .dashboard-order-guide {
+            display:none;
+            margin:0 0 12px;
+            padding:9px 12px;
+            border-radius:10px;
+            background:#fff7ed;
+            border:1px solid #fdba74;
+            color:#9a3412;
+            font-size:.75rem;
+            font-weight:800;
+        }
+        .dashboard-order-guide.active { display:block; }
+        .dashboard-order-controls {
+            display:flex;
+            align-items:center;
+            gap:5px;
+            margin-left:auto;
+        }
+        .dashboard-order-move {
+            width:30px;
+            height:30px;
+            border:1px solid #cbd5e1;
+            border-radius:8px;
+            background:#fff;
+            color:#334155;
+            font-size:.9rem;
+            font-weight:900;
+            cursor:pointer;
+        }
+        .dashboard-order-move:disabled { opacity:.28; cursor:default; }
+        .book-card.order-editing {
+            outline:2px dashed #f59e0b;
+            outline-offset:2px;
+        }
+        .book-order-controls {
+            display:flex;
+            gap:5px;
+            justify-content:flex-start;
+            padding-top:8px;
+            margin-top:8px;
+            border-top:1px dashed rgba(0,0,0,.12);
         }
 
         .book-card {
@@ -795,6 +881,7 @@
                     <button class="btn" style="background-color: #14b8a6;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" style="background-color: var(--accent-color);" onclick="openReportModal()">📊 実績</button>
+                    <button class="btn btn-outline" id="dashboardOrderBtn" onclick="toggleDashboardOrderMode()">↕ 表示順</button>
                     <button class="btn" onclick="openBookModal()">+ 問題集を追加</button>
                     <button class="btn" style="background-color: #8b5cf6;" onclick="showPastExamScreen()">🎓 過去問・模試管理</button>
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
@@ -825,6 +912,7 @@
                 </div>
             </div>
 
+            <div id="dashboardOrderGuide" class="dashboard-order-guide">表示順編集モードです。教科は ▲▼、問題集は教科内の ◀▶ で順番を変更できます。変更内容は自動保存されます。</div>
             <div id="dashboardGroupsContainer"></div>
         </div>
     </div>
@@ -2185,6 +2273,90 @@
             renderPortalPlanList();
         }
 
+        const dashboardOpenSubjects = new Set();
+        let dashboardOrderEditMode = false;
+
+        function ensureDashboardOrderData() {
+            if (!Array.isArray(store.dashboardSubjectOrder)) store.dashboardSubjectOrder = [];
+            if (!store.dashboardBookOrder || typeof store.dashboardBookOrder !== "object") store.dashboardBookOrder = {};
+        }
+
+        function getDashboardSubjectOrder(existingSubjects) {
+            ensureDashboardOrderData();
+            const baseDefault = ["英語", "数学", "国語", "物理", "化学", "生物", "社会", "その他"];
+            const result = [];
+            store.dashboardSubjectOrder.forEach(s => {
+                if (existingSubjects.includes(s) && !result.includes(s)) result.push(s);
+            });
+            baseDefault.forEach(s => {
+                if (existingSubjects.includes(s) && !result.includes(s)) result.push(s);
+            });
+            existingSubjects.forEach(s => {
+                if (!result.includes(s)) result.push(s);
+            });
+            return result;
+        }
+
+        function getDashboardBookOrder(subject, ids) {
+            ensureDashboardOrderData();
+            const saved = Array.isArray(store.dashboardBookOrder[subject]) ? store.dashboardBookOrder[subject] : [];
+            const result = saved.filter(id => ids.includes(id));
+            ids.forEach(id => { if (!result.includes(id)) result.push(id); });
+            return result;
+        }
+
+        function toggleDashboardOrderMode() {
+            dashboardOrderEditMode = !dashboardOrderEditMode;
+            const btn = document.getElementById("dashboardOrderBtn");
+            const guide = document.getElementById("dashboardOrderGuide");
+            if (btn) {
+                btn.classList.toggle("active", dashboardOrderEditMode);
+                btn.textContent = dashboardOrderEditMode ? "✓ 表示順確定" : "↕ 表示順";
+            }
+            if (guide) guide.classList.toggle("active", dashboardOrderEditMode);
+            if (dashboardOrderEditMode) {
+                Object.keys(store.books || {}).forEach(id => {
+                    const s = store.books[id]?.subject || "その他";
+                    dashboardOpenSubjects.add(s);
+                });
+            }
+            renderDashboard();
+        }
+
+        function moveDashboardSubject(subject, delta, ev) {
+            if (ev) ev.stopPropagation();
+            ensureDashboardOrderData();
+            const existing = Array.from(new Set(Object.values(store.books || {}).map(b => b?.subject || "その他")));
+            const order = getDashboardSubjectOrder(existing);
+            const i = order.indexOf(subject), j = i + delta;
+            if (i < 0 || j < 0 || j >= order.length) return;
+            [order[i], order[j]] = [order[j], order[i]];
+            store.dashboardSubjectOrder = order;
+            saveStore();
+            renderDashboard();
+        }
+
+        function moveDashboardBook(subject, bookId, delta, ev) {
+            if (ev) ev.stopPropagation();
+            ensureDashboardOrderData();
+            const ids = Object.keys(store.books || {}).filter(id => (store.books[id]?.subject || "その他") === subject);
+            const order = getDashboardBookOrder(subject, ids);
+            const i = order.indexOf(bookId), j = i + delta;
+            if (i < 0 || j < 0 || j >= order.length) return;
+            [order[i], order[j]] = [order[j], order[i]];
+            store.dashboardBookOrder[subject] = order;
+            saveStore();
+            dashboardOpenSubjects.add(subject);
+            renderDashboard();
+        }
+
+        function toggleDashboardSubject(subject) {
+            if (dashboardOrderEditMode) return;
+            if (dashboardOpenSubjects.has(subject)) dashboardOpenSubjects.delete(subject);
+            else dashboardOpenSubjects.add(subject);
+            renderDashboard();
+        }
+
         function renderDashboard() {
             const container = document.getElementById("dashboardGroupsContainer");
             if (!container) return;
@@ -2192,7 +2364,7 @@
 
             let globalTotalBooks = 0; let globalTotalQ = 0; let globalAnsweredQ = 0;
             const groups = {};
-            const subjectOrder = ["英語", "数学", "国語", "物理", "化学", "生物", "社会", "その他"];
+            const defaultSubjectOrder = ["英語", "数学", "国語", "物理", "化学", "生物", "社会", "その他"];
 
             Object.keys(store.books).forEach(bId => {
                 const book = store.books[bId];
@@ -2212,17 +2384,34 @@
                 groups[book.subject].push(bId);
             });
 
-            subjectOrder.forEach(subj => {
+            const subjectOrder = getDashboardSubjectOrder(Object.keys(groups));
+            subjectOrder.forEach((subj, subjectIndex) => {
                 if (!groups[subj] || groups[subj].length === 0) return;
 
                 const meta = subjectMeta[subj] || subjectMeta["その他"];
                 const sectionDiv = document.createElement("div");
-                sectionDiv.className = "subject-section";
-                const titleHtml = `<div class="subject-title" style="border-bottom-color: ${meta.color};"><span>${meta.icon}</span> ${subj}</div>`;
+                const isOpen = dashboardOpenSubjects.has(subj);
+                sectionDiv.className = "subject-section" + (isOpen ? " open" : "");
+                const bookCount = groups[subj].length;
+                const titleHtml = `
+                    <div class="subject-title" style="border-left-color:${meta.color};" onclick="toggleDashboardSubject('${subj}')">
+                        <div class="subject-title-main">
+                            <span>${meta.icon}</span>
+                            <span>${subj}</span>
+                            <span class="subject-title-count">${bookCount}冊</span>
+                        </div>
+                        ${dashboardOrderEditMode ? `
+                            <div class="dashboard-order-controls">
+                                <button type="button" class="dashboard-order-move" ${subjectIndex===0?'disabled':''} onclick="moveDashboardSubject('${subj}',-1,event)">▲</button>
+                                <button type="button" class="dashboard-order-move" ${subjectIndex===subjectOrder.length-1?'disabled':''} onclick="moveDashboardSubject('${subj}',1,event)">▼</button>
+                            </div>` : `
+                            <button type="button" class="subject-toggle-btn" aria-label="${isOpen ? '閉じる' : '開く'}" onclick="event.stopPropagation(); toggleDashboardSubject('${subj}')">${isOpen ? '−' : '+'}</button>`}
+                    </div>`;
                 const gridDiv = document.createElement("div");
                 gridDiv.className = "book-grid";
 
-                groups[subj].forEach(bId => {
+                const orderedBookIds = getDashboardBookOrder(subj, groups[subj]);
+                orderedBookIds.forEach((bId, bookIndex) => {
                     try {
                         const book = store.books[bId];
                         if (!book.data) book.data = {};
@@ -2255,11 +2444,11 @@
                         const bookBgColor = book.bgColor || "#ffffff";
 
                         const card = document.createElement("div");
-                        card.className = "book-card";
+                        card.className = "book-card" + (dashboardOrderEditMode ? " order-editing" : "");
                         card.style.backgroundColor = bookBgColor;
                         card.style.borderColor = meta.color;
                         card.innerHTML = `
-                            <div class="book-card-main" onclick="openBookDetail('${bId}')">
+                            <div class="book-card-main" onclick="${dashboardOrderEditMode ? '' : `openBookDetail('${bId}')`}">
                                 <div class="book-card-header">
                                     <div class="book-title">${book.title || "名称未設定"}</div>
                                     <div class="subject-badge" style="background-color: #ffffff; color: ${meta.text}; border: 1px solid ${meta.color}33;">${subj}</div>
@@ -2277,10 +2466,16 @@
                                     </div>
                                 </div>
                             </div>
+                            ${dashboardOrderEditMode ? `
+                            <div class="book-order-controls">
+                                <button type="button" class="dashboard-order-move" ${bookIndex===0?'disabled':''} onclick="moveDashboardBook('${subj}','${bId}',-1,event)">◀</button>
+                                <span style="font-size:.68rem;color:#64748b;font-weight:800;align-self:center;">${bookIndex+1} / ${orderedBookIds.length}</span>
+                                <button type="button" class="dashboard-order-move" ${bookIndex===orderedBookIds.length-1?'disabled':''} onclick="moveDashboardBook('${subj}','${bId}',1,event)">▶</button>
+                            </div>` : `
                             <div class="card-actions">
                                 <button class="btn btn-outline" style="font-size: 0.65rem; padding: 4px 8px; border-color: ${meta.color}; background: rgba(255,255,255,0.7);" onclick="openBookModal('${bId}')">✏️ 編集</button>
                                 <button class="btn btn-danger-outline" style="font-size: 0.65rem; padding: 4px 8px; background: rgba(255,255,255,0.7);" onclick="deleteBook('${bId}')">削除</button>
-                            </div>
+                            </div>`}
                         `;
                         gridDiv.appendChild(card);
                     } catch(e) {
