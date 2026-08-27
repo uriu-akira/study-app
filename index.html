@@ -648,6 +648,33 @@
             letter-spacing: .02em;
             box-shadow: 0 2px 5px rgba(0,0,0,.2);
         }
+
+        /* 学習実績レポートの明細から開いたセルも、宿題実績と同等の強さで表示 */
+        .report-highlight-cell.report-detail-highlight-cell {
+            outline: 5px solid #0284c7 !important;
+            outline-offset: -5px;
+            box-shadow:
+                inset 0 0 0 9999px rgba(56, 189, 248, 0.36),
+                inset 0 0 0 2px #fff,
+                0 0 0 3px rgba(2, 132, 199, 0.45),
+                0 0 14px rgba(2, 132, 199, 0.55) !important;
+            transform: scale(1.035);
+            z-index: 4;
+        }
+        .report-highlight-cell.report-detail-highlight-cell::after {
+            content: "★ レポート実績";
+            top: 3px;
+            right: 3px;
+            padding: 3px 7px;
+            border-radius: 7px;
+            background: #0369a1;
+            color: #fff;
+            font-size: 0.62rem;
+            font-weight: 900;
+            line-height: 1.25;
+            letter-spacing: .02em;
+            box-shadow: 0 2px 5px rgba(0,0,0,.2);
+        }
         .history-list-box { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 6px; font-size: 0.72rem; max-height: 90px; overflow-y: auto; }
         .history-item { 
             display: flex; justify-content: space-between; padding: 4px 6px; border-bottom: 1px dashed var(--border-color);
@@ -987,6 +1014,7 @@
             <div class="header-top" id="detailHeaderNormal">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
+                    <button class="btn" id="reportBackBtn" style="display:none; background:#0ea5e9; color:white;" onclick="returnToReportFromDetail()">← 実績レポートへ戻る</button>
                     <h1 id="detailBookTitle"></h1>
                 </div>
                 <div style="display: flex; gap: 6px;">
@@ -2028,7 +2056,11 @@
 
         function clearReportHighlights() {
             reportHighlightState = null;
-            document.querySelectorAll(".report-highlight-cell").forEach(el => el.classList.remove("report-highlight-cell", "homework-actual-highlight-cell"));
+            document.querySelectorAll(".report-highlight-cell").forEach(el =>
+                el.classList.remove("report-highlight-cell", "homework-actual-highlight-cell", "report-detail-highlight-cell")
+            );
+            const backBtn = document.getElementById("reportBackBtn");
+            if (backBtn) backBtn.style.display = "none";
         }
 
         function applyReportHighlights() {
@@ -2041,10 +2073,14 @@
                     cell.classList.add("report-highlight-cell");
                     if (reportHighlightState.source === "homework") {
                         cell.classList.add("homework-actual-highlight-cell");
+                    } else if (reportHighlightState.source === "report") {
+                        cell.classList.add("report-detail-highlight-cell");
                     }
                     found.push(cell);
                 }
             });
+            const backBtn = document.getElementById("reportBackBtn");
+            if (backBtn) backBtn.style.display = reportHighlightState.source === "report" ? "inline-flex" : "none";
             if (found.length > 0) {
                 setTimeout(() => found[0].scrollIntoView({ behavior: "smooth", block: "center", inline: "center" }), 80);
             }
@@ -3262,10 +3298,18 @@
         function openReportBookDetail(bookId, encodedCells) {
             let cells = [];
             try { cells = JSON.parse(decodeURIComponent(encodedCells)); } catch (e) { cells = []; }
-            reportHighlightState = { bookId, cells };
+            reportHighlightState = { bookId, cells, source: "report" };
             closeReportModal();
             openBookDetail(bookId, true);
             requestAnimationFrame(() => applyReportHighlights());
+        }
+
+        function returnToReportFromDetail() {
+            // レポート条件と集計結果はモーダルを閉じた時点の内容をそのまま保持している。
+            clearReportHighlights();
+            renderDashboard();
+            switchScreen("dashboardScreen");
+            document.getElementById("reportModal").classList.add("active");
         }
 
         function initTable() {
