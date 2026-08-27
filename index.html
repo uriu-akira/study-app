@@ -4126,12 +4126,12 @@
                 const entry = history[selectedIdx];
                 setTempMark(entry.mark || "ー");
                 document.getElementById("modalTime").value = entry.time || "";
-                document.getElementById("modalDate").value = entry.date || new Date().toISOString().split('T')[0];
+                document.getElementById("modalDate").value = entry.date || formatLocalDate(new Date());
                 deleteBtn.style.display = "block"; 
             } else {
                 setTempMark("ー");
                 document.getElementById("modalTime").value = "";
-                document.getElementById("modalDate").value = new Date().toISOString().split('T')[0];
+                document.getElementById("modalDate").value = formatLocalDate(new Date());
                 deleteBtn.style.display = "none"; 
             }
         }
@@ -5687,14 +5687,14 @@
                 setTempPEMark(entry.mark || "ー");
                 document.getElementById("peCellScoreInput").value = entry.score || "";
                 document.getElementById("peCellTimeInput").value = entry.time || "";
-                document.getElementById("peCellDateInput").value = entry.date || new Date().toISOString().split('T')[0];
+                document.getElementById("peCellDateInput").value = entry.date || formatLocalDate(new Date());
                 document.getElementById("peCellNoteInput").value = entry.note || "";
                 deleteBtn.style.display = "block"; 
             } else {
                 setTempPEMark("ー");
                 document.getElementById("peCellScoreInput").value = "";
                 document.getElementById("peCellTimeInput").value = "";
-                document.getElementById("peCellDateInput").value = new Date().toISOString().split('T')[0];
+                document.getElementById("peCellDateInput").value = formatLocalDate(new Date());
                 document.getElementById("peCellNoteInput").value = "";
                 deleteBtn.style.display = "none"; 
             }
