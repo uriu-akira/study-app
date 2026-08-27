@@ -621,6 +621,33 @@
             line-height: 1.4;
             pointer-events: none;
         }
+
+        /* 宿題進捗の「実績値」から開いたセルは、通常の実績レポートより強く目立たせる */
+        .report-highlight-cell.homework-actual-highlight-cell {
+            outline: 5px solid #f97316 !important;
+            outline-offset: -5px;
+            box-shadow:
+                inset 0 0 0 9999px rgba(250, 204, 21, 0.42),
+                inset 0 0 0 2px #fff,
+                0 0 0 3px rgba(249, 115, 22, 0.45),
+                0 0 14px rgba(249, 115, 22, 0.55) !important;
+            transform: scale(1.035);
+            z-index: 4;
+        }
+        .report-highlight-cell.homework-actual-highlight-cell::after {
+            content: "★ 宿題実績";
+            top: 3px;
+            right: 3px;
+            padding: 3px 7px;
+            border-radius: 7px;
+            background: #ea580c;
+            color: #fff;
+            font-size: 0.62rem;
+            font-weight: 900;
+            line-height: 1.25;
+            letter-spacing: .02em;
+            box-shadow: 0 2px 5px rgba(0,0,0,.2);
+        }
         .history-list-box { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 6px; font-size: 0.72rem; max-height: 90px; overflow-y: auto; }
         .history-item { 
             display: flex; justify-content: space-between; padding: 4px 6px; border-bottom: 1px dashed var(--border-color);
@@ -2001,17 +2028,20 @@
 
         function clearReportHighlights() {
             reportHighlightState = null;
-            document.querySelectorAll(".report-highlight-cell").forEach(el => el.classList.remove("report-highlight-cell"));
+            document.querySelectorAll(".report-highlight-cell").forEach(el => el.classList.remove("report-highlight-cell", "homework-actual-highlight-cell"));
         }
 
         function applyReportHighlights() {
-            document.querySelectorAll(".report-highlight-cell").forEach(el => el.classList.remove("report-highlight-cell"));
+            document.querySelectorAll(".report-highlight-cell").forEach(el => el.classList.remove("report-highlight-cell", "homework-actual-highlight-cell"));
             if (!reportHighlightState || reportHighlightState.bookId !== currentBookId) return;
             const found = [];
             reportHighlightState.cells.forEach(item => {
                 const cell = document.getElementById(`cell_${item.secId}_${item.qNum}`);
                 if (cell) {
                     cell.classList.add("report-highlight-cell");
+                    if (reportHighlightState.source === "homework") {
+                        cell.classList.add("homework-actual-highlight-cell");
+                    }
                     found.push(cell);
                 }
             });
@@ -4279,7 +4309,7 @@
                 alert("この宿題の集計条件に該当する実績セルはありません。");
                 return;
             }
-            reportHighlightState = { bookId: hw.targetId, cells };
+            reportHighlightState = { bookId: hw.targetId, cells, source: "homework" };
             openBookDetail(hw.targetId, true);
             requestAnimationFrame(() => applyReportHighlights());
         }
