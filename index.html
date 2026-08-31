@@ -457,6 +457,13 @@
         .plan-selected .cell-subinfo, .plan-selected .cell-history-flow { color: #cbd5e1 !important; }
         .plan-selected .q-number-row, .plan-selected .q-diff-stars, .plan-selected .cell-latest-status span { color: #f8fafc !important; }
         
+        .weekly-plan-tabs { display:none; flex-wrap:wrap; gap:6px; align-items:center; margin:8px 0 2px; width:100%; }
+        .weekly-plan-tabs.active { display:flex; }
+        .weekly-plan-tab { border:1px solid #94a3b8; background:#fff; color:#334155; border-radius:9px; padding:6px 9px; font-size:.68rem; font-weight:800; cursor:pointer; }
+        .weekly-plan-tab.active { background:#0ea5e9; color:#fff; border-color:#0ea5e9; box-shadow:0 0 0 2px rgba(14,165,233,.18); }
+        .weekly-plan-tab .count { display:block; font-size:.58rem; margin-top:2px; opacity:.9; }
+        .weekly-plan-help { font-size:.64rem; color:#64748b; margin-left:4px; }
+
         .planned-date-badge {
             position: absolute; top: -6px; right: -6px;
             background-color: #f59e0b; color: #fff;
@@ -1041,6 +1048,7 @@
                     <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()">✅ 予定登録</button>
                 </div>
             </div>
+            <div class="weekly-plan-tabs" id="peWeeklyPlanTabs"></div>
 
             <div class="pe-tabs" id="peTabs"></div>
         </header>
@@ -1122,6 +1130,7 @@
                     <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()">✅ 予定登録</button>
                 </div>
             </div>
+            <div class="weekly-plan-tabs" id="detailWeeklyPlanTabs"></div>
 
             <div class="stats-bar">
                 <div class="stat-item">
@@ -1238,9 +1247,13 @@
                 <input type="date" class="modal-input" id="planDateInput">
                 <span class="form-help" style="margin-top: 4px; color: #f59e0b;">※日付を空欄にして開始すると、選択したセルの「予定解除」ができます。</span>
             </div>
-            <div class="modal-actions" style="margin-top: 12px;">
+            <div style="font-size:.7rem;color:#475569;background:#f8fafc;border-radius:8px;padding:8px;margin-top:8px;">
+                <b>週間まとめ登録</b>：指定日から7日分の日付タブを作り、日付を切り替えながらセルを選択して最後に一括登録します。
+            </div>
+            <div class="modal-actions" style="margin-top: 12px; flex-wrap:wrap;">
                 <button type="button" class="btn btn-outline" onclick="closePlanDateModal()">キャンセル</button>
-                <button type="button" class="btn" style="background-color: #14b8a6; color: white;" onclick="startPlanMode()">選択モード開始</button>
+                <button type="button" class="btn btn-outline" onclick="startPlanMode(false)">単日登録</button>
+                <button type="button" class="btn" style="background-color: #14b8a6; color: white;" onclick="startPlanMode(true)">📅 週間まとめ登録</button>
             </div>
         </div>
     </div>
@@ -1943,7 +1956,10 @@
         let isPlanMode = false;
         let currentPlanType = ""; // 'book' or 'pe'
         let currentPlanDate = "";
-        let selectedPlanCells = []; // array of { id1: secId/colId, id2: qNum/qId }
+        let selectedPlanCells = []; // 単日モードの選択
+        let isWeeklyPlanMode = false;
+        let weeklyPlanDates = [];
+        let weeklyPlanAssignments = {}; // date -> [{id1,id2}]
         let currentPortalPlanSubject = "all"; // 予定一覧の科目タブ
         let currentPortalPlanView = "today"; // 'list' / 'carryover' / 'today' / 'future'
         let portalPriorityEditMode = false;
@@ -2533,28 +2549,69 @@
             document.getElementById("planDateModal").classList.remove("active");
         }
 
-        function startPlanMode() {
-            currentPlanDate = document.getElementById("planDateInput").value;
-            isPlanMode = true;
-            selectedPlanCells = [];
-            closePlanDateModal();
+        function addLocalDays(dateStr, days) {
+            const [y,m,d] = String(dateStr).split("-").map(Number);
+            const dt = new Date(y, m-1, d);
+            dt.setDate(dt.getDate() + days);
+            return formatLocalDate(dt);
+        }
 
+        function startPlanMode(weekly = false) {
+            currentPlanDate = document.getElementById("planDateInput").value;
+            if (weekly && !currentPlanDate) return alert("週間まとめ登録では開始日を指定してください。");
+            isPlanMode = true;
+            isWeeklyPlanMode = !!weekly;
+            selectedPlanCells = [];
+            weeklyPlanDates = weekly ? Array.from({length:7}, (_,i)=>addLocalDays(currentPlanDate,i)) : [];
+            weeklyPlanAssignments = {};
+            weeklyPlanDates.forEach(d => weeklyPlanAssignments[d] = []);
+            closePlanDateModal();
+            updatePlanModeUI();
+            rerenderPlanTarget();
+        }
+
+        function rerenderPlanTarget() {
+            if (currentPlanType === 'book') initTable(); else renderPETable();
+            if (isWeeklyPlanMode) renderWeeklyPlanTabs();
+        }
+
+        function updatePlanModeUI() {
+            const txt = isWeeklyPlanMode ? `📅 週間予定登録: ${weeklyPlanDates[0]} ～ ${weeklyPlanDates[6]}` : (currentPlanDate ? `📅 予定登録モード: ${currentPlanDate}` : `📅 予定解除モード`);
             if (currentPlanType === 'book') {
                 document.getElementById("detailHeaderNormal").style.display = "none";
                 document.getElementById("detailHeaderPlanMode").style.display = "flex";
-                document.getElementById("detailPlanModeTitle").innerText = currentPlanDate ? `📅 予定登録モード: ${currentPlanDate}` : `📅 予定解除モード`;
-                initTable();
+                document.getElementById("detailPlanModeTitle").innerText = txt;
             } else {
                 document.getElementById("peHeaderNormal").style.display = "none";
                 document.getElementById("peHeaderPlanMode").style.display = "flex";
-                document.getElementById("pePlanModeTitle").innerText = currentPlanDate ? `📅 予定登録モード: ${currentPlanDate}` : `📅 予定解除モード`;
-                renderPETable();
+                document.getElementById("pePlanModeTitle").innerText = txt;
             }
+        }
+
+        function renderWeeklyPlanTabs() {
+            const id = currentPlanType === 'book' ? "detailWeeklyPlanTabs" : "peWeeklyPlanTabs";
+            const box = document.getElementById(id);
+            document.querySelectorAll('.weekly-plan-tabs').forEach(x => { x.classList.remove('active'); x.innerHTML=''; });
+            if (!box || !isPlanMode || !isWeeklyPlanMode) return;
+            const days=['日','月','火','水','木','金','土'];
+            box.classList.add('active');
+            box.innerHTML = weeklyPlanDates.map(d => {
+                const [y,m,day]=d.split('-').map(Number); const dow=days[new Date(y,m-1,day).getDay()];
+                const count=(weeklyPlanAssignments[d]||[]).length;
+                return `<button type="button" class="weekly-plan-tab ${d===currentPlanDate?'active':''}" onclick="switchWeeklyPlanDate('${d}')">${m}/${day}(${dow})<span class="count">${count}問</span></button>`;
+            }).join('') + `<span class="weekly-plan-help">日付を選択 → セルをタップ → 最後に「予定登録」</span>`;
+        }
+
+        function switchWeeklyPlanDate(date) {
+            currentPlanDate = date;
+            selectedPlanCells = [...(weeklyPlanAssignments[date] || [])];
+            rerenderPlanTarget();
         }
 
         function cancelPlanMode() {
-            isPlanMode = false;
-            selectedPlanCells = [];
+            isPlanMode = false; isWeeklyPlanMode = false;
+            selectedPlanCells = []; weeklyPlanDates=[]; weeklyPlanAssignments={};
+            document.querySelectorAll('.weekly-plan-tabs').forEach(x => { x.classList.remove('active'); x.innerHTML=''; });
             if (currentPlanType === 'book') {
                 document.getElementById("detailHeaderNormal").style.display = "flex";
                 document.getElementById("detailHeaderPlanMode").style.display = "none";
@@ -2566,75 +2623,53 @@
             }
         }
 
+        function samePlanCell(a,id1,id2) { return String(a.id1)===String(id1) && String(a.id2)===String(id2); }
+
         function togglePlanSelection(id1, id2, element) {
-            const idx = selectedPlanCells.findIndex(item => item.id1 === id1 && item.id2 === id2);
-            if (idx >= 0) {
-                selectedPlanCells.splice(idx, 1);
-                element.classList.remove("plan-selected");
-            } else {
-                selectedPlanCells.push({ id1, id2 });
-                element.classList.add("plan-selected");
+            if (isWeeklyPlanMode) {
+                const wasSelected = (weeklyPlanAssignments[currentPlanDate]||[]).some(x => samePlanCell(x,id1,id2));
+                weeklyPlanDates.forEach(d => { weeklyPlanAssignments[d] = (weeklyPlanAssignments[d]||[]).filter(x => !samePlanCell(x,id1,id2)); });
+                if (!wasSelected) (weeklyPlanAssignments[currentPlanDate] ||= []).push({id1,id2});
+                selectedPlanCells = [...(weeklyPlanAssignments[currentPlanDate] || [])];
+                rerenderPlanTarget();
+                return;
             }
+            const idx = selectedPlanCells.findIndex(item => samePlanCell(item,id1,id2));
+            if (idx >= 0) { selectedPlanCells.splice(idx, 1); element.classList.remove("plan-selected"); }
+            else { selectedPlanCells.push({ id1, id2 }); element.classList.add("plan-selected"); }
         }
 
         function savePlanMode() {
-            if (selectedPlanCells.length === 0) {
+            const assignments = isWeeklyPlanMode
+                ? weeklyPlanDates.flatMap(date => (weeklyPlanAssignments[date]||[]).map(item => ({...item, date})))
+                : selectedPlanCells.map(item => ({...item, date: currentPlanDate}));
+            if (assignments.length === 0) {
                 if (!confirm("何も選択されていません。モードを終了しますか？")) return;
-                cancelPlanMode();
-                return;
+                cancelPlanMode(); return;
             }
-
             if (currentPlanType === 'book') {
-                const book = store.books[currentBookId];
-                if(!book.data) book.data = {};
-                selectedPlanCells.forEach(item => {
-                    if (currentPlanDate) {
-                        book.data[`${item.id1}_${item.id2}_plan`] = currentPlanDate;
-                        // この予定を登録した時点の実績回数を保存。
-                        // 以後に追加された実績だけを、この予定に対する実績として扱う。
-                        const currentHistory = Array.isArray(book.data[`${item.id1}_${item.id2}_history`])
-                            ? book.data[`${item.id1}_${item.id2}_history`]
-                            : [];
-                        book.data[`${item.id1}_${item.id2}_planBaseline`] = currentHistory.length;
-                    } else {
-                        delete book.data[`${item.id1}_${item.id2}_plan`];
-                        delete book.data[`${item.id1}_${item.id2}_planBaseline`];
-                    }
+                const book = store.books[currentBookId]; if(!book.data) book.data = {};
+                assignments.forEach(item => {
+                    const key=`${item.id1}_${item.id2}`;
+                    if (item.date) {
+                        book.data[`${key}_plan`] = item.date;
+                        const h=Array.isArray(book.data[`${key}_history`]) ? book.data[`${key}_history`] : [];
+                        book.data[`${key}_planBaseline`] = h.length;
+                    } else { delete book.data[`${key}_plan`]; delete book.data[`${key}_planBaseline`]; }
                 });
             } else {
-                const subj = store.pastExams[currentPESubject];
-                if(!subj.records) subj.records = {};
-                selectedPlanCells.forEach(item => {
-                    if (!subj.records[`${item.id1}_${item.id2}`]) subj.records[`${item.id1}_${item.id2}`] = { history: [] };
-                    if (currentPlanDate) {
-                        const rec = subj.records[`${item.id1}_${item.id2}`];
-                        rec.plan = currentPlanDate;
-                        const currentHistory = Array.isArray(rec.history) ? rec.history : [];
-                        rec.planBaseline = currentHistory.length;
-                    } else {
-                        delete subj.records[`${item.id1}_${item.id2}`].plan;
-                        delete subj.records[`${item.id1}_${item.id2}`].planBaseline;
-                    }
+                const subj=store.pastExams[currentPESubject]; if(!subj.records) subj.records={};
+                assignments.forEach(item => {
+                    const key=`${item.id1}_${item.id2}`; if(!subj.records[key]) subj.records[key]={history:[]};
+                    if(item.date) { const rec=subj.records[key]; rec.plan=item.date; rec.planBaseline=Array.isArray(rec.history)?rec.history.length:0; }
+                    else { delete subj.records[key].plan; delete subj.records[key].planBaseline; }
                 });
             }
-
             saveStore();
-            isPlanMode = false;
-            selectedPlanCells = [];
-            
-            if (currentPlanType === 'book') {
-                document.getElementById("detailHeaderNormal").style.display = "flex";
-                document.getElementById("detailHeaderPlanMode").style.display = "none";
-                initTable();
-            } else {
-                document.getElementById("peHeaderNormal").style.display = "flex";
-                document.getElementById("peHeaderPlanMode").style.display = "none";
-                renderPETable();
-            }
-            
-            if (document.getElementById("portalPlanListScreen").classList.contains("active")) {
-                renderPortalPlanList();
-            }
+            const wasWeekly=isWeeklyPlanMode;
+            const count=assignments.length, days=wasWeekly ? weeklyPlanDates.filter(d => (weeklyPlanAssignments[d]||[]).length).length : 1;
+            cancelPlanMode();
+            alert(wasWeekly ? `${days}日分・${count}問の予定を登録しました。` : `${count}問の予定を登録しました。`);
         }
 
         // 予定一覧の科目タブ切替
@@ -3663,9 +3698,14 @@
                         }
                         
                         // 同日の予定であれば初期選択状態にする
-                        if (isPlanMode && planDate === currentPlanDate) {
-                            tdInput.classList.add("plan-selected");
-                            selectedPlanCells.push({ id1: sec.id, id2: qNum });
+                        if (isPlanMode) {
+                            const chosen = isWeeklyPlanMode
+                                ? (weeklyPlanAssignments[currentPlanDate] || []).some(x => samePlanCell(x, sec.id, qNum))
+                                : planDate === currentPlanDate;
+                            if (chosen) {
+                                tdInput.classList.add("plan-selected");
+                                if (!selectedPlanCells.some(x => samePlanCell(x, sec.id, qNum))) selectedPlanCells.push({ id1: sec.id, id2: qNum });
+                            }
                         }
 
                         renderCellContent(tdInput, sec.id, qNum, planDate);
@@ -5496,9 +5536,14 @@
 
                             // ▼追加：同日の予定であれば初期選択状態にする
                             let isSelected = false;
-                            if (isPlanMode && planDate === currentPlanDate) {
-                                isSelected = true;
-                                selectedPlanCells.push({ id1: col.id, id2: q.id });
+                            if (isPlanMode) {
+                                const chosen = isWeeklyPlanMode
+                                    ? (weeklyPlanAssignments[currentPlanDate] || []).some(x => samePlanCell(x, col.id, q.id))
+                                    : planDate === currentPlanDate;
+                                if (chosen) {
+                                    isSelected = true;
+                                    if (!selectedPlanCells.some(x => samePlanCell(x, col.id, q.id))) selectedPlanCells.push({ id1: col.id, id2: q.id });
+                                }
                             }
                             let selectedClass = isSelected ? "plan-selected" : "";
 
