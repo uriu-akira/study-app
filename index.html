@@ -854,6 +854,9 @@
         .homework-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
         .homework-card.done { border-color:#86efac; background:#f0fdf4; }
         .homework-card.over { border-color:#93c5fd; }
+        .homework-order-controls { display:flex; align-items:center; gap:4px; margin-left:auto; }
+        .homework-order-btn { border:1px solid rgba(100,116,139,.35); background:rgba(255,255,255,.82); color:#334155; border-radius:7px; padding:4px 7px; font-size:.68rem; font-weight:800; cursor:pointer; line-height:1; }
+        .homework-order-btn:disabled { opacity:.25; cursor:default; }
         .homework-meta { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 10px; color:#64748b; font-size:.72rem; }
         .homework-chip { display:inline-flex; align-items:center; padding:2px 7px; border-radius:999px; font-size:.68rem; font-weight:700; background:#eff6ff; color:#1d4ed8; }
         .homework-progress-row { display:flex; justify-content:space-between; align-items:end; gap:10px; margin:8px 0 5px; }
@@ -2062,6 +2065,7 @@
                     store.adHocTasks = Array.isArray(latestSave.data.adHocTasks) ? latestSave.data.adHocTasks : [];
                     store.homeworks = Array.isArray(latestSave.data.homeworks) ? latestSave.data.homeworks : [];
                     store.lessonGroups = Array.isArray(latestSave.data.lessonGroups) ? latestSave.data.lessonGroups : [];
+                    store.homeworkOrder = latestSave.data.homeworkOrder && typeof latestSave.data.homeworkOrder === "object" ? latestSave.data.homeworkOrder : {};
                     store.planPriorities = latestSave.data.planPriorities && typeof latestSave.data.planPriorities === "object" ? latestSave.data.planPriorities : {};
 
                     // 古いセーブデータの削除（掃除）
@@ -2075,11 +2079,13 @@
                     store.adHocTasks = [];
                     store.homeworks = [];
                     store.lessonGroups = [];
+                    store.homeworkOrder = {};
                     store.planPriorities = {};
                 }
 
                 if (!Array.isArray(store.homeworks)) store.homeworks = [];
                 if (!Array.isArray(store.lessonGroups)) store.lessonGroups = [];
+                if (!store.homeworkOrder || typeof store.homeworkOrder !== "object" || Array.isArray(store.homeworkOrder)) store.homeworkOrder = {};
                 migrateLegacyHomeworkGroups();
                 if (!store.planPriorities || typeof store.planPriorities !== "object") store.planPriorities = {};
 
@@ -4762,6 +4768,30 @@
             setTimeout(() => openPlanDateModal('book', hw.toDate || hw.lessonDate || ''), 0);
         }
 
+        function getOrderedHomeworkRows(groupId, rows) {
+            if (!store.homeworkOrder || typeof store.homeworkOrder !== 'object') store.homeworkOrder = {};
+            const ids = rows.map(x => x.hw.id);
+            const saved = Array.isArray(store.homeworkOrder[groupId]) ? store.homeworkOrder[groupId] : [];
+            const order = [...saved.filter(id => ids.includes(id)), ...ids.filter(id => !saved.includes(id))];
+            store.homeworkOrder[groupId] = order;
+            const rank = new Map(order.map((id, i) => [id, i]));
+            return [...rows].sort((a,b) => (rank.get(a.hw.id) ?? 9999) - (rank.get(b.hw.id) ?? 9999));
+        }
+
+        function moveHomeworkInGroup(groupId, homeworkId, delta, ev) {
+            if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+            const rows = (store.homeworks || []).filter(hw => hw.groupId === groupId).map(hw => ({hw}));
+            getOrderedHomeworkRows(groupId, rows);
+            const order = store.homeworkOrder[groupId] || [];
+            const i = order.indexOf(homeworkId);
+            const j = i + delta;
+            if (i < 0 || j < 0 || j >= order.length) return;
+            [order[i], order[j]] = [order[j], order[i]];
+            store.homeworkOrder[groupId] = order;
+            saveStore();
+            renderHomeworkScreen();
+        }
+
         function renderHomeworkScreen() {
             migrateLegacyHomeworkGroups();
             document.querySelectorAll(".homework-filter-btn").forEach(btn => {
@@ -4804,7 +4834,7 @@
                 return;
             }
             list.innerHTML=groups.map(g=>{
-                const rows=metrics.filter(x=>x.hw.groupId===g.id);
+                const rows=getOrderedHomeworkRows(g.id, metrics.filter(x=>x.hw.groupId===g.id));
                 const isScience=String(g.type||'').startsWith('理系塾');
                 const bandClass=isScience?'science':'humanities';
                 const registerBtnBg=isScience?'#2563eb':'#db2777';
@@ -4816,7 +4846,7 @@
                         </div>
                         <button class="btn" style="background:${registerBtnBg};" onclick="event.stopPropagation();openHomeworkModal('', '${g.id}')">＋ 宿題登録</button>
                     </div>
-                    ${rows.length?`<div class="homework-grid">${rows.map(({hw,actual,target,percent})=>{
+                    ${rows.length?`<div class="homework-grid">${rows.map(({hw,actual,target,percent}, rowIndex)=>{
                         const pct=percent%1===0?percent.toFixed(0):percent.toFixed(1);
                         const cls=percent>=100?(percent>100?'homework-card done over':'homework-card done'):'homework-card';
                         const over=percent>100?`<div class="homework-over-label">目標を ${actual-target}問 上回っています（+${(percent-100).toFixed(0)}%）</div>`:'';
@@ -4825,7 +4855,7 @@
                         const plannedCount = countHomeworkPlannedCells(hw);
                         const plannedInfo = plannedCount === null ? '' : `<span class="homework-chip" style="background:rgba(255,255,255,.78);color:#334155;border:1px solid rgba(100,116,139,.25);">📅 期間内の予定 ${plannedCount}問</span>`;
                         return `<div class="${cls}" onclick="openHomeworkModal('${hw.id}','${g.id}')" style="cursor:pointer;${homeworkCardStyle}">
-                            <div style="font-weight:800;color:#0f172a;">${escapeHtml(hw.title||getHomeworkTargetName(hw))}</div>
+                            <div style="display:flex;align-items:center;gap:8px;"><div style="font-weight:800;color:#0f172a;">${escapeHtml(hw.title||getHomeworkTargetName(hw))}</div><div class="homework-order-controls"><button type="button" class="homework-order-btn" ${rowIndex===0?'disabled':''} onclick="moveHomeworkInGroup('${g.id}','${hw.id}',-1,event)" title="上へ">▲</button><button type="button" class="homework-order-btn" ${rowIndex===rows.length-1?'disabled':''} onclick="moveHomeworkInGroup('${g.id}','${hw.id}',1,event)" title="下へ">▼</button></div></div>
                             <div class="homework-meta"><span>${escapeHtml(getHomeworkTargetTypeLabel(hw.targetType))}｜${escapeHtml(getHomeworkTargetName(hw))}</span><span>${escapeHtml(hw.fromDate)} ～ ${escapeHtml(hw.toDate)}</span>${plannedInfo}</div>
                             <div class="homework-progress-row"><div><span style="font-size:.72rem;color:#64748b;">実績 / 目標</span><br><strong>${actual} / ${target}問</strong></div><div style="display:flex;align-items:center;gap:8px;"><button type="button" class="btn btn-outline" style="font-size:.68rem;padding:5px 9px;${hw.targetType==='book'?'':'display:none;'}" onclick="openHomeworkActualDetail('${hw.id}',event)">実績値</button><div class="homework-progress-value">${pct}%</div></div></div>
                             <div class="homework-progress-track"><div class="homework-progress-fill ${percent>=100?'complete':''}" style="width:${Math.min(percent,100)}%;"></div></div>${over}
