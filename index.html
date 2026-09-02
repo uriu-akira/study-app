@@ -1112,6 +1112,7 @@
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
                     <button class="btn" id="reportBackBtn" style="display:none; background:#0ea5e9; color:white;" onclick="returnToReportFromDetail()">← 実績レポートへ戻る</button>
+                    <button class="btn" id="homeworkBackBtn" style="display:none; background:#f59e0b; color:white;" onclick="returnToHomeworkFromDetail()">← 宿題進捗へ戻る</button>
                     <h1 id="detailBookTitle"></h1>
                 </div>
                 <div style="display: flex; gap: 6px;">
@@ -2180,6 +2181,8 @@
             );
             const backBtn = document.getElementById("reportBackBtn");
             if (backBtn) backBtn.style.display = "none";
+            const homeworkBackBtn = document.getElementById("homeworkBackBtn");
+            if (homeworkBackBtn) homeworkBackBtn.style.display = "none";
         }
 
         function applyReportHighlights() {
@@ -2200,6 +2203,8 @@
             });
             const backBtn = document.getElementById("reportBackBtn");
             if (backBtn) backBtn.style.display = reportHighlightState.source === "report" ? "inline-flex" : "none";
+            const homeworkBackBtn = document.getElementById("homeworkBackBtn");
+            if (homeworkBackBtn) homeworkBackBtn.style.display = reportHighlightState.source === "homework" ? "inline-flex" : "none";
             if (found.length > 0) {
                 setTimeout(() => found[0].scrollIntoView({ behavior: "smooth", block: "center", inline: "center" }), 80);
             }
@@ -4672,6 +4677,11 @@
             reportHighlightState = { bookId: hw.targetId, cells, source: "homework" };
             openBookDetail(hw.targetId, true);
             requestAnimationFrame(() => applyReportHighlights());
+        }
+
+        function returnToHomeworkFromDetail() {
+            clearReportHighlights();
+            showHomeworkScreen();
         }
 
         function getHomeworkProgress(hw) {
