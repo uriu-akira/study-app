@@ -463,6 +463,10 @@
         .weekly-plan-tab.active { background:#0ea5e9; color:#fff; border-color:#0ea5e9; box-shadow:0 0 0 2px rgba(14,165,233,.18); }
         .weekly-plan-tab .count { display:block; font-size:.58rem; margin-top:2px; opacity:.9; }
         .weekly-plan-help { font-size:.64rem; color:#64748b; margin-left:4px; }
+        .plan-assigned-other { position:relative; outline:3px solid #f59e0b !important; outline-offset:-3px; }
+        .plan-assigned-other::after { content:attr(data-plan-assigned-date); position:absolute; top:2px; left:2px; z-index:12; background:#f59e0b; color:#fff; border-radius:5px; padding:2px 4px; font-size:.55rem; font-weight:900; line-height:1.1; box-shadow:0 1px 3px rgba(0,0,0,.25); pointer-events:none; }
+        .plan-selected.plan-assigned-other { outline-color:#38bdf8 !important; }
+
 
         .planned-date-badge {
             position: absolute; top: -6px; right: -6px;
@@ -1247,17 +1251,21 @@
         <div class="modal-content" style="width: 320px;">
             <div class="modal-header">学習予定日の指定</div>
             <div class="form-group">
-                <label class="form-label">予定日を設定してください</label>
+                <label class="form-label">FROM（開始日）</label>
                 <input type="date" class="modal-input" id="planDateInput">
-                <span class="form-help" style="margin-top: 4px; color: #f59e0b;">※日付を空欄にして開始すると、選択したセルの「予定解除」ができます。</span>
+            </div>
+            <div class="form-group" style="margin-top:8px;">
+                <label class="form-label">TO（終了日・最大31日間）</label>
+                <input type="date" class="modal-input" id="planDateToInput">
+                <span class="form-help" style="margin-top:4px;color:#f59e0b;">※単日登録・予定解除はFROMを使用します。FROMを空欄にして単日登録すると予定解除できます。</span>
             </div>
             <div style="font-size:.7rem;color:#475569;background:#f8fafc;border-radius:8px;padding:8px;margin-top:8px;">
-                <b>週間まとめ登録</b>：指定日から7日分の日付タブを作り、日付を切り替えながらセルを選択して最後に一括登録します。
+                <b>期間まとめ登録</b>：FROM～TO（最大31日）の日付ボタンを作り、日付を切り替えながらセルを選択して最後に一括登録します。別の日に登録済みのセルはオレンジ枠と日付ラベルで残るので、前日に選んだセルも確認できます。
             </div>
             <div class="modal-actions" style="margin-top: 12px; flex-wrap:wrap;">
                 <button type="button" class="btn btn-outline" onclick="closePlanDateModal()">キャンセル</button>
                 <button type="button" class="btn btn-outline" onclick="startPlanMode(false)">単日登録</button>
-                <button type="button" class="btn" style="background-color: #14b8a6; color: white;" onclick="startPlanMode(true)">📅 週間まとめ登録</button>
+                <button type="button" class="btn" style="background-color: #14b8a6; color: white;" onclick="startPlanMode(true)">📅 期間まとめ登録</button>
             </div>
         </div>
     </div>
@@ -2553,6 +2561,7 @@
             // 呼び出し元に関係なく、学習予定日の初期値は必ず当日のローカル日付にする。
             // defaultDate は互換性のため引数として残すが、初期値には使用しない。
             document.getElementById("planDateInput").value = getLocalTodayString();
+            document.getElementById("planDateToInput").value = addLocalDays(getLocalTodayString(), 6);
             document.getElementById("planDateModal").classList.add("active");
         }
 
@@ -2569,11 +2578,21 @@
 
         function startPlanMode(weekly = false) {
             currentPlanDate = document.getElementById("planDateInput").value;
-            if (weekly && !currentPlanDate) return alert("週間まとめ登録では開始日を指定してください。");
+            const toDate = document.getElementById("planDateToInput").value;
+            if (weekly && (!currentPlanDate || !toDate)) return alert("期間まとめ登録ではFROMとTOを指定してください。");
+            let rangeDays = 0;
+            if (weekly) {
+                const [fy,fm,fd] = currentPlanDate.split('-').map(Number);
+                const [ty,tm,td] = toDate.split('-').map(Number);
+                const from = new Date(fy,fm-1,fd), to = new Date(ty,tm-1,td);
+                rangeDays = Math.round((to-from)/86400000)+1;
+                if (rangeDays < 1) return alert("TOはFROM以降の日付を指定してください。");
+                if (rangeDays > 31) return alert("まとめて登録できる期間は最大31日です。");
+            }
             isPlanMode = true;
             isWeeklyPlanMode = !!weekly;
             selectedPlanCells = [];
-            weeklyPlanDates = weekly ? Array.from({length:7}, (_,i)=>addLocalDays(currentPlanDate,i)) : [];
+            weeklyPlanDates = weekly ? Array.from({length:rangeDays}, (_,i)=>addLocalDays(currentPlanDate,i)) : [];
             weeklyPlanAssignments = {};
             weeklyPlanDates.forEach(d => weeklyPlanAssignments[d] = []);
             closePlanDateModal();
@@ -2587,7 +2606,7 @@
         }
 
         function updatePlanModeUI() {
-            const txt = isWeeklyPlanMode ? `📅 週間予定登録: ${weeklyPlanDates[0]} ～ ${weeklyPlanDates[6]}` : (currentPlanDate ? `📅 予定登録モード: ${currentPlanDate}` : `📅 予定解除モード`);
+            const txt = isWeeklyPlanMode ? `📅 期間予定登録: ${weeklyPlanDates[0]} ～ ${weeklyPlanDates[weeklyPlanDates.length-1]}（${weeklyPlanDates.length}日）` : (currentPlanDate ? `📅 予定登録モード: ${currentPlanDate}` : `📅 予定解除モード`);
             if (currentPlanType === 'book') {
                 document.getElementById("detailHeaderNormal").style.display = "none";
                 document.getElementById("detailHeaderPlanMode").style.display = "flex";
@@ -2610,7 +2629,7 @@
                 const [y,m,day]=d.split('-').map(Number); const dow=days[new Date(y,m-1,day).getDay()];
                 const count=(weeklyPlanAssignments[d]||[]).length;
                 return `<button type="button" class="weekly-plan-tab ${d===currentPlanDate?'active':''}" onclick="switchWeeklyPlanDate('${d}')">${m}/${day}(${dow})<span class="count">${count}問</span></button>`;
-            }).join('') + `<span class="weekly-plan-help">日付を選択 → セルをタップ → 最後に「予定登録」</span>`;
+            }).join('') + `<span class="weekly-plan-help">日付を選択 → セルをタップ → オレンジ枠は他の日に選択済み → 最後に「予定登録」</span>`;
         }
 
         function switchWeeklyPlanDate(date) {
@@ -3720,6 +3739,13 @@
                         }
 
                         renderCellContent(tdInput, sec.id, qNum, planDate);
+                        if (isPlanMode && isWeeklyPlanMode) {
+                            const assignedDate = weeklyPlanDates.find(d => (weeklyPlanAssignments[d] || []).some(x => samePlanCell(x, sec.id, qNum)));
+                            if (assignedDate && assignedDate !== currentPlanDate) {
+                                tdInput.classList.add("plan-assigned-other");
+                                tdInput.setAttribute("data-plan-assigned-date", assignedDate.slice(5).replace('-', '/'));
+                            }
+                        }
 
                         tdInput.addEventListener("click", () => { 
                             if (isPlanMode) {
@@ -5586,6 +5612,14 @@
                                 }
                             }
                             let selectedClass = isSelected ? "plan-selected" : "";
+                            let assignedOtherClass = "", assignedOtherAttr = "";
+                            if (isPlanMode && isWeeklyPlanMode) {
+                                const assignedDate = weeklyPlanDates.find(d => (weeklyPlanAssignments[d] || []).some(x => samePlanCell(x, col.id, q.id)));
+                                if (assignedDate && assignedDate !== currentPlanDate) {
+                                    assignedOtherClass = "plan-assigned-other";
+                                    assignedOtherAttr = ` data-plan-assigned-date="${assignedDate.slice(5).replace('-', '/')}"`;
+                                }
+                            }
 
                             let headerInfo = "";
                             let topicInfo = "";
@@ -5611,7 +5645,7 @@
                             }
 
                             rowHtml += `
-                            <td class="${cellBgClass} ${plannedClass} ${selectedClass}" id="pe-cell-${col.id}-${q.id}">
+                            <td class="${cellBgClass} ${plannedClass} ${selectedClass} ${assignedOtherClass}"${assignedOtherAttr} id="pe-cell-${col.id}-${q.id}">
                                 <div class="pe-cell-display ${latest.mark && latest.mark !== "ー" ? 'has-data' : ''}" onclick="onPECellClick('${col.id}', '${q.id}', this)">
                                     ${planBadge}
                                     <div style="width:100%; display:flex; justify-content:space-between; font-size:0.6rem; color:#8b5cf6; margin-bottom:2px; font-weight:bold;">
