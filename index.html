@@ -2970,12 +2970,15 @@
         }
 
         // ポータル画面の予定一覧表示
-        // 予定日当日または予定日以降の日付で有効な実績が1件でもあれば、その予定は消化済みとする。
-        // これにより、後日「実績日=予定日」として入力した入力忘れ分も正しく予定一覧から消える。
-        function hasPlanCompletionHistory(history, planDate) {
-            if (!planDate) return false;
+        // 予定登録時の有効実績数(planBaseline)より実績が増えていれば、実績日が予定日より前でも消化済みとする。
+        // これにより「予定を登録した後に前倒しで実施したケース」と、後日「実績日=予定日」で入力したケースの両方に対応する。
+        // 古いデータなどでplanBaselineが無い場合だけ、予定日当日または予定日以降の実績で補完判定する。
+        function hasPlanCompletionHistory(history, planDate, planBaseline = null) {
             const list = Array.isArray(history) ? history : [];
-            return list.some(h => h && h.date && h.date >= planDate && h.mark && h.mark !== "ー");
+            const valid = list.filter(h => h && h.mark && h.mark !== "ー");
+            if (Number.isInteger(planBaseline)) return valid.length > planBaseline;
+            if (!planDate) return false;
+            return valid.some(h => h.date && h.date >= planDate);
         }
 
         function isPortalPlanCompleted(item) {
@@ -2984,7 +2987,7 @@
                 const task = Array.isArray(store.adHocTasks) ? store.adHocTasks.find(t => t && t.id === item.taskId) : null;
                 return !!(task && task.completed);
             }
-            return hasPlanCompletionHistory(item.history, item.planDate);
+            return hasPlanCompletionHistory(item.history, item.planDate, item.planBaseline);
         }
 
         function getPortalPlanSummaryKey(item) {
