@@ -3242,8 +3242,12 @@
             if (currentPortalPlanView === "carryover") {
                 visiblePlans = visiblePlans.filter(item => item.planDate < todayLocal);
             } else if (currentPortalPlanView === "today") {
-                // 今日の予定では、未完了の積み残しも一番上にまとめて表示する
-                visiblePlans = visiblePlans.filter(item => item.planDate <= todayLocal);
+                // 今日の予定では、積み残しは「未完了の明細」だけを一番上に表示する。
+                // 今日分は従来どおり保持し、完了判定は明細表示側の既存仕様に従う。
+                visiblePlans = visiblePlans.filter(item =>
+                    item.planDate === todayLocal ||
+                    (item.planDate < todayLocal && !isPortalPlanCompleted(item))
+                );
             } else if (currentPortalPlanView === "future") {
                 // 「明日以降」はユーザー指定どおり明日以降
                 visiblePlans = visiblePlans.filter(item => item.planDate >= tomorrowLocal);
