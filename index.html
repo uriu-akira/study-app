@@ -966,7 +966,7 @@
             </div>
             <div class="portal-plan-view-switch" id="portalPlanViewSwitch">
                 <button class="portal-plan-view-btn active" data-view="list" onclick="setPortalPlanView('list')">一覧</button>
-                <button class="portal-plan-view-btn" data-view="carryover" onclick="setPortalPlanView('carryover')">⚠️ 積み残し</button>
+                <button class="portal-plan-view-btn" data-view="carryover" onclick="setPortalPlanView('carryover')">⚠️ 過去分</button>
                 <button class="portal-plan-view-btn" data-view="today" onclick="setPortalPlanView('today')">今日の予定</button>
                 <button class="portal-plan-view-btn" data-view="future" onclick="setPortalPlanView('future')">明日以降</button>
             </div>
@@ -3291,8 +3291,8 @@
             }
 
             visiblePlans.sort((a, b) => {
-                // 積み残しは日付の新しいものから表示。
-                // 「今日の予定」では積み残しを先頭にし、その後に今日分を表示する。
+                // 「積み残し」画面は日付の新しいものから表示。
+                // 「今日の予定」では未完了の積み残しを先頭にし、積み残し部分だけ古い日付から表示する。
                 let dateCmp;
                 if (currentPortalPlanView === "carryover") {
                     dateCmp = b.planDate.localeCompare(a.planDate);
@@ -3301,7 +3301,7 @@
                     const bCarry = b.planDate < todayLocal;
                     if (aCarry !== bCarry) return aCarry ? -1 : 1;
                     dateCmp = aCarry
-                        ? b.planDate.localeCompare(a.planDate)
+                        ? a.planDate.localeCompare(b.planDate)
                         : a.planDate.localeCompare(b.planDate);
                 } else {
                     dateCmp = a.planDate.localeCompare(b.planDate);
