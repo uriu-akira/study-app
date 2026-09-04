@@ -2970,15 +2970,17 @@
         }
 
         // ポータル画面の予定一覧表示
-        // 予定登録時の有効実績数(planBaseline)より実績が増えていれば、実績日が予定日より前でも消化済みとする。
-        // これにより「予定を登録した後に前倒しで実施したケース」と、後日「実績日=予定日」で入力したケースの両方に対応する。
-        // 古いデータなどでplanBaselineが無い場合だけ、予定日当日または予定日以降の実績で補完判定する。
+        // 予定完了判定は2条件のORで判定する。
+        // 1) 予定登録時の有効実績数(planBaseline)より実績が増えている
+        //    → 予定日より前に前倒しで実施したケースを完了扱いにできる。
+        // 2) 予定日当日または予定日以降の有効実績が存在する
+        //    → 後日、実績日を予定日に戻して入力したケースやbaselineがずれた旧データにも対応できる。
         function hasPlanCompletionHistory(history, planDate, planBaseline = null) {
             const list = Array.isArray(history) ? history : [];
             const valid = list.filter(h => h && h.mark && h.mark !== "ー");
-            if (Number.isInteger(planBaseline)) return valid.length > planBaseline;
-            if (!planDate) return false;
-            return valid.some(h => h.date && h.date >= planDate);
+            const completedByNewEntry = Number.isInteger(planBaseline) && valid.length > planBaseline;
+            const completedByDate = !!planDate && valid.some(h => h.date && h.date >= planDate);
+            return completedByNewEntry || completedByDate;
         }
 
         function isPortalPlanCompleted(item) {
