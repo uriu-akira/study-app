@@ -2970,23 +2970,21 @@
         }
 
         // ポータル画面の予定一覧表示
+        // 予定日当日または予定日以降の日付で有効な実績が1件でもあれば、その予定は消化済みとする。
+        // これにより、後日「実績日=予定日」として入力した入力忘れ分も正しく予定一覧から消える。
+        function hasPlanCompletionHistory(history, planDate) {
+            if (!planDate) return false;
+            const list = Array.isArray(history) ? history : [];
+            return list.some(h => h && h.date && h.date >= planDate && h.mark && h.mark !== "ー");
+        }
+
         function isPortalPlanCompleted(item) {
             if (!item) return true;
             if (item.type === "adhoc") {
                 const task = Array.isArray(store.adHocTasks) ? store.adHocTasks.find(t => t && t.id === item.taskId) : null;
                 return !!(task && task.completed);
             }
-            const history = Array.isArray(item.history) ? item.history : [];
-            const validCount = history.filter(h => h && h.mark && h.mark !== "ー").length;
-
-            // 新仕様: 予定登録時点の実績回数より、有効実績が1件以上増えたら予定消化。
-            // 予定日より前倒しで取り組んだ場合も正しく実績として数える。
-            if (Number.isInteger(item.planBaseline)) {
-                return validCount > item.planBaseline;
-            }
-
-            // 旧データ互換: baseline が存在しない既存予定は従来の判定も利用する。
-            return history.some(h => h && h.date && h.date >= item.planDate && h.mark && h.mark !== "ー");
+            return hasPlanCompletionHistory(item.history, item.planDate);
         }
 
         function getPortalPlanSummaryKey(item) {
@@ -3734,14 +3732,11 @@
                         
                         // 予定日の取得
                         const planDate = book.data[`${sec.id}_${qNum}_plan`];
-                        const planBaseline = book.data[`${sec.id}_${qNum}_planBaseline`];
                         const planHistory = Array.isArray(book.data[`${sec.id}_${qNum}_history`])
                             ? book.data[`${sec.id}_${qNum}_history`]
                             : [];
-                        const planValidCount = planHistory.filter(h => h && h.mark && h.mark !== "ー").length;
-                        // 予定登録後に実績が増えていれば、予定は保持したまま黒反転のみ解除。
-                        // 予定日と実績日の前後関係は判定に使わない（前倒し学習対応）。
-                        const planConsumed = Number.isInteger(planBaseline) && planValidCount > planBaseline;
+                        // 予定日当日または予定日以降の有効実績があれば消化済み。
+                        const planConsumed = hasPlanCompletionHistory(planHistory, planDate);
                         if (planDate && !planConsumed) {
                             tdInput.classList.add("planned-cell");
                         }
@@ -3804,9 +3799,7 @@
             const latest = getLatestEntry(secId, qNum);
             const book = store.books[currentBookId];
             const storedPlanDate = book?.data?.[`${secId}_${qNum}_plan`] || planDate || "";
-            const planBaseline = book?.data?.[`${secId}_${qNum}_planBaseline`];
-            const planValidCount = history.filter(h => h && h.mark && h.mark !== "ー").length;
-            const planConsumed = Number.isInteger(planBaseline) && planValidCount > planBaseline;
+            const planConsumed = hasPlanCompletionHistory(history, storedPlanDate);
 
             // 予定登録の黒反転は未消化の予定だけ。実績登録/取消の直後にもここで再判定する。
             td.classList.remove("planned-cell");
@@ -5604,12 +5597,9 @@
                             let latestMarkClass = "";
                             if(latest.mark === "〇") latestMarkClass = "maru";
                             else if(latest.mark === "×") latestMarkClass = "batsu";
-                            else if(latest.mark === "△") latestMarkClass = "tri";                            // 予定日の取得。予定登録後に実績が増えていれば黒反転のみ解除する。
-                            // 実績日が予定日より前でも消化済みとして扱う。
+                            else if(latest.mark === "△") latestMarkClass = "tri";                            // 予定日当日または予定日以降の有効実績があれば消化済み。
                             const planDate = rec.plan;
-                            const planBaseline = rec.planBaseline;
-                            const planValidCount = history.filter(h => h && h.mark && h.mark !== "ー").length;
-                            const planConsumed = Number.isInteger(planBaseline) && planValidCount > planBaseline;
+                            const planConsumed = hasPlanCompletionHistory(history, planDate);
                             let plannedClass = (planDate && !planConsumed) ? "planned-cell" : "";
 
                             let planBadge = "";
