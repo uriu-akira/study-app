@@ -3242,7 +3242,8 @@
             if (currentPortalPlanView === "carryover") {
                 visiblePlans = visiblePlans.filter(item => item.planDate < todayLocal);
             } else if (currentPortalPlanView === "today") {
-                visiblePlans = visiblePlans.filter(item => item.planDate === todayLocal);
+                // 今日の予定では、未完了の積み残しも一番上にまとめて表示する
+                visiblePlans = visiblePlans.filter(item => item.planDate <= todayLocal);
             } else if (currentPortalPlanView === "future") {
                 // 「明日以降」はユーザー指定どおり明日以降
                 visiblePlans = visiblePlans.filter(item => item.planDate >= tomorrowLocal);
@@ -3286,7 +3287,21 @@
             }
 
             visiblePlans.sort((a, b) => {
-                const dateCmp = a.planDate.localeCompare(b.planDate);
+                // 積み残しは日付の新しいものから表示。
+                // 「今日の予定」では積み残しを先頭にし、その後に今日分を表示する。
+                let dateCmp;
+                if (currentPortalPlanView === "carryover") {
+                    dateCmp = b.planDate.localeCompare(a.planDate);
+                } else if (currentPortalPlanView === "today") {
+                    const aCarry = a.planDate < todayLocal;
+                    const bCarry = b.planDate < todayLocal;
+                    if (aCarry !== bCarry) return aCarry ? -1 : 1;
+                    dateCmp = aCarry
+                        ? b.planDate.localeCompare(a.planDate)
+                        : a.planDate.localeCompare(b.planDate);
+                } else {
+                    dateCmp = a.planDate.localeCompare(b.planDate);
+                }
                 if (dateCmp !== 0) return dateCmp;
                 const typeCmp = a.type.localeCompare(b.type);
                 if (typeCmp !== 0) return typeCmp;
