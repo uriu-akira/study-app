@@ -1073,8 +1073,10 @@
                 grid-column: 2 !important;
                 grid-row: 1 !important;
                 margin-left: 0 !important;
-                justify-self: end !important;
-                justify-content: flex-end !important;
+                /* iPad縦: 2段目の操作ボタン群と同じ左端から開始 */
+                justify-self: stretch !important;
+                justify-content: flex-start !important;
+                width: 100% !important;
                 min-width: 0;
                 overflow-x: auto;
                 overflow-y: hidden;
@@ -1086,7 +1088,7 @@
                 display: none !important;
             }
             header .header-top:not(.plan-mode-header) .header-action-slot {
-                grid-column: 1 / -1 !important;
+                grid-column: 2 !important;
                 grid-row: 2 !important;
                 width: 100% !important;
                 margin-left: 0 !important;
