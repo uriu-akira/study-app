@@ -926,6 +926,117 @@
                 justify-content:center;
             }
         }
+    
+        /* iPad / PC: header navigation on row 1, screen actions on row 2 */
+        header .header-top {
+            display:grid !important;
+            grid-template-columns:minmax(220px, 1fr) auto;
+            align-items:center;
+            gap:8px 14px;
+            padding-bottom:8px !important;
+        }
+        header .header-top > .header-common-nav {
+            position:static !important; transform:none !important; inset:auto !important;
+            grid-column:2; grid-row:1; margin-left:0 !important;
+            display:flex !important; justify-content:flex-end; gap:6px; flex-wrap:wrap;
+        }
+        header .header-top > :not(.header-common-nav):not(.header-title-row):first-child { grid-column:1; grid-row:1; }
+        header .header-top > :not(.header-common-nav):not(.header-title-row):not(:first-child) { grid-column:1 / -1; grid-row:2; justify-self:end; }
+        header .header-title-row { grid-column:1; grid-row:1; }
+        header .header-action-row { grid-column:1 / -1; grid-row:2; display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+        header .header-top > .header-common-nav + * { }
+        @media (max-width: 900px) {
+            header .header-top { grid-template-columns:1fr; }
+            header .header-top > .header-common-nav { grid-column:1; grid-row:2; justify-content:flex-start; }
+            header .header-top > :not(.header-common-nav):not(.header-title-row):not(:first-child),
+            header .header-action-row { grid-column:1; grid-row:3; justify-self:stretch; justify-content:flex-start; }
+            header .header-title-row { grid-column:1; grid-row:1; }
+        }
+
+        /* 予定登録モードは画面遷移ナビを重複表示せず、操作だけを1行表示 */
+        header .header-top.plan-mode-header {
+            display:flex !important;
+            align-items:center;
+            justify-content:space-between;
+            gap:10px;
+        }
+        header .header-top.plan-mode-header > * {
+            grid-column:auto !important;
+            grid-row:auto !important;
+            justify-self:auto !important;
+        }
+    
+
+        /* ===== 2026-09-06 ヘッダ1段レイアウト ===== */
+        header {
+            gap: 6px;
+        }
+        header .header-top:not(.plan-mode-header) {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 0 !important;
+            width: 100%;
+            min-width: 0;
+            flex-wrap: nowrap !important;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: thin;
+            padding-bottom: 1px;
+        }
+        header .header-top:not(.plan-mode-header) .header-title-slot {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 0 0 auto;
+            min-width: max-content;
+        }
+        header .header-top:not(.plan-mode-header) .header-title-slot h1,
+        header .header-top:not(.plan-mode-header) .header-title-row h1 {
+            white-space: nowrap;
+        }
+        header .header-top:not(.plan-mode-header) .header-common-nav {
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            flex-wrap: nowrap !important;
+            flex: 0 0 auto;
+            margin-left: 34px !important;
+        }
+        header .header-top:not(.plan-mode-header) .header-nav-divider {
+            width: 1px;
+            height: 30px;
+            background: #cbd5e1;
+            margin: 0 14px;
+            flex: 0 0 1px;
+        }
+        header .header-top:not(.plan-mode-header) .header-action-slot {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+            flex-wrap: nowrap;
+            margin-left: auto;
+            flex: 0 0 auto;
+            min-width: max-content;
+        }
+        header .header-top:not(.plan-mode-header) .header-action-slot:empty,
+        header .header-top:not(.plan-mode-header) .header-action-slot:empty + .header-nav-divider {
+            display:none;
+        }
+        header .header-top:not(.plan-mode-header) .btn,
+        header .header-top:not(.plan-mode-header) label.btn {
+            white-space: nowrap;
+        }
+        @media (max-width: 1200px) {
+            header { padding-left: 10px; padding-right: 10px; }
+            header .header-top:not(.plan-mode-header) .header-common-nav { margin-left: 22px !important; gap: 5px !important; }
+            header .header-top:not(.plan-mode-header) .header-nav-divider { margin: 0 10px; }
+            header .header-top:not(.plan-mode-header) .btn,
+            header .header-top:not(.plan-mode-header) label.btn { padding: 6px 10px; font-size: .7rem; }
+        }
+
     </style>
 </head>
 <body>
@@ -934,20 +1045,20 @@
          ============================== -->
     <div id="dashboardScreen" class="view-screen active">
         <header>
-            <div class="header-top">
-                <h1>📚 問題集 進捗管理ポータル</h1>
-                <div style="display: flex; gap: 6px;">
-                    <button class="btn" style="background-color: #7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
-                    <button class="btn" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
-                    <button class="btn" style="background-color: var(--accent-color);" onclick="openReportModal()">📊 実績</button>
+            <div class="header-top two-row-header">
+                <div class="header-title-row"><h1>📚 問題集一覧</h1></div>
+                <div class="header-common-nav">
+                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
+                    <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
+                    <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
+                    <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
+                </div>
+                <div class="header-action-row">
                     <button class="btn btn-outline" id="dashboardOrderBtn" onclick="toggleDashboardOrderMode()">↕ 表示順</button>
                     <button class="btn" onclick="openBookModal()">+ 問題集を追加</button>
-                    <button class="btn" style="background-color: #8b5cf6;" onclick="showPastExamScreen()">🎓 過去問・模試管理</button>
+                    <button class="btn" style="background-color:#8b5cf6;" onclick="showPastExamScreen()">🎓 過去問・模試管理</button>
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
-                    <label class="btn btn-outline" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer;">
-                        データ読込
-                        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
-                    </label>
+                    <label class="btn btn-outline" style="margin:0; display:inline-flex; align-items:center; cursor:pointer;">データ読込<input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)"></label>
                 </div>
             </div>
         </header>
@@ -983,10 +1094,11 @@
         <header>
             <div class="header-top">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
+                    
                     <h1 style="color: #14b8a6;">📅 学習予定リスト</h1>
                 </div>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
@@ -1048,11 +1160,12 @@
         <header>
             <div class="header-top">
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
+                    
                     <h1 style="color:#2563eb;">📈 宿題進捗</h1>
                 </div>
                 <button class="btn" style="background:#2563eb;" onclick="openLessonGroupModal()">＋ 塾日程</button>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
@@ -1086,7 +1199,7 @@
             <!-- 通常時のヘッダー -->
             <div class="header-top" id="peHeaderNormal" style="padding: 0 0 10px 0;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
+                    
                     <h1 style="color: #4f46e5;">🎓 東大理系 過去問・模試管理</h1>
                 </div>
                 <div style="display: flex; gap: 6px;">
@@ -1103,24 +1216,20 @@
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
                 </div>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
                 </div>
             </div>
             <!-- 予定登録モード時のヘッダー -->
-            <div class="header-top" id="peHeaderPlanMode" style="display:none; background-color:#1e293b; color:white; padding: 6px 12px; border-radius: 8px; margin-bottom: 10px;">
+            <div class="header-top plan-mode-header" id="peHeaderPlanMode" style="display:none; background-color:#1e293b; color:white; padding: 6px 12px; border-radius: 8px; margin-bottom: 10px;">
                 <span style="font-weight:bold; font-size:0.9rem;" id="pePlanModeTitle">予定登録モード</span>
                 <div style="display: flex; gap: 6px;">
                     <button class="btn" style="background-color: #f1f5f9; color: #0f172a;" onclick="cancelPlanMode()">キャンセル</button>
                     <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()">✅ 予定登録</button>
                 </div>
-                <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
-                    <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
-                    <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
-                    <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
                 </div>
-            </div>
             <div class="weekly-plan-tabs" id="peWeeklyPlanTabs"></div>
 
             <div class="pe-tabs" id="peTabs"></div>
@@ -1144,6 +1253,7 @@
                     <h1 id="peBatsuBookTitle" style="color: #4f46e5;">過去問 - 要復習リスト</h1>
                 </div>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
@@ -1170,6 +1280,7 @@
                     <h1 id="peFilterBookTitle" style="color: #0ea5e9;">過去問 - 検索結果</h1>
                 </div>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
@@ -1193,7 +1304,7 @@
             <!-- 通常時のヘッダー -->
             <div class="header-top" id="detailHeaderNormal">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
+                    
                     <button class="btn" id="reportBackBtn" style="display:none; background:#0ea5e9; color:white;" onclick="returnToReportFromDetail()">← 実績レポートへ戻る</button>
                     <button class="btn" id="homeworkBackBtn" style="display:none; background:#f59e0b; color:white;" onclick="returnToHomeworkFromDetail()">← 宿題進捗へ戻る</button>
                     <h1 id="detailBookTitle"></h1>
@@ -1207,24 +1318,20 @@
                     <button class="btn btn-danger-outline" onclick="resetCurrentBookStatus()">初期化</button>
                 </div>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
                 </div>
             </div>
             <!-- 予定登録モード時のヘッダー -->
-            <div class="header-top" id="detailHeaderPlanMode" style="display:none; background-color:#1e293b; color:white; padding: 6px 12px; border-radius: 8px;">
+            <div class="header-top plan-mode-header" id="detailHeaderPlanMode" style="display:none; background-color:#1e293b; color:white; padding: 6px 12px; border-radius: 8px;">
                 <span style="font-weight:bold; font-size:0.9rem;" id="detailPlanModeTitle">予定登録モード</span>
                 <div style="display: flex; gap: 6px;">
                     <button class="btn" style="background-color: #f1f5f9; color: #0f172a;" onclick="cancelPlanMode()">キャンセル</button>
                     <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()">✅ 予定登録</button>
                 </div>
-                <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
-                    <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
-                    <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
-                    <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
                 </div>
-            </div>
             <div class="weekly-plan-tabs" id="detailWeeklyPlanTabs"></div>
 
             <div class="stats-bar">
@@ -1297,6 +1404,7 @@
                     <h1 id="batsuBookTitle">要復習リスト</h1>
                 </div>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
@@ -1324,6 +1432,7 @@
                     <h1 id="starBookTitle">★指定リスト</h1>
                 </div>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
@@ -6264,5 +6373,63 @@
             }
         };
     </script>
+
+<script>
+(function(){
+    function normalizeSingleRowHeaders(){
+        document.querySelectorAll('header .header-top:not(.plan-mode-header)').forEach(function(row){
+            if(row.dataset.singleRowReady === '1') return;
+            var nav = row.querySelector(':scope > .header-common-nav');
+            if(!nav) return;
+
+            var children = Array.from(row.children);
+            var title = children.find(function(el){ return el !== nav && (el.classList.contains('header-title-row') || el.querySelector('h1')); });
+            if(!title) return;
+
+            // Remove older duplicate dashboard/portal jump buttons outside the common navigation.
+            row.querySelectorAll(':scope > * button[onclick="showDashboard()"], :scope > * > button[onclick="showDashboard()"]')
+                .forEach(function(btn){
+                    if(!btn.closest('.header-common-nav')) btn.remove();
+                });
+
+            title.classList.add('header-title-slot');
+            nav.removeAttribute('style');
+
+            var actions = document.createElement('div');
+            actions.className = 'header-action-slot';
+            Array.from(row.children).forEach(function(el){
+                if(el !== title && el !== nav) actions.appendChild(el);
+            });
+
+            row.innerHTML = '';
+            row.appendChild(title);
+            row.appendChild(nav);
+            if(actions.children.length){
+                var divider = document.createElement('div');
+                divider.className = 'header-nav-divider';
+                divider.setAttribute('aria-hidden','true');
+                row.appendChild(divider);
+                row.appendChild(actions);
+            }
+            row.classList.remove('two-row-header');
+            row.dataset.singleRowReady = '1';
+        });
+    }
+
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', normalizeSingleRowHeaders);
+    else normalizeSingleRowHeaders();
+
+    // Headers are static, but rerun after screen switches in case a screen header is regenerated.
+    var originalSwitchScreen = window.switchScreen;
+    if(typeof originalSwitchScreen === 'function'){
+        window.switchScreen = function(){
+            var r = originalSwitchScreen.apply(this, arguments);
+            normalizeSingleRowHeaders();
+            return r;
+        };
+    }
+})();
+</script>
+
 </body>
 </html>
