@@ -950,6 +950,7 @@
                     <button class="btn" type="button" style="background:#14b8a6;color:#fff;" onclick="openPortalPlanTargetModal()">📅 予定登録</button>
                     <button class="adhoc-add-btn" type="button" onclick="openAdhocTaskModal()">＋ 単発タスク追加</button>
                     <button class="reschedule-btn" id="portalRescheduleBtn" type="button" onclick="togglePortalRescheduleMode()">予定日変更</button>
+                    <button class="reschedule-btn" type="button" onclick="shiftAllIncompletePlansByDays()">未実施を一括ずらし</button>
                     <button class="priority-order-btn" id="portalPriorityOrderBtn" type="button" onclick="togglePortalPriorityMode()">優先順</button>
                 </div>
             </div>
@@ -1124,6 +1125,7 @@
                 </div>
                 <div style="display: flex; gap: 6px;">
                     <button class="btn" style="background-color: #14b8a6;" onclick="openPlanDateModal('book')">📅 予定</button>
+                    <button class="btn" style="background-color: #f59e0b;" onclick="shiftCurrentBookIncompletePlansByDays()">↔ 未実施を一括ずらし</button>
                     <button class="btn" style="background-color: var(--accent-color);" onclick="showStarListScreen()">★ 指定リスト</button>
                     <button class="btn" style="background-color: #e11d48;" onclick="showBatsuListScreen()">📌 要復習</button>
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
@@ -2922,6 +2924,111 @@
             renderPortalPlanList();
         }
 
+        function shiftCurrentBookIncompletePlansByDays() {
+            const book = store.books && store.books[currentBookId];
+            if (!book) return;
+            const raw = prompt(`問題集「${book.title || "名称未設定"}」の未実施予定を何日ずらしますか？\n例：3 → 3日後、-2 → 2日前`);
+            if (raw === null) return;
+            const days = Number(raw);
+            if (!Number.isInteger(days) || days === 0) {
+                alert("0以外の整数で日数を入力してください。");
+                return;
+            }
+
+            if (!book.data) book.data = {};
+            const targets = [];
+            (book.sections || []).forEach(sec => {
+                if (!sec || book.data["sec_disabled_" + sec.id]) return;
+                for (let q = 1; q <= sec.count; q++) {
+                    const key = `${sec.id}_${q}`;
+                    const planDate = book.data[`${key}_plan`];
+                    if (!planDate) continue;
+                    const history = getHistoryArrayBook(currentBookId, sec.id, q);
+                    const baseline = Number.isInteger(book.data[`${key}_planBaseline`]) ? book.data[`${key}_planBaseline`] : null;
+                    if (!hasPlanCompletionHistory(history, planDate, baseline)) {
+                        targets.push({ key, planDate });
+                    }
+                }
+            });
+
+            if (targets.length === 0) {
+                alert("この問題集に、ずらす対象の未実施予定はありません。");
+                return;
+            }
+            const direction = days > 0 ? `${days}日後` : `${Math.abs(days)}日前`;
+            if (!confirm(`問題集「${book.title || "名称未設定"}」の未実施予定 ${targets.length}件を一括で${direction}へずらします。\nよろしいですか？`)) return;
+
+            targets.forEach(item => { book.data[`${item.key}_plan`] = addLocalDays(item.planDate, days); });
+            saveStore();
+            initTable();
+            alert(`この問題集の未実施予定 ${targets.length}件を${direction}へ変更しました。`);
+        }
+
+        function shiftAllIncompletePlansByDays() {
+            const raw = prompt("未実施の予定を何日ずらしますか？\n例：3 → 3日後、-2 → 2日前");
+            if (raw === null) return;
+            const days = Number(raw);
+            if (!Number.isInteger(days) || days === 0) {
+                alert("0以外の整数で日数を入力してください。");
+                return;
+            }
+
+            let targetCount = 0;
+            const targets = [];
+
+            Object.keys(store.books || {}).forEach(bId => {
+                const book = store.books[bId];
+                if (!book || !book.data || !Array.isArray(book.sections)) return;
+                book.sections.forEach(sec => {
+                    if (book.data["sec_disabled_" + sec.id]) return;
+                    for (let q = 1; q <= sec.count; q++) {
+                        const key = `${sec.id}_${q}`;
+                        const planDate = book.data[`${key}_plan`];
+                        if (!planDate) continue;
+                        const history = getHistoryArrayBook(bId, sec.id, q);
+                        const baseline = Number.isInteger(book.data[`${key}_planBaseline`]) ? book.data[`${key}_planBaseline`] : null;
+                        if (!hasPlanCompletionHistory(history, planDate, baseline)) {
+                            targets.push(() => { book.data[`${key}_plan`] = addLocalDays(planDate, days); });
+                            targetCount++;
+                        }
+                    }
+                });
+            });
+
+            Object.keys(store.pastExams || {}).forEach(subjKey => {
+                const subj = store.pastExams[subjKey];
+                if (!subj || !subj.records) return;
+                Object.values(subj.records).forEach(rec => {
+                    if (!rec || !rec.plan) return;
+                    const history = Array.isArray(rec.history) ? rec.history : [];
+                    const baseline = Number.isInteger(rec.planBaseline) ? rec.planBaseline : null;
+                    if (!hasPlanCompletionHistory(history, rec.plan, baseline)) {
+                        targets.push(() => { rec.plan = addLocalDays(rec.plan, days); });
+                        targetCount++;
+                    }
+                });
+            });
+
+            if (!Array.isArray(store.adHocTasks)) store.adHocTasks = [];
+            store.adHocTasks.forEach(task => {
+                if (!task || !task.planDate || task.completed) return;
+                targets.push(() => { task.planDate = addLocalDays(task.planDate, days); });
+                targetCount++;
+            });
+
+            if (targetCount === 0) {
+                alert("ずらす対象の未実施予定はありません。");
+                return;
+            }
+            const direction = days > 0 ? `${days}日後` : `${Math.abs(days)}日前`;
+            if (!confirm(`未実施の予定 ${targetCount}件を一括で${direction}へずらします。\nよろしいですか？`)) return;
+
+            targets.forEach(fn => fn());
+            saveStore();
+            renderPortalPlanList();
+            alert(`未実施の予定 ${targetCount}件を${direction}へ変更しました。`);
+        }
+
         function applyPortalReschedule() {
             if (!portalRescheduleMode) return;
             if (portalRescheduleSelectedKeys.length === 0) { alert("予定日を変更する明細を選択してください。"); return; }
@@ -3741,7 +3848,8 @@
                             ? book.data[`${sec.id}_${qNum}_history`]
                             : [];
                         // 予定日当日または予定日以降の有効実績があれば消化済み。
-                        const planConsumed = hasPlanCompletionHistory(planHistory, planDate);
+                        const planBaseline = book.data[`${sec.id}_${qNum}_planBaseline`];
+                        const planConsumed = hasPlanCompletionHistory(planHistory, planDate, Number.isInteger(planBaseline) ? planBaseline : null);
                         if (planDate && !planConsumed) {
                             tdInput.classList.add("planned-cell");
                         }
@@ -3804,7 +3912,8 @@
             const latest = getLatestEntry(secId, qNum);
             const book = store.books[currentBookId];
             const storedPlanDate = book?.data?.[`${secId}_${qNum}_plan`] || planDate || "";
-            const planConsumed = hasPlanCompletionHistory(history, storedPlanDate);
+            const storedPlanBaseline = book?.data?.[`${secId}_${qNum}_planBaseline`];
+            const planConsumed = hasPlanCompletionHistory(history, storedPlanDate, Number.isInteger(storedPlanBaseline) ? storedPlanBaseline : null);
 
             // 予定登録の黒反転は未消化の予定だけ。実績登録/取消の直後にもここで再判定する。
             td.classList.remove("planned-cell");
@@ -5604,7 +5713,7 @@
                             else if(latest.mark === "×") latestMarkClass = "batsu";
                             else if(latest.mark === "△") latestMarkClass = "tri";                            // 予定日当日または予定日以降の有効実績があれば消化済み。
                             const planDate = rec.plan;
-                            const planConsumed = hasPlanCompletionHistory(history, planDate);
+                            const planConsumed = hasPlanCompletionHistory(history, planDate, Number.isInteger(rec.planBaseline) ? rec.planBaseline : null);
                             let plannedClass = (planDate && !planConsumed) ? "planned-cell" : "";
 
                             let planBadge = "";
