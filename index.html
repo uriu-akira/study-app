@@ -953,13 +953,23 @@
             header .header-title-row { grid-column:1; grid-row:1; }
         }
 
-        /* 予定登録モードは画面遷移ナビを重複表示せず、操作だけを1行表示 */
+        /* 予定登録モード：通常ヘッダを上段に残し、黒帯を下段に表示 */
         header .header-top.plan-mode-header {
             display:none !important;
-            /* 旧黒帯は廃止。予定登録操作は通常ヘッダ内に表示する */
-            align-items:center;
-            justify-content:space-between;
+            width:100%;
+            box-sizing:border-box;
+            align-items:center !important;
+            justify-content:space-between !important;
             gap:10px;
+            background:#1e293b !important;
+            color:#fff !important;
+            padding:7px 12px !important;
+            border-radius:8px;
+            margin:4px 0 2px !important;
+            overflow:visible !important;
+        }
+        header .header-top.plan-mode-header.active {
+            display:flex !important;
         }
         header .header-top.plan-mode-header > * {
             grid-column:auto !important;
@@ -1104,18 +1114,18 @@
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
                     <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                 </div>
-            </div>
-        </header>
-        <div class="batsu-list-container">
-            <div class="portal-plan-toolbar">
-                <div style="font-size:0.72rem; color:#64748b;">問題集・過去問の予定と、単発タスクをまとめて管理できます。</div>
-                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <div style="display:flex; gap:6px; align-items:center; flex-wrap:nowrap;">
                     <button class="btn" type="button" style="background:#14b8a6;color:#fff;" onclick="openPortalPlanTargetModal()">📅 予定登録</button>
                     <button class="adhoc-add-btn" type="button" onclick="openAdhocTaskModal()">＋ 単発タスク追加</button>
                     <button class="reschedule-btn" id="portalRescheduleBtn" type="button" onclick="togglePortalRescheduleMode()">予定日変更</button>
                     <button class="reschedule-btn" type="button" onclick="shiftAllIncompletePlansByDays()">未実施を一括ずらし</button>
                     <button class="priority-order-btn" id="portalPriorityOrderBtn" type="button" onclick="togglePortalPriorityMode()">優先順</button>
                 </div>
+            </div>
+        </header>
+        <div class="batsu-list-container">
+            <div class="portal-plan-toolbar">
+                <div style="font-size:0.72rem; color:#64748b;">問題集・過去問の予定と、単発タスクをまとめて管理できます。</div>
             </div>
             <div class="portal-plan-tabs" id="portalPlanTabs">
                 <button class="portal-plan-tab active" data-subject="all" onclick="setPortalPlanSubject('all')">全科目</button>
@@ -2820,32 +2830,24 @@
             pairs.forEach(([normalId, planId]) => {
                 const normal = document.getElementById(normalId);
                 const plan = document.getElementById(planId);
-                if (!normal || !plan) return;
-                if (isPlanMode) {
-                    // 対象画面の切替は updatePlanModeUI 側で制御する
-                    return;
-                }
-                normal.style.display = "flex";
-                plan.style.display = "none";
+                if (normal) normal.style.display = "flex";
+                if (plan && !isPlanMode) plan.classList.remove("active");
             });
         }
 
         function updatePlanModeUI() {
             const txt = isWeeklyPlanMode ? `📅 期間予定登録: ${weeklyPlanDates[0]} ～ ${weeklyPlanDates[weeklyPlanDates.length-1]}（${weeklyPlanDates.length}日）` : (currentPlanDate ? `📅 予定登録: ${currentPlanDate}` : `📅 予定解除`);
-            const normalId = currentPlanType === 'book' ? "detailHeaderNormal" : "peHeaderNormal";
             const planId = currentPlanType === 'book' ? "detailHeaderPlanMode" : "peHeaderPlanMode";
+            const titleId = currentPlanType === 'book' ? "detailPlanModeTitle" : "pePlanModeTitle";
+            const normalId = currentPlanType === 'book' ? "detailHeaderNormal" : "peHeaderNormal";
             const normal = document.getElementById(normalId);
             const plan = document.getElementById(planId);
-            if (normal) normal.style.display = "flex";
-            if (plan) plan.style.display = "none";
+            const title = document.getElementById(titleId);
             document.querySelectorAll('.inline-plan-mode-controls').forEach(x => x.remove());
-            if (!normal) return;
-            const actions = normal.querySelector('.header-action-slot') || normal;
-            const controls = document.createElement('div');
-            controls.className = 'inline-plan-mode-controls';
-            controls.style.cssText = 'display:flex;align-items:center;gap:6px;margin-left:8px;padding-left:10px;border-left:2px solid #f59e0b;white-space:nowrap;';
-            controls.innerHTML = `<span style="font-size:.72rem;font-weight:800;color:#b45309;">${txt}</span><button class="btn" style="background:#f1f5f9;color:#0f172a;" onclick="cancelPlanMode()">キャンセル</button><button class="btn" style="background:#f59e0b;" onclick="savePlanMode()">✅ 予定登録</button>`;
-            actions.appendChild(controls);
+            document.querySelectorAll('.plan-mode-header').forEach(x => x.classList.remove('active'));
+            if (normal) normal.style.display = "flex";
+            if (title) title.textContent = `予定登録モード　${txt}`;
+            if (plan && isPlanMode) plan.classList.add('active');
         }
 
         function renderWeeklyPlanTabs() {
