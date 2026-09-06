@@ -880,11 +880,56 @@
         .lesson-group-title { font-size:1.05rem; font-weight:900; color:#0f172a; }
         .lesson-group-sub { font-size:.72rem; color:#64748b; margin-top:2px; }
         @media (max-width: 600px) { .homework-grid { grid-template-columns:1fr; } }
+
+        /* 全画面共通ナビゲーション */
+        .global-quick-nav {
+            position: fixed;
+            right: 12px;
+            bottom: 12px;
+            z-index: 9000;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            padding: 7px;
+            border-radius: 12px;
+            background: rgba(255,255,255,.94);
+            box-shadow: 0 4px 18px rgba(15,23,42,.18);
+            border: 1px solid rgba(148,163,184,.35);
+            backdrop-filter: blur(6px);
+        }
+        .global-quick-nav .btn { margin:0; white-space:nowrap; }
+        @media (max-width:600px) {
+            .global-quick-nav { right:6px; bottom:6px; left:6px; justify-content:center; }
+            .global-quick-nav .btn { flex:1 1 auto; padding:7px 8px; font-size:.72rem; }
+        }
+    
+        /* iPad / PC: 共通3ボタンはヘッダー中央に配置 */
+        .header-top { position:relative; }
+        .header-common-nav {
+            flex-shrink:0;
+            position:absolute;
+            left:50%;
+            top:50%;
+            transform:translate(-50%, -50%);
+            margin-left:0 !important;
+            justify-content:center;
+            z-index:5;
+        }
+        @media (max-width: 1100px) {
+            .header-top { flex-wrap:wrap; gap:8px; padding-bottom:52px; }
+            .header-common-nav {
+                top:auto;
+                bottom:6px;
+                width:auto;
+                max-width:100%;
+                justify-content:center;
+            }
+        }
     </style>
 </head>
 <body>
-
-    <!-- ==============================
+<!-- ==============================
          画面1: ポータル (ダッシュボード)
          ============================== -->
     <div id="dashboardScreen" class="view-screen active">
@@ -892,7 +937,7 @@
             <div class="header-top">
                 <h1>📚 問題集 進捗管理ポータル</h1>
                 <div style="display: flex; gap: 6px;">
-                    <button class="btn" style="background-color: #14b8a6;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
+                    <button class="btn" style="background-color: #7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" style="background-color: var(--accent-color);" onclick="openReportModal()">📊 実績</button>
                     <button class="btn btn-outline" id="dashboardOrderBtn" onclick="toggleDashboardOrderMode()">↕ 表示順</button>
@@ -940,6 +985,11 @@
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button class="btn btn-outline" onclick="showDashboard()">← ポータルへ</button>
                     <h1 style="color: #14b8a6;">📅 学習予定リスト</h1>
+                </div>
+                <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
+                    <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
+                    <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
                 </div>
             </div>
         </header>
@@ -1002,6 +1052,11 @@
                     <h1 style="color:#2563eb;">📈 宿題進捗</h1>
                 </div>
                 <button class="btn" style="background:#2563eb;" onclick="openLessonGroupModal()">＋ 塾日程</button>
+                <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
+                    <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
+                    <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
+                </div>
             </div>
         </header>
         <div class="homework-wrap">
@@ -1035,7 +1090,7 @@
                     <h1 style="color: #4f46e5;">🎓 東大理系 過去問・模試管理</h1>
                 </div>
                 <div style="display: flex; gap: 6px;">
-                    <button class="btn" style="background-color: #14b8a6;" onclick="openPlanDateModal('pe')">📅 予定</button>
+                    <button class="btn" style="background-color: #14b8a6;" onclick="openPlanDateModal('pe')">📅 予定登録</button>
                     <!-- ▼ 科目ごとに表示が切り替わる検索ボタン群 ▼ -->
                     <div id="peFilterButtons" style="display: flex; gap: 6px;">
                         <button class="btn" id="btnMathFilter" style="background-color: #0ea5e9; display: none;" onclick="openPEMathFilterModal()">🔍 数学検索</button>
@@ -1047,6 +1102,11 @@
                     <button class="btn" style="background-color: #e11d48;" onclick="showPEBatsuListScreen()">📌 要復習</button>
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
                 </div>
+                <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
+                    <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
+                    <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
+                </div>
             </div>
             <!-- 予定登録モード時のヘッダー -->
             <div class="header-top" id="peHeaderPlanMode" style="display:none; background-color:#1e293b; color:white; padding: 6px 12px; border-radius: 8px; margin-bottom: 10px;">
@@ -1054,6 +1114,11 @@
                 <div style="display: flex; gap: 6px;">
                     <button class="btn" style="background-color: #f1f5f9; color: #0f172a;" onclick="cancelPlanMode()">キャンセル</button>
                     <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()">✅ 予定登録</button>
+                </div>
+                <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
+                    <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
+                    <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
                 </div>
             </div>
             <div class="weekly-plan-tabs" id="peWeeklyPlanTabs"></div>
@@ -1078,6 +1143,11 @@
                     <button class="btn btn-outline" onclick="showPastExamScreen()">← 表に戻る</button>
                     <h1 id="peBatsuBookTitle" style="color: #4f46e5;">過去問 - 要復習リスト</h1>
                 </div>
+                <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
+                    <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
+                    <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
+                </div>
             </div>
         </header>
         <div class="batsu-list-container">
@@ -1098,6 +1168,11 @@
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button class="btn btn-outline" onclick="showPastExamScreen()">← 表に戻る</button>
                     <h1 id="peFilterBookTitle" style="color: #0ea5e9;">過去問 - 検索結果</h1>
+                </div>
+                <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
+                    <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
+                    <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
                 </div>
             </div>
         </header>
@@ -1124,12 +1199,17 @@
                     <h1 id="detailBookTitle"></h1>
                 </div>
                 <div style="display: flex; gap: 6px;">
-                    <button class="btn" style="background-color: #14b8a6;" onclick="openPlanDateModal('book')">📅 予定</button>
+                    <button class="btn" style="background-color: #14b8a6;" onclick="openPlanDateModal('book')">📅 予定登録</button>
                     <button class="btn" style="background-color: #f59e0b;" onclick="shiftCurrentBookIncompletePlansByDays()">↔ 未実施を一括ずらし</button>
                     <button class="btn" style="background-color: var(--accent-color);" onclick="showStarListScreen()">★ 指定リスト</button>
                     <button class="btn" style="background-color: #e11d48;" onclick="showBatsuListScreen()">📌 要復習</button>
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
                     <button class="btn btn-danger-outline" onclick="resetCurrentBookStatus()">初期化</button>
+                </div>
+                <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
+                    <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
+                    <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
                 </div>
             </div>
             <!-- 予定登録モード時のヘッダー -->
@@ -1138,6 +1218,11 @@
                 <div style="display: flex; gap: 6px;">
                     <button class="btn" style="background-color: #f1f5f9; color: #0f172a;" onclick="cancelPlanMode()">キャンセル</button>
                     <button class="btn" style="background-color: #f59e0b;" onclick="savePlanMode()">✅ 予定登録</button>
+                </div>
+                <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
+                    <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
+                    <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
                 </div>
             </div>
             <div class="weekly-plan-tabs" id="detailWeeklyPlanTabs"></div>
@@ -1211,6 +1296,11 @@
                     <button class="btn btn-outline" onclick="showDashboard()">🏠 ポータル</button>
                     <h1 id="batsuBookTitle">要復習リスト</h1>
                 </div>
+                <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
+                    <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
+                    <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
+                </div>
             </div>
         </header>
         <div class="batsu-list-container">
@@ -1232,6 +1322,11 @@
                     <button class="btn btn-outline" onclick="showDetailScreen()">← 表に戻る</button>
                     <button class="btn btn-outline" onclick="showDashboard()">🏠 ポータル</button>
                     <h1 id="starBookTitle">★指定リスト</h1>
+                </div>
+                <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
+                    <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
+                    <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
                 </div>
             </div>
         </header>
