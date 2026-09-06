@@ -1048,7 +1048,80 @@
             header .header-top:not(.plan-mode-header) label.btn { padding: 6px 10px; font-size: .7rem; }
         }
 
-    </style>
+    
+
+        /* ===== iPad縦表示: 縦線右側の操作群だけ2段目へ ===== */
+        @media (orientation: portrait) and (max-width: 1100px) {
+            header .header-top:not(.plan-mode-header) {
+                display: grid !important;
+                grid-template-columns: auto minmax(0, 1fr) !important;
+                grid-template-rows: auto auto !important;
+                align-items: center !important;
+                column-gap: 18px !important;
+                row-gap: 8px !important;
+                overflow: visible !important;
+                flex-wrap: unset !important;
+                padding-bottom: 6px !important;
+            }
+            header .header-top:not(.plan-mode-header) .header-title-slot {
+                grid-column: 1 !important;
+                grid-row: 1 !important;
+                min-width: max-content;
+                align-self: center;
+            }
+            header .header-top:not(.plan-mode-header) .header-common-nav {
+                grid-column: 2 !important;
+                grid-row: 1 !important;
+                margin-left: 0 !important;
+                justify-self: end !important;
+                justify-content: flex-end !important;
+                min-width: 0;
+                overflow-x: auto;
+                overflow-y: hidden;
+                max-width: 100%;
+                padding-bottom: 1px;
+                scrollbar-width: thin;
+            }
+            header .header-top:not(.plan-mode-header) .header-nav-divider {
+                display: none !important;
+            }
+            header .header-top:not(.plan-mode-header) .header-action-slot {
+                grid-column: 1 / -1 !important;
+                grid-row: 2 !important;
+                width: 100% !important;
+                margin-left: 0 !important;
+                justify-self: stretch !important;
+                justify-content: flex-end !important;
+                flex-wrap: wrap !important;
+                min-width: 0 !important;
+            }
+            /* 予定登録モードの黒帯は通常ヘッダのさらに下段に表示 */
+            header .header-top.plan-mode-header.active {
+                margin-top: 2px !important;
+            }
+        }
+
+        /* さらに狭い縦画面では上段ナビも無理に縮めず横スクロール可能にする */
+        @media (orientation: portrait) and (max-width: 760px) {
+            header .header-top:not(.plan-mode-header) {
+                grid-template-columns: 1fr !important;
+            }
+            header .header-top:not(.plan-mode-header) .header-title-slot {
+                grid-column: 1 !important;
+                grid-row: 1 !important;
+            }
+            header .header-top:not(.plan-mode-header) .header-common-nav {
+                grid-column: 1 !important;
+                grid-row: 2 !important;
+                justify-self: stretch !important;
+                justify-content: flex-start !important;
+            }
+            header .header-top:not(.plan-mode-header) .header-action-slot {
+                grid-column: 1 !important;
+                grid-row: 3 !important;
+            }
+        }
+</style>
 </head>
 <body>
 <!-- ==============================
