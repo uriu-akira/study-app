@@ -1123,6 +1123,17 @@
                 grid-row: 3 !important;
             }
         }
+
+        /* TOPを画面遷移ナビの先頭にし、予定一覧との間だけ少し広めに空ける */
+        header .header-top:not(.plan-mode-header) .header-common-nav .header-top-nav-btn {
+            margin-right: 12px !important;
+        }
+        @media (orientation: portrait) and (max-width: 1100px) {
+            header .header-top:not(.plan-mode-header) .header-common-nav .header-top-nav-btn {
+                margin-right: 14px !important;
+            }
+        }
+
 </style>
 </head>
 <body>
@@ -1132,12 +1143,12 @@
     <div id="dashboardScreen" class="view-screen active">
         <header>
             <div class="header-top two-row-header">
-                <div class="header-title-row"><h1>📚 問題集一覧</h1></div>
+                <div class="header-title-row"><h1>🏠 TOP</h1></div>
                 <div class="header-common-nav">
+                    <button class="btn header-top-nav-btn" type="button" style="background-color:#475569;" onclick="showDashboard()">🏠 TOP</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
-                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                 </div>
                 <div class="header-action-row">
                     <button class="btn btn-outline" id="dashboardOrderBtn" onclick="toggleDashboardOrderMode()">↕ 表示順</button>
@@ -1184,10 +1195,10 @@
                     <h1 style="color: #14b8a6;">📅 学習予定リスト</h1>
                 </div>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn header-top-nav-btn" type="button" style="background-color:#475569;" onclick="showDashboard()">🏠 TOP</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
-                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                 </div>
                 <div style="display:flex; gap:6px; align-items:center; flex-wrap:nowrap;">
                     <button class="btn" type="button" style="background:#14b8a6;color:#fff;" onclick="openPortalPlanTargetModal()">📅 予定登録</button>
@@ -1251,10 +1262,10 @@
                 </div>
                 <button class="btn" style="background:#2563eb;" onclick="openLessonGroupModal()">＋ 塾日程</button>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn header-top-nav-btn" type="button" style="background-color:#475569;" onclick="showDashboard()">🏠 TOP</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
-                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                 </div>
             </div>
         </header>
@@ -1302,10 +1313,10 @@
                     <button class="btn btn-outline" onclick="exportData()">保存/出力</button>
                 </div>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn header-top-nav-btn" type="button" style="background-color:#475569;" onclick="showDashboard()">🏠 TOP</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
-                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                 </div>
             </div>
             <!-- 予定登録モード時のヘッダー -->
@@ -1339,10 +1350,10 @@
                     <h1 id="peBatsuBookTitle" style="color: #4f46e5;">過去問 - 要復習リスト</h1>
                 </div>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn header-top-nav-btn" type="button" style="background-color:#475569;" onclick="showDashboard()">🏠 TOP</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
-                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                 </div>
             </div>
         </header>
@@ -1366,10 +1377,10 @@
                     <h1 id="peFilterBookTitle" style="color: #0ea5e9;">過去問 - 検索結果</h1>
                 </div>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn header-top-nav-btn" type="button" style="background-color:#475569;" onclick="showDashboard()">🏠 TOP</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
-                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                 </div>
             </div>
         </header>
@@ -1404,10 +1415,10 @@
                     <button class="btn btn-danger-outline" onclick="resetCurrentBookStatus()">初期化</button>
                 </div>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn header-top-nav-btn" type="button" style="background-color:#475569;" onclick="showDashboard()">🏠 TOP</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
-                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                 </div>
             </div>
             <!-- 予定登録モード時のヘッダー -->
@@ -1490,10 +1501,10 @@
                     <h1 id="batsuBookTitle">要復習リスト</h1>
                 </div>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn header-top-nav-btn" type="button" style="background-color:#475569;" onclick="showDashboard()">🏠 TOP</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
-                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                 </div>
             </div>
         </header>
@@ -1518,10 +1529,10 @@
                     <h1 id="starBookTitle">★指定リスト</h1>
                 </div>
                 <div class="header-common-nav" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <button class="btn header-top-nav-btn" type="button" style="background-color:#475569;" onclick="showDashboard()">🏠 TOP</button>
                     <button class="btn" type="button" style="background-color:#7c3aed;" onclick="showPortalPlanListScreen()">📅 予定一覧</button>
                     <button class="btn" type="button" style="background-color:#2563eb;" onclick="showHomeworkScreen()">📈 宿題進捗</button>
                     <button class="btn" type="button" style="background-color:var(--accent-color);" onclick="openReportModal()">📊 実績</button>
-                    <button class="btn" type="button" style="background-color:#475569;" onclick="showDashboard()">📚 問題集一覧</button>
                 </div>
             </div>
         </header>
