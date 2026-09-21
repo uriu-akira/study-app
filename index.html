@@ -3734,8 +3734,36 @@
                     dateCmp = a.planDate.localeCompare(b.planDate);
                 }
                 if (dateCmp !== 0) return dateCmp;
+                // 同じ日の明細は、ヘッダに表示されているタスク（問題集等）の順番に合わせる。
+                // 優先順が設定されている場合も、ヘッダと明細で同じ並びになるようにする。
+                const aSummaryKey = getPortalPlanSummaryKey(a);
+                const bSummaryKey = getPortalPlanSummaryKey(b);
+                if (aSummaryKey !== bSummaryKey) {
+                    const aPriority = getPortalTaskPriority(a.planDate, aSummaryKey);
+                    const bPriority = getPortalTaskPriority(b.planDate, bSummaryKey);
+                    if (aPriority !== null || bPriority !== null) {
+                        if (aPriority === null) return 1;
+                        if (bPriority === null) return -1;
+                        if (aPriority !== bPriority) return aPriority - bPriority;
+                    }
+
+                    const summaryLabel = (x) => {
+                        if (x.type === "book") return `【問題集：${String(x.title || "問題集").trim()}】`;
+                        if (x.type === "adhoc") return `単発：${String(x.title || "単発タスク").trim() || "単発タスク"}`;
+                        return `【過去問・模試：${String(x.title || "過去問・模試").trim()}】`;
+                    };
+                    const labelCmp = summaryLabel(a).localeCompare(summaryLabel(b), "ja");
+                    if (labelCmp !== 0) return labelCmp;
+                }
+
+                // 同じタスク内では従来の明細順を維持する。
                 const typeCmp = a.type.localeCompare(b.type);
                 if (typeCmp !== 0) return typeCmp;
+                if (a.type === "book" && b.type === "book") {
+                    const secCmp = Number(a.secId || 0) - Number(b.secId || 0);
+                    if (secCmp !== 0) return secCmp;
+                    return Number(a.qNum || 0) - Number(b.qNum || 0);
+                }
                 return (a.title || "").localeCompare(b.title || "", "ja");
             });
 
