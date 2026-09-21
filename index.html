@@ -625,7 +625,8 @@
             background: linear-gradient(90deg, #ccfbf1 0%, #f0fdfa 100%);
             border: 1px solid #99f6e4; border-left: 5px solid #14b8a6; border-radius: 9px;
             color: #0f766e; font-size: 0.9rem; font-weight: 800;
-            position: sticky; top: 0; z-index: 3; box-shadow: 0 2px 5px rgba(15,118,110,0.08);
+            /* 可変高さの予定明細と重ならないよう、日付グループは通常フローで表示 */
+            position: relative; z-index: 1; box-shadow: 0 2px 5px rgba(15,118,110,0.08);
         }
         .plan-date-group-header:first-child { margin-top: 0; }
         .plan-date-group-count {
