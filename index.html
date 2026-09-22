@@ -518,6 +518,55 @@
         .portal-plan-view-btn.active {
             background: #ffffff; color: #0f766e; box-shadow: 0 1px 3px rgba(15,23,42,0.12);
         }
+
+        /* Future-date filters use normal flow (never sticky) to avoid overlapping cards. */
+        .portal-plan-future-filter {
+            margin: 0 0 14px; padding: 12px;
+            border: 1px solid #99f6e4; border-radius: 12px; background: #f0fdfa;
+            min-width: 0;
+        }
+        .portal-plan-future-filter[hidden] { display: none !important; }
+        .portal-future-filter-toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 8px 16px; margin-bottom: 10px;
+        }
+        .portal-future-filter-title { font-size: .78rem; font-weight: 800; color: #115e59; }
+        .portal-future-date-picker {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: .74rem; font-weight: 700; color: #334155;
+        }
+        .portal-future-date-picker input {
+            min-height: 38px; width: 160px; max-width: 100%; padding: 6px 8px;
+            border: 1px solid #94a3b8; border-radius: 7px; background: #fff;
+            color: #0f172a; font-size: .85rem;
+        }
+        .portal-future-filter-options { display: flex; align-items: stretch; gap: 8px; min-width: 0; }
+        .portal-future-date-list {
+            display: flex; flex: 1 1 0; min-width: 0; gap: 8px;
+            overflow-x: auto; padding: 2px 2px 8px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .portal-future-date-btn {
+            display: inline-flex; flex: 0 0 auto; flex-direction: column; align-items: center;
+            justify-content: center; gap: 3px; min-width: 92px; min-height: 48px;
+            padding: 7px 10px; border: 1px solid #99d9d2; border-radius: 9px;
+            background: #fff; color: #0f766e; font-size: .8rem; font-weight: 800;
+            line-height: 1.35; white-space: nowrap; cursor: pointer;
+        }
+        .portal-future-date-btn:hover { background: #ccfbf1; }
+        .portal-future-date-btn.active { background: #0f766e; color: #fff; border-color: #0f766e; }
+        .portal-future-date-btn:focus-visible, .portal-future-date-picker input:focus-visible {
+            outline: 3px solid #7c3aed; outline-offset: 2px;
+        }
+        .portal-future-date-count { font-size: .65rem; font-weight: 700; }
+        #portalFutureAllBtn { align-self: flex-start; margin-top: 2px; }
+        .portal-future-filter-help { margin-top: 6px; font-size: .68rem; line-height: 1.5; color: #475569; }
+        .portal-future-no-dates { align-self: center; font-size: .75rem; color: #64748b; padding: 8px 4px; }
+        @media (max-width: 600px) {
+            .portal-future-filter-toolbar { align-items: flex-start; }
+            .portal-future-date-picker { margin-left: auto; }
+            .portal-future-date-btn { min-width: 88px; }
+        }
         .portal-plan-day-nav {
             display: none; align-items: center; gap: 8px; margin: 0 0 14px;
             padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px;
@@ -1229,7 +1278,24 @@
                 <button class="portal-plan-view-btn active" data-view="list" onclick="setPortalPlanView('list')">一覧</button>
                 <button class="portal-plan-view-btn" data-view="carryover" onclick="setPortalPlanView('carryover')">⚠️ 過去分</button>
                 <button class="portal-plan-view-btn" data-view="today" onclick="setPortalPlanView('today')">今日の予定</button>
-                <button class="portal-plan-view-btn" data-view="future" onclick="setPortalPlanView('future')">明日以降</button>
+                <button class="portal-plan-view-btn" data-view="future" onclick="setPortalPlanView('future')">未来の予定</button>
+            </div>
+            <div class="portal-plan-future-filter" id="portalPlanFutureFilter" hidden>
+                <div class="portal-future-filter-toolbar">
+                    <span class="portal-future-filter-title">未来の予定を日付で選択</span>
+                    <label class="portal-future-date-picker" for="portalFutureDateInput">
+                        <span>日付指定</span>
+                        <input type="date" id="portalFutureDateInput" aria-controls="portalPlanCardGrid" onchange="setPortalFutureDate(this.value)">
+                    </label>
+                </div>
+                <div class="portal-future-filter-options">
+                    <button type="button" id="portalFutureAllBtn" class="portal-future-date-btn active" aria-pressed="true" aria-controls="portalPlanCardGrid" onclick="setPortalFutureDate('')">
+                        <span>未来すべて</span>
+                        <span class="portal-future-date-count" id="portalFutureAllCount"></span>
+                    </button>
+                    <div class="portal-future-date-list" id="portalFutureDateButtons" role="group" aria-label="未来の予定日"></div>
+                </div>
+                <p class="portal-future-filter-help">予定のある日だけ日付ボタンを表示します。横にスクロールできます。「日付指定」から任意の未来の日も選べます。</p>
             </div>
             <div class="priority-mode-guide" id="portalPriorityModeGuide">
                 優先順設定モードです。まず優先順位を設定したい日のヘッダをタップしてください。その日のタスクボタンだけが設定対象になります。未設定のボタンを押すと次の順位を付与し、設定済みのボタンをもう一度押すとその順位を解除して後ろの順位を自動で詰めます。途中で何度でも修正できます。
@@ -2278,6 +2344,7 @@
         let weeklyPlanAssignments = {}; // date -> [{id1,id2}]
         let currentPortalPlanSubject = "all"; // 予定一覧の科目タブ
         let currentPortalPlanView = "today"; // 'list' / 'carryover' / 'today' / 'future'
+        let currentPortalFutureDate = ""; // Empty = all future dates; otherwise YYYY-MM-DD (view state only).
         let portalPriorityEditMode = false;
         let portalPrioritySessionStarted = false;
         let portalPrioritySessionAssigned = [];
@@ -2546,6 +2613,7 @@
 
         function showPortalPlanListScreen() {
             currentPortalPlanView = "today";
+            currentPortalFutureDate = "";
             renderPortalPlanList();
             switchScreen("portalPlanListScreen");
         }
@@ -3035,10 +3103,120 @@
         function setPortalPlanView(view) {
             const allowed = ["list", "carryover", "today", "future"];
             currentPortalPlanView = allowed.includes(view) ? view : "list";
+            // The main future-view button always opens the complete overview.
+            if (currentPortalPlanView === "future") currentPortalFutureDate = "";
             document.querySelectorAll(".portal-plan-view-btn").forEach(btn => {
                 btn.classList.toggle("active", btn.dataset.view === currentPortalPlanView);
             });
             renderPortalPlanList();
+        }
+
+
+        // Future-date filtering is independent of saved plans and their completion state.
+        function isPortalFutureDateString(value) {
+            if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+            const date = new Date(value + "T12:00:00");
+            return !Number.isNaN(date.getTime()) && formatLocalDate(date) === value;
+        }
+
+        function setPortalFutureDate(value) {
+            const selected = String(value || "").trim();
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const minDate = formatLocalDate(tomorrow);
+            const input = document.getElementById("portalFutureDateInput");
+            if (selected && (!isPortalFutureDateString(selected) || selected < minDate)) {
+                alert("明日以降の日付を指定してください。");
+                if (input) input.value = currentPortalFutureDate;
+                return;
+            }
+            currentPortalPlanView = "future";
+            currentPortalFutureDate = selected;
+            renderPortalPlanList();
+        }
+
+        function renderPortalFutureDateControls(futurePlans, tomorrowLocal) {
+            const panel = document.getElementById("portalPlanFutureFilter");
+            if (!panel) return;
+            panel.hidden = currentPortalPlanView !== "future";
+            if (panel.hidden) return;
+
+            // A previously selected future day may have become today after midnight.
+            if (currentPortalFutureDate && currentPortalFutureDate < tomorrowLocal) {
+                currentPortalFutureDate = "";
+            }
+            const input = document.getElementById("portalFutureDateInput");
+            input.min = tomorrowLocal;
+            input.value = currentPortalFutureDate;
+
+            const totals = new Map();
+            let openTotal = 0;
+            futurePlans.forEach(item => {
+                if (!isPortalFutureDateString(item.planDate)) return;
+                const counts = totals.get(item.planDate) || { total: 0, open: 0 };
+                counts.total++;
+                if (!isPortalPlanCompleted(item)) { counts.open++; openTotal++; }
+                totals.set(item.planDate, counts);
+            });
+            const allButton = document.getElementById("portalFutureAllBtn");
+            allButton.classList.toggle("active", !currentPortalFutureDate);
+            allButton.setAttribute("aria-pressed", String(!currentPortalFutureDate));
+            document.getElementById("portalFutureAllCount").textContent = `未完了 ${openTotal}件`;
+
+            // Keep an explicitly chosen empty day selected; never silently show another day.
+            if (currentPortalFutureDate && !totals.has(currentPortalFutureDate)) {
+                totals.set(currentPortalFutureDate, { total: 0, open: 0 });
+            }
+            const list = document.getElementById("portalFutureDateButtons");
+            const oldScrollLeft = list.scrollLeft;
+            const focusedDate = list.contains(document.activeElement)
+                ? document.activeElement.dataset.futureDate : null;
+            const fragment = document.createDocumentFragment();
+            const weekNames = ["日", "月", "火", "水", "木", "金", "土"];
+            Array.from(totals.keys()).sort().forEach(dateStr => {
+                const counts = totals.get(dateStr);
+                const date = new Date(dateStr + "T12:00:00");
+                const otherYear = dateStr.slice(0, 4) !== tomorrowLocal.slice(0, 4);
+                const dateLabel = `${otherYear ? date.getFullYear() + "/" : ""}${date.getMonth()+1}/${date.getDate()}（${weekNames[date.getDay()]}）`;
+                const selected = currentPortalFutureDate === dateStr;
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "portal-future-date-btn" + (selected ? " active" : "");
+                button.dataset.futureDate = dateStr;
+                button.setAttribute("aria-pressed", String(selected));
+                button.setAttribute("aria-controls", "portalPlanCardGrid");
+                button.title = `${formatPortalPlanDateLabel(dateStr)} / 予定 ${counts.total}件 / 未完了 ${counts.open}件`;
+                const label = document.createElement("span");
+                label.textContent = dateLabel;
+                const count = document.createElement("span");
+                count.className = "portal-future-date-count";
+                count.textContent = counts.total === 0 ? "予定なし"
+                    : counts.open === 0 ? "完了" : `未完了 ${counts.open}件`;
+                button.appendChild(label);
+                button.appendChild(count);
+                button.onclick = () => setPortalFutureDate(dateStr);
+                fragment.appendChild(button);
+            });
+            if (totals.size === 0) {
+                const empty = document.createElement("span");
+                empty.className = "portal-future-no-dates";
+                empty.textContent = "未来の予定はありません。";
+                fragment.appendChild(empty);
+            }
+            list.replaceChildren(fragment);
+            list.scrollLeft = oldScrollLeft;
+            if (focusedDate) {
+                const focused = Array.from(list.children).find(el => el.dataset.futureDate === focusedDate);
+                if (focused) focused.focus({ preventScroll: true });
+            }
+            // Scroll only the date strip, not the page, when a far-off date is selected.
+            const active = list.querySelector(".active");
+            if (active) {
+                const stripRect = list.getBoundingClientRect();
+                const buttonRect = active.getBoundingClientRect();
+                if (buttonRect.left < stripRect.left) list.scrollLeft += buttonRect.left - stripRect.left - 2;
+                else if (buttonRect.right > stripRect.right) list.scrollLeft += buttonRect.right - stripRect.right + 2;
+            }
         }
 
         function getPortalPlanPriorityKey(item) {
@@ -3667,6 +3845,10 @@
             tomorrowObj.setDate(tomorrowObj.getDate() + 1);
             const tomorrowLocal = formatLocalDate(tomorrowObj);
 
+            // Build all day buttons before applying the selected-day filter.
+            const futurePlans = visiblePlans.filter(item => item.planDate >= tomorrowLocal);
+            renderPortalFutureDateControls(futurePlans, tomorrowLocal);
+
             if (currentPortalPlanView === "carryover") {
                 visiblePlans = visiblePlans.filter(item => item.planDate < todayLocal);
             } else if (currentPortalPlanView === "today") {
@@ -3677,8 +3859,9 @@
                     (item.planDate < todayLocal && !isPortalPlanCompleted(item))
                 );
             } else if (currentPortalPlanView === "future") {
-                // 「明日以降」はユーザー指定どおり明日以降
-                visiblePlans = visiblePlans.filter(item => item.planDate >= tomorrowLocal);
+                visiblePlans = currentPortalFutureDate
+                    ? futurePlans.filter(item => item.planDate === currentPortalFutureDate)
+                    : futurePlans;
             }
 
             document.querySelectorAll(".portal-plan-tab").forEach(tab => {
@@ -3695,7 +3878,9 @@
                 } else if (currentPortalPlanView === "today") {
                     headingEl.innerText = `${prefix}今日の予定`;
                 } else if (currentPortalPlanView === "future") {
-                    headingEl.innerText = `${prefix}明日以降の予定一覧`;
+                    headingEl.innerText = currentPortalFutureDate
+                        ? `${prefix}${formatPortalPlanDateLabel(currentPortalFutureDate)}の予定`
+                        : `${prefix}未来すべての予定`;
                 } else {
                     headingEl.innerText = currentPortalPlanSubject === "all"
                         ? "登録されているすべての学習予定"
@@ -3711,7 +3896,10 @@
                 } else if (currentPortalPlanView === "today") {
                     listEl.innerHTML = `<div class="portal-plan-day-empty">${subjectLabel}今日の予定はありません。</div>`;
                 } else if (currentPortalPlanView === "future") {
-                    listEl.innerHTML = `<div class="portal-plan-day-empty">${subjectLabel}明日以降の予定はありません。</div>`;
+                    const futureEmptyLabel = currentPortalFutureDate
+                        ? `${formatPortalPlanDateLabel(currentPortalFutureDate)}の${subjectLabel}予定はありません。`
+                        : `${subjectLabel}未来の予定はありません。`;
+                    listEl.innerHTML = `<div class="portal-plan-day-empty">${escapeHtml(futureEmptyLabel)}</div>`;
                 } else {
                     listEl.innerHTML = `<div style="text-align:center; padding: 40px; color: #6b7280; font-size: 0.85rem;">現在、${subjectLabel}登録されている学習予定はありません。</div>`;
                 }
