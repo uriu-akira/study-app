@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta name="study-app-build" content="standard-workload-20260925">
+<meta name="study-app-build" content="standard-schedule-rank-20260925">
     <meta charset="UTF-8">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -701,6 +701,32 @@
             font-size:.72rem; font-weight:800; line-height:1.4; white-space:normal;
         }
         #portalPlanListScreen .portal-standard-time-badge.time-unset { background:#fffbeb; border-color:#fcd34d; color:#92400e; }
+
+        /* Difficulty labels stay in normal flow; colors match the workbook cells. */
+        #portalPlanListScreen .portal-standard-rank-summary {
+            display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px;
+            min-width:0; margin-top:5px; font-size:.7rem; font-weight:700; line-height:1.5;
+        }
+        #portalPlanListScreen .portal-standard-day-time > .portal-standard-rank-summary {
+            flex-basis:100%; margin-top:0;
+        }
+        #portalPlanListScreen .portal-standard-rank-label { white-space:nowrap; }
+        #portalPlanListScreen .portal-standard-rank-summary .study-rank {
+            padding:2px 6px; font-size:.68rem;
+        }
+        #portalPlanListScreen .portal-standard-rank-summary .rank-empty {
+            color:#64748b; border-color:#cbd5e1; background:#f8fafc;
+        }
+        #portalPlanListScreen .portal-standard-rank-caution {
+            padding:2px 7px; border:1px solid #cbd5e1; border-radius:5px;
+            background:#f8fafc; color:#475569; white-space:nowrap; font-weight:800;
+        }
+        #portalPlanListScreen .portal-standard-rank-caution.has-hard {
+            background:#fff7ed; border-color:#fdba74; color:#9a3412;
+        }
+        #portalPlanListScreen .portal-standard-difficulty-badge {
+            padding:3px 8px; font-size:.72rem; line-height:1.4;
+        }
         #portalPlanListScreen .batsu-info { min-width:0; }
         #portalPlanListScreen .batsu-meta { flex-wrap:wrap; }
         .plan-date-summary-chip:hover { filter:brightness(.97); transform:translateY(-1px); }
@@ -3918,17 +3944,41 @@
             };
         }
 
+        // Planned difficulty totals include completed problems, just like planned time.
+        // Unknown ranks are never inferred from importance stars or priority order.
+        function buildPortalStandardPlanDifficultySummary(summary) {
+            if (!summary) return '';
+            const total=summary.total.ranks, remaining=summary.remaining.ranks;
+            const badges=['A','B','C','D'].map(rank => {
+                const count=total[rank] || 0, left=remaining[rank] || 0;
+                return `<span class="study-rank study-rank-${rank}${count?'':' rank-empty'}" data-rank="${rank}" data-count="${count}" data-remaining="${left}" title="${rank}：予定${count}問／未完了${left}問">${rank}：${count}問</span>`;
+            }).join('');
+            const unknown=total.unknown
+                ? `<span class="study-rank study-rank-unknown" data-rank="unknown" data-count="${total.unknown}" data-remaining="${remaining.unknown || 0}" title="難易度未設定：予定${total.unknown}問／未完了${remaining.unknown || 0}問">未設定：${total.unknown}問</span>` : '';
+            const hardRemaining=(remaining.C || 0)+(remaining.D || 0);
+            const caution=(total.C || 0)+(total.D || 0)
+                ? `<span class="portal-standard-rank-caution${hardRemaining?' has-hard':''}">未完了のC・D：${hardRemaining}問</span>` : '';
+            return `<span class="portal-standard-rank-summary" title="難易度の内訳は表示対象の予定全体（完了分を含む）。優先順・★設定とは別です。"><span class="portal-standard-rank-label">難易度（予定）：</span>${badges}${unknown}${caution}</span>`;
+        }
+
+        function buildPortalStandardPlanDifficultyBadge(item) {
+            if (!isPortalStandardExercisePlan(item)) return '';
+            const rank=getBookStudyMetadata(item.bookId,item.secId,item.qNum).rank;
+            return `<span class="portal-standard-difficulty-badge study-rank study-rank-${rank || 'unknown'}" data-rank="${rank || 'unknown'}" title="問題に登録された難易度（A〜D）。優先順・★設定とは別です。">難易度：${rank || '未設定'}</span>`;
+        }
+
         function buildPortalStandardPlanTimeSummary(plans, daily=false) {
             const summary=getPortalStandardPlanWorkload(plans);
             if (!summary) return '';
+            const difficultyHtml=buildPortalStandardPlanDifficultySummary(summary);
             const total=escapeHtml(workloadTimeLabel(summary.total));
             const remaining=summary.remaining.count < summary.total.count
                 ? ` ／ 残り ${escapeHtml(workloadTimeLabel(summary.remaining))}` : '';
             const help='表示対象のスタンダード演習の目標時間を合計。完了分も予定時間に残し、残りは未完了分のみ。未設定・無制限は数値合計に含みません。実績時間とは別です。';
             if (daily) {
-                return `<div class="portal-standard-day-time" title="${help}"><span>スタンダード演習の予定時間：<strong>${total}</strong>${remaining}</span></div>`;
+                return `<div class="portal-standard-day-time" title="${help}"><span>スタンダード演習の予定時間：<strong>${total}</strong>${remaining}</span>${difficultyHtml}</div>`;
             }
-            return `<span class="portal-standard-time-summary" title="${help}"> ／ 予定時間 ${total}${remaining}</span>`;
+            return `<span class="portal-standard-time-summary" title="${help}"> ／ 予定時間 ${total}${remaining}</span>${difficultyHtml}`;
         }
 
         function buildPortalStandardPlanTimeBadge(item) {
@@ -4362,6 +4412,7 @@
                     const noteVal = getNote(item.secId, item.qNum);
                     const starsDisplay = item.diff > 0 ? "★".repeat(item.diff) : "";
                     const plannedTimeBadge = buildPortalStandardPlanTimeBadge(item);
+                    const difficultyBadge = buildPortalStandardPlanDifficultyBadge(item);
                     
                     card.innerHTML = `
                         <div class="batsu-info">
@@ -4370,6 +4421,7 @@
                                 ${starsDisplay ? `<span style="color:#d97706; font-size:0.8rem; letter-spacing:-1px;">${starsDisplay}</span>` : ''}
                                 ${markStatusTag}
                                 ${planDateTag}
+                                ${difficultyBadge}
                                 ${plannedTimeBadge}
                             </div>
                             ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">📝 備考: ${noteVal}</div>` : ''}
