@@ -687,6 +687,22 @@
         .plan-date-group-main { display:flex; align-items:center; gap:10px; min-width:0; }
         .plan-date-group-summary { display:flex; flex-direction:column; align-items:stretch; gap:6px; width:100%; font-size:0.72rem; font-weight:700; color:#115e59; line-height:1.45; }
         .plan-date-summary-chip { display:block; width:100%; box-sizing:border-box; text-align:left; background:rgba(255,255,255,.9); border:1px solid #99f6e4; border-radius:9px; padding:7px 10px; white-space:normal; cursor:pointer; font:inherit; color:inherit; font-weight:800; }
+
+        /* Planned-time displays follow normal layout and wrap on tablet widths. */
+        #portalPlanListScreen .portal-standard-time-summary { font-weight:800; overflow-wrap:anywhere; }
+        #portalPlanListScreen .portal-standard-day-time {
+            display:flex; flex-wrap:wrap; gap:4px 12px; min-width:0; padding:5px 8px;
+            border:1px solid rgba(15,118,110,.20); border-radius:6px; background:rgba(255,255,255,.6);
+            font-size:.72rem; line-height:1.55; font-weight:600; color:inherit; overflow-wrap:anywhere;
+        }
+        #portalPlanListScreen .portal-standard-time-badge {
+            display:inline-flex; align-items:center; padding:3px 8px; border-radius:5px;
+            background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3;
+            font-size:.72rem; font-weight:800; line-height:1.4; white-space:normal;
+        }
+        #portalPlanListScreen .portal-standard-time-badge.time-unset { background:#fffbeb; border-color:#fcd34d; color:#92400e; }
+        #portalPlanListScreen .batsu-info { min-width:0; }
+        #portalPlanListScreen .batsu-meta { flex-wrap:wrap; }
         .plan-date-summary-chip:hover { filter:brightness(.97); transform:translateY(-1px); }
         .plan-date-summary-chip.priority-selecting { outline:2px dashed #f59e0b; outline-offset:2px; cursor:pointer; }
         .plan-date-summary-chip .task-priority-rank { display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 5px; margin-right:5px; border-radius:999px; background:#f59e0b; color:#fff; font-size:.66rem; font-weight:900; vertical-align:middle; }
@@ -3877,6 +3893,50 @@
             renderPortalPlanList();
         }
 
+        // Planned time for the two Standard Exercise books; never use actual history time.
+        function isPortalStandardExercisePlan(item) {
+            if (!item || item.type !== 'book') return false;
+            if (item.bookId === 'book_std_math12ab' || item.bookId === 'book_std_math3c') return true;
+            const title=String(store.books[item.bookId]?.title || item.title || '').normalize('NFKC').replace(/\s+/g,'');
+            return title.startsWith('新数学スタンダード演習') || title === '数学IIICスタンダード演習';
+        }
+
+        function getPortalStandardPlanWorkload(plans) {
+            const seen=new Set();
+            const items=(plans || []).filter(item => {
+                if (!isPortalStandardExercisePlan(item)) return false;
+                const key=JSON.stringify([item.bookId,String(item.secId),String(item.qNum),item.planDate]);
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+            if (!items.length) return null;
+            const metadata=item=>getBookStudyMetadata(item.bookId,item.secId,item.qNum);
+            return {
+                total:sumStudyWorkload(items.map(metadata)),
+                remaining:sumStudyWorkload(items.filter(item=>!isPortalPlanCompleted(item)).map(metadata))
+            };
+        }
+
+        function buildPortalStandardPlanTimeSummary(plans, daily=false) {
+            const summary=getPortalStandardPlanWorkload(plans);
+            if (!summary) return '';
+            const total=escapeHtml(workloadTimeLabel(summary.total));
+            const remaining=summary.remaining.count < summary.total.count
+                ? ` ／ 残り ${escapeHtml(workloadTimeLabel(summary.remaining))}` : '';
+            const help='表示対象のスタンダード演習の目標時間を合計。完了分も予定時間に残し、残りは未完了分のみ。未設定・無制限は数値合計に含みません。実績時間とは別です。';
+            if (daily) {
+                return `<div class="portal-standard-day-time" title="${help}"><span>スタンダード演習の予定時間：<strong>${total}</strong>${remaining}</span></div>`;
+            }
+            return `<span class="portal-standard-time-summary" title="${help}"> ／ 予定時間 ${total}${remaining}</span>`;
+        }
+
+        function buildPortalStandardPlanTimeBadge(item) {
+            if (!isPortalStandardExercisePlan(item)) return '';
+            const time=getBookStudyMetadata(item.bookId,item.secId,item.qNum).time;
+            return `<span class="portal-standard-time-badge${time.kind==='known'?'':' time-unset'}" title="問題に設定された目標時間を予定時間として表示">予定時間：${escapeHtml(time.label)}</span>`;
+        }
+
         function buildPortalPlanDateSummary(plans, planDate) {
             const grouped = new Map();
             const adhocItems = [];
@@ -3933,9 +3993,10 @@
                     const bg=(book && book.bgColor) ? book.bgColor : "#ffffff";
                     chipStyle=` style="background:${escapeHtml(bg)}; border-color:rgba(71,85,105,.35); color:#334155;"`;
                 }
+                const plannedTimeHtml=buildPortalStandardPlanTimeSummary(v.targetPlans || []);
                 if (v.completed) {
                     const countText = v.type === "adhoc" ? "実績 完了" : `予定${v.totalCount}問 ／ 実績${v.actualCount}問`;
-                    return `<button type="button" class="plan-date-summary-chip${v.type==='adhoc'?' adhoc':''} completed"${chipStyle} disabled aria-disabled="true"><span class="completed-task-label">${rankHtml}${escapeHtml(v.label)} </span><span class="completed-count">${countText}</span></button>`;
+                    return `<button type="button" class="plan-date-summary-chip${v.type==='adhoc'?' adhoc':''} completed"${chipStyle} disabled aria-disabled="true"><span class="completed-task-label">${rankHtml}${escapeHtml(v.label)} </span><span class="completed-count">${countText}${plannedTimeHtml}</span></button>`;
                 }
                 const active=selected===v.key ? " active" : "";
                 const modeClass=isPriorityDate ? " priority-selecting" : "";
@@ -3943,7 +4004,7 @@
                     ? (isPriorityDate ? `assignPortalTaskPriority('${escapeHtml(planDate)}','${escapeHtml(v.key)}',event)` : `event.stopPropagation()`)
                     : `togglePortalPlanDateGroup('${escapeHtml(planDate)}','${escapeHtml(v.key)}',event)`;
                 const countText = v.type === "adhoc" ? "実績 未完了" : `予定${v.totalCount}問 ／ 実績${v.actualCount}問`;
-                return `<button type="button" class="plan-date-summary-chip${v.type==='adhoc'?' adhoc':''}${active}${modeClass}"${chipStyle} onclick="${handler}">${rankHtml}${escapeHtml(v.label)} ／ ${countText}</button>`;
+                return `<button type="button" class="plan-date-summary-chip${v.type==='adhoc'?' adhoc':''}${active}${modeClass}"${chipStyle} onclick="${handler}">${rankHtml}${escapeHtml(v.label)} ／ ${countText}${plannedTimeHtml}</button>`;
             }).join("");
         }
 
@@ -4192,6 +4253,7 @@
                     const sameDatePlans = visiblePlans.filter(p => p.planDate === item.planDate);
                     const openSameDatePlans = sameDatePlans.filter(p => !isPortalPlanCompleted(p));
                     const summaryHtml = buildPortalPlanDateSummary(sameDatePlans, item.planDate);
+                    const dayPlannedTimeHtml = buildPortalStandardPlanTimeSummary(sameDatePlans, true);
                     const expandedKey = portalPlanExpandedByDate[item.planDate] || "";
                     const header = document.createElement("div");
                     header.className = "plan-date-group-header" + (expandedKey ? " expanded" : "")
@@ -4205,6 +4267,7 @@
                                 <span class="plan-date-group-count">未完了 ${openSameDatePlans.length}件</span>
                                 <span class="plan-date-group-toggle-hint">${portalPriorityEditMode ? (portalPrioritySelectedDate === item.planDate ? "★ この日の優先順を編集中" : "☆ タップしてこの日を選択") : (expandedKey ? "▲ 明細を閉じる" : "▼ ここをタップで全明細")}</span>
                             </div>
+                            ${dayPlannedTimeHtml}
                             <div class="plan-date-group-summary">${summaryHtml}</div>
                         </div>`;
                     header.addEventListener("click", (ev) => {
@@ -4298,6 +4361,7 @@
 
                     const noteVal = getNote(item.secId, item.qNum);
                     const starsDisplay = item.diff > 0 ? "★".repeat(item.diff) : "";
+                    const plannedTimeBadge = buildPortalStandardPlanTimeBadge(item);
                     
                     card.innerHTML = `
                         <div class="batsu-info">
@@ -4306,12 +4370,13 @@
                                 ${starsDisplay ? `<span style="color:#d97706; font-size:0.8rem; letter-spacing:-1px;">${starsDisplay}</span>` : ''}
                                 ${markStatusTag}
                                 ${planDateTag}
+                                ${plannedTimeBadge}
                             </div>
                             ${noteVal ? `<div style="font-size:0.75rem; color:${meta.text}; margin-top:2px; font-weight:normal;">📝 備考: ${noteVal}</div>` : ''}
                             <div class="batsu-meta">
                                 <span>履歴: ${historyFlow || 'なし'}</span>
                                 <span>最終解答日: ${item.latest.date || '未記録'}</span>
-                                ${item.latest.time ? `<span>時間: ${item.latest.time}分</span>` : ''}
+                                ${item.latest.time ? `<span>${isPortalStandardExercisePlan(item) ? '実績時間' : '時間'}: ${item.latest.time}分</span>` : ''}
                             </div>
                         </div>
                         <button class="btn btn-outline" style="border-color: ${isPastOrToday ? '#f59e0b' : meta.color}; color: var(--text-color); background: rgba(255,255,255,0.7);">記録</button>
