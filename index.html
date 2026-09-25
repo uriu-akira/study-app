@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+<meta name="study-app-build" content="standard-workload-20260925">
     <meta charset="UTF-8">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1185,6 +1186,51 @@
         }
 
 </style>
+<style id="study-workload-styles">
+/* A-D rank/time metadata, separate from the pre-existing star field. */
+.book-study-meta { display:flex; align-items:center; justify-content:space-between; gap:4px; width:100%; font-size:.64rem; line-height:1.3; margin-bottom:3px; }
+.study-rank { display:inline-flex; align-items:center; border:1px solid #cbd5e1; border-radius:5px; padding:1px 6px; font-size:.68rem; line-height:1.4; font-weight:800; white-space:nowrap; color:#334155; background:#f8fafc; }
+.study-rank-A { color:#166534; border-color:#86efac; background:#f0fdf4; }
+.study-rank-B { color:#1e40af; border-color:#93c5fd; background:#eff6ff; }
+.study-rank-C { color:#9a3412; border-color:#fdba74; background:#fff7ed; }
+.study-rank-D { color:#9f1239; border-color:#fda4af; background:#fff1f2; }
+.study-target-time { white-space:nowrap; color:#6d28d9; font-weight:800; }
+.input-cell-display.has-study-meta { height:auto !important; min-height:68px; gap:3px; }
+.planned-cell .study-target-time { color:#fde68a; }
+.plan-selected .study-target-time { color:#fff; }
+.plan-workload-panel { margin:7px 0; padding:10px 12px; border:1px solid #99d5cf; border-left:4px solid #14b8a6; border-radius:8px; background:#f0fdfa; color:#134e4a; font-size:.76rem; line-height:1.5; }
+.plan-workload-panel[hidden], .plan-workload-warning[hidden] { display:none !important; }
+.workload-main { display:flex; align-items:center; flex-wrap:wrap; gap:6px 18px; }
+.workload-total { font-size:.88rem; color:#0f766e; }
+.workload-ranks { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:5px 0; }
+.workload-muted { color:#526371; font-size:.69rem; }
+.workload-caution { color:#9a3412; margin-left:4px; font-size:.72rem; }
+.workload-bottom { display:flex; align-items:center; flex-wrap:wrap; gap:5px 16px; margin-top:4px; }
+.workload-day { flex:1; min-width:240px; font-size:.7rem; }
+.workload-limit { display:inline-flex; align-items:center; gap:5px; white-space:nowrap; font-size:.72rem; }
+.workload-limit input { width:88px; min-height:32px; padding:4px 6px; border:1px solid #b5c9ca; border-radius:5px; background:white; color:#0f172a; font-size:.78rem; }
+.plan-workload-warning { color:#9a3412; background:#fff7ed; border:1px solid #fed7aa; border-radius:5px; padding:5px 8px; margin-top:6px; font-size:.7rem; }
+.workload-note { font-size:.65rem; color:#64748b; margin-top:4px; }
+.workload-details { font-size:.69rem; margin-top:4px; }
+.workload-details summary { cursor:pointer; color:#0f766e; font-weight:bold; }
+.workload-items { max-height:115px; overflow:auto; margin-top:5px; }
+.workload-items > div { display:flex; justify-content:space-between; gap:16px; padding:3px 5px; border-bottom:1px solid #ccfbf1; }
+.workload-items > div > span:last-child { white-space:nowrap; }
+.weekly-plan-tab .workload-tab-time { font-size:.65rem; font-weight:bold; white-space:nowrap; }
+.study-settings-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); gap:10px; }
+#diffModal .modal-content { max-height:90vh; overflow-y:auto; }
+@media (max-width:700px) { .study-settings-grid { grid-template-columns:1fr; } .workload-total { font-size:.8rem; } }
+/* Keep rank/time badges readable rather than squeezing 18 columns into a portrait viewport. */
+#detailScreen .table-container, #pastExamScreen .table-container { min-height:0; }
+#progress-table th.disabled-header { opacity:1; color:#94a3b8; }
+#progress-table th.disabled-header .header-cell-inner { opacity:.5; }
+#star-counts { white-space:nowrap; flex-shrink:0; }
+#detailScreen .stats-bar .stat-item[style*="span 2"] > div { flex-wrap:wrap; }
+.planned-cell .input-cell-display.has-study-meta,
+.plan-assigned-other .input-cell-display.has-study-meta { padding-top:14px; min-height:80px; }
+.weekly-plan-tabs.active { max-height:146px; overflow:auto; }
+
+</style>
 </head>
 <body>
 <!-- ==============================
@@ -1395,6 +1441,17 @@
                 </div>
                 </div>
             <div class="weekly-plan-tabs" id="peWeeklyPlanTabs"></div>
+            <section class="plan-workload-panel" id="pePlanWorkload" hidden aria-label="予定登録時の時間集計">
+                <div id="pePlanWorkloadContent" aria-live="polite"></div>
+                <div class="workload-bottom">
+                    <div class="workload-day" id="pePlanWorkloadDay"></div>
+                    <label class="workload-limit" for="pePlanWorkloadLimit">この日の上限
+                        <input id="pePlanWorkloadLimit" type="number" min="1" step="1" inputmode="numeric" placeholder="任意" oninput="setPlanWorkloadLimit(this.value)">分
+                    </label>
+                </div>
+                <div class="plan-workload-warning" id="pePlanWorkloadWarning" hidden role="status"></div>
+                <div class="workload-note">目標時間は解答の目安です。解説確認・復習・休憩時間は含めていません。上限は今回の予定登録中の確認用です。</div>
+            </section>
 
             <div class="pe-tabs" id="peTabs"></div>
         </header>
@@ -1497,6 +1554,17 @@
                 </div>
                 </div>
             <div class="weekly-plan-tabs" id="detailWeeklyPlanTabs"></div>
+            <section class="plan-workload-panel" id="detailPlanWorkload" hidden aria-label="予定登録時の時間集計">
+                <div id="detailPlanWorkloadContent" aria-live="polite"></div>
+                <div class="workload-bottom">
+                    <div class="workload-day" id="detailPlanWorkloadDay"></div>
+                    <label class="workload-limit" for="detailPlanWorkloadLimit">この日の上限
+                        <input id="detailPlanWorkloadLimit" type="number" min="1" step="1" inputmode="numeric" placeholder="任意" oninput="setPlanWorkloadLimit(this.value)">分
+                    </label>
+                </div>
+                <div class="plan-workload-warning" id="detailPlanWorkloadWarning" hidden role="status"></div>
+                <div class="workload-note">目標時間は解答の目安です。解説確認・復習・休憩時間は含めていません。上限は今回の予定登録中の確認用です。</div>
+            </section>
 
             <div class="stats-bar">
                 <div class="stat-item">
@@ -1803,8 +1871,21 @@
                 <label class="form-label" for="modalQNumInput">問題番号 (表示カスタム)</label>
                 <input type="text" class="modal-input" id="modalQNumInput" placeholder="例: 101, 問3 など (空欄でデフォルト)">
             </div>
+            <div class="study-settings-grid">
+                <div class="form-group">
+                    <label class="form-label" for="bookDifficultyRankInput">難易度ランク</label>
+                    <select class="modal-input" id="bookDifficultyRankInput">
+                        <option value="">未設定</option><option>A</option><option>B</option><option>C</option><option>D</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="bookTargetTimeInput">目標時間（分）</label>
+                    <input class="modal-input" id="bookTargetTimeInput" type="text" placeholder="例：25 または 無制限">
+                </div>
+            </div>
+            <div class="form-help">A〜Dと目標時間は、下の★設定・実績時間とは別です。スタンダード演習の * は10分、小さな○は5分に換算しています。</div>
             <div class="form-group">
-                <label class="form-label">難易度 (星の数)</label>
+                <label class="form-label">重要度（従来の★設定）</label>
                 <div class="diff-options">
                     <button type="button" class="diff-opt-btn" data-val="0">なし</button>
                     <button type="button" class="diff-opt-btn" data-val="1">★</button>
@@ -2596,6 +2677,7 @@
         }
 
         function switchScreen(screenId) {
+            if(isPlanMode && screenId!==(currentPlanType==='book'?'detailScreen':'pastExamScreen')) cancelPlanMode();
             document.querySelectorAll(".view-screen").forEach(s => s.classList.remove("active"));
             const target = document.getElementById(screenId);
             if (target) target.classList.add("active");
@@ -2928,6 +3010,137 @@
             return `${y}-${m}-${d}`;
         }
 
+        // A-D difficulty is independent of the existing numeric star/importance field.
+        function normalizeStudyRank(value) {
+            const rank=String(value ?? '').trim().toUpperCase();
+            return /^[ABCD]$/.test(rank)?rank:'';
+        }
+        function parseStudyTargetTime(value) {
+            const text=String(value ?? '').trim();
+            if (/^(\u7121\u5236\u9650|unlimited|\u221e)$/i.test(text)) return {kind:'unlimited',minutes:0,label:'\u7121\u5236\u9650'};
+            const m=text.match(/^(\d+(?:\.\d+)?)\s*(?:\u5206|m|min)?$/i);
+            const minutes=m?Number(m[1]):NaN;
+            if(Number.isFinite(minutes) && minutes>0) return {kind:'known',minutes,label:minutes+'\u5206'};
+            return {kind:'missing',minutes:0,label:'\u672a\u8a2d\u5b9a'};
+        }
+        function getBookStudyMetadata(bookId,secId,qNum) {
+            const data=store.books[bookId]?.data || {},key=`${secId}_${qNum}`;
+            return {rank:normalizeStudyRank(data[key+'_difficultyRank']),time:parseStudyTargetTime(data[key+'_targetTime'])};
+        }
+        function buildBookStudyBadge(bookId,secId,qNum) {
+            const meta=getBookStudyMetadata(bookId,secId,qNum);
+            if(!meta.rank && meta.time.kind==='missing') return '';
+            return `<div class="book-study-meta"><span class="study-rank study-rank-${meta.rank || 'unknown'}" title="\u96e3\u6613\u5ea6\u30e9\u30f3\u30af">${meta.rank || '\u672a\u8a2d\u5b9a'}</span><span class="study-target-time" title="\u89e3\u7b54\u306e\u76ee\u6a19\u6642\u9593">\u76ee\u6a19 ${meta.time.label}</span></div>`;
+        }
+        function getPlanningStudyMetadata(id1,id2) {
+            if(currentPlanType==='book') {
+                const book=store.books[currentBookId],sec=book?.sections?.find(s=>String(s.id)===String(id1));
+                const label=book?.data?.[`${id1}_${id2}_customNum`] || `${id1}\u30fb${id2}`;
+                return {...getBookStudyMetadata(currentBookId,id1,id2),label:`${sec?.name || ''} ${label}`.trim()};
+            }
+            const subj=store.pastExams[currentPESubject],rec=subj?.records?.[`${id1}_${id2}`] || {};
+            const col=subj?.columns?.find(c=>String(c.id)===String(id1)),q=subj?.questions?.find(q=>String(q.id)===String(id2));
+            // Physics target-score fields are not minutes.
+            return {rank:normalizeStudyRank(rec.diff || rec.chemDiff),time:parseStudyTargetTime(rec.targetTime),label:`${col?.name || id1} ${q?.name || id2}`};
+        }
+        function sumStudyWorkload(items) {
+            const s={count:items.length,minutes:0,known:0,missing:0,unlimited:0,ranks:{A:0,B:0,C:0,D:0,unknown:0}};
+            items.forEach(x=>{
+                s.ranks[x.rank || 'unknown']++;
+                if(x.time.kind==='known') {s.minutes+=x.time.minutes;s.known++;}
+                else if(x.time.kind==='unlimited') s.unlimited++;else s.missing++;
+            });
+            s.minutes=Math.round(s.minutes*100)/100;return s;
+        }
+        function getSelectedStudyWorkload(cells) {
+            const seen=new Set();
+            const items=(cells || []).filter(x=>{const key=JSON.stringify([String(x.id1),String(x.id2)]);if(seen.has(key))return false;seen.add(key);return true;}).map(x=>getPlanningStudyMetadata(x.id1,x.id2));
+            return {...sumStudyWorkload(items),items};
+        }
+        function formatStudyMinutes(minutes) {
+            const value=Math.round(minutes*100)/100;
+            if(value<60)return `${value}\u5206`;
+            const h=Math.floor(value/60),r=Math.round(value%60*100)/100;
+            return `${value}\u5206\uff08${h}\u6642\u9593${r?r+'\u5206':''}\uff09`;
+        }
+        function workloadTimeLabel(s) {
+            return (s.known?formatStudyMinutes(s.minutes):(s.count?'\u96c6\u8a08\u3067\u304d\u308b\u6642\u9593\u306a\u3057':'0\u5206'))
+                +(s.missing?` \uff0b \u6642\u9593\u672a\u8a2d\u5b9a ${s.missing}\u554f`:'')
+                +(s.unlimited?` \uff0b \u7121\u5236\u9650 ${s.unlimited}\u554f`:'');
+        }
+        function getCurrentPlanDrafts() {
+            if(!isPlanMode)return [];
+            return isWeeklyPlanMode?weeklyPlanDates.flatMap(date=>(weeklyPlanAssignments[date] || []).map(x=>({...x,date}))):selectedPlanCells.map(x=>({...x,date:currentPlanDate}));
+        }
+        function planWorkloadIdentity(type,owner,id1,id2) {return JSON.stringify([type,String(owner),String(id1),String(id2)]);}
+        function getScheduledDayWorkload(date) {
+            const items=[],drafts=getCurrentPlanDrafts(),owner=currentPlanType==='book'?currentBookId:currentPESubject;
+            const moved=new Set(drafts.map(x=>planWorkloadIdentity(currentPlanType,owner,x.id1,x.id2)));
+            Object.entries(store.books || {}).forEach(([id,b])=>{
+                const data=b.data || {};
+                (b.sections || []).forEach(sec=>{
+                    if(data['sec_disabled_'+sec.id])return;
+                    for(let q=1;q<=sec.count;q++) {
+                        const key=`${sec.id}_${q}`;
+                        if(data[key+'_plan']!==date || moved.has(planWorkloadIdentity('book',id,sec.id,q)))continue;
+                        const base=data[key+'_planBaseline'];
+                        if(hasPlanCompletionHistory(data[key+'_history'] || [],date,Number.isInteger(base)?base:null))continue;
+                        items.push(getBookStudyMetadata(id,sec.id,q));
+                    }
+                });
+            });
+            Object.entries(store.pastExams || {}).forEach(([id,s])=>{
+                (s.columns || []).forEach(c=>(s.questions || []).forEach(q=>{
+                    const r=s.records?.[`${c.id}_${q.id}`];
+                    if(!r || r.plan!==date || moved.has(planWorkloadIdentity('pe',id,c.id,q.id)))return;
+                    if(hasPlanCompletionHistory(r.history || [],date,Number.isInteger(r.planBaseline)?r.planBaseline:null))return;
+                    items.push({rank:normalizeStudyRank(r.diff || r.chemDiff),time:parseStudyTargetTime(r.targetTime)});
+                }));
+            });
+            (store.adHocTasks || []).forEach(t=>{if(t && t.planDate===date && !t.completed)items.push({rank:'',time:parseStudyTargetTime(t.minutes)});});
+            drafts.filter(x=>x.date===date).forEach(x=>items.push(getPlanningStudyMetadata(x.id1,x.id2)));
+            return sumStudyWorkload(items);
+        }
+        let planWorkloadLimits={};
+        function setPlanWorkloadLimit(value) {
+            const m=Number(value);
+            if(value!=='' && Number.isFinite(m) && m>0)planWorkloadLimits[currentPlanDate]=m;else delete planWorkloadLimits[currentPlanDate];
+            renderPlanWorkloadSummary();
+        }
+        function seedSingleDayPlanSelection() {
+            if(isWeeklyPlanMode || !currentPlanDate)return;
+            if(currentPlanType==='book') {
+                const b=store.books[currentBookId];
+                (b?.sections || []).forEach(s=>{for(let q=1;q<=s.count;q++)if(b.data?.[`${s.id}_${q}_plan`]===currentPlanDate)selectedPlanCells.push({id1:s.id,id2:q});});
+            } else {
+                const s=store.pastExams[currentPESubject];
+                (s?.columns || []).forEach(c=>(s.questions || []).forEach(q=>{if(s.records?.[`${c.id}_${q.id}`]?.plan===currentPlanDate)selectedPlanCells.push({id1:c.id,id2:q.id});}));
+            }
+        }
+        function renderPlanWorkloadSummary() {
+            const p=currentPlanType==='book'?'detail':'pe';
+            document.querySelectorAll('.plan-workload-panel').forEach(b=>{b.hidden=!isPlanMode || b.id!==p+'PlanWorkload';});
+            if(!isPlanMode)return;
+            const el=document.getElementById(p+'PlanWorkloadContent');if(!el)return;
+            const cells=isWeeklyPlanMode?(weeklyPlanAssignments[currentPlanDate] || []):selectedPlanCells;
+            const s=getSelectedStudyWorkload(cells),hard=s.ranks.C+s.ranks.D;
+            const ranks=['A','B','C','D'].map(r=>`<span class="study-rank study-rank-${r}">${r}\uff1a${s.ranks[r]}\u554f</span>`).join('');
+            let extra='';
+            if(isWeeklyPlanMode) {const all=getSelectedStudyWorkload(getCurrentPlanDrafts());extra=`<span class="workload-muted">\u4eca\u56de\u306e\u671f\u9593\u9078\u629e\uff1a${all.count}\u554f \uff0f ${workloadTimeLabel(all)}</span>`;}
+            const open=el.querySelector('details')?.open;
+            el.innerHTML=`<div class="workload-main"><strong>${currentPlanDate?escapeHtml(currentPlanDate)+' \u306e\u9078\u629e':'\u89e3\u9664\u5bfe\u8c61\u306e\u9078\u629e'}\uff1a${s.count}\u554f</strong><strong class="workload-total">\u76ee\u6a19\u6642\u9593 ${workloadTimeLabel(s)}</strong></div>
+                <div class="workload-ranks">${ranks}${s.ranks.unknown?`<span class="workload-muted">\u96e3\u6613\u5ea6\u672a\u8a2d\u5b9a\uff1a${s.ranks.unknown}\u554f</span>`:''}${hard?`<strong class="workload-caution">C\u30fbD\u3092 ${hard}\u554f \u9078\u629e\u4e2d</strong>`:''}</div>${extra}
+                ${s.count?`<details class="workload-details" ${open?'open':''}><summary>\u9078\u629e\u554f\u984c\u306e\u5185\u8a33</summary><div class="workload-items">${s.items.map(x=>`<div><span>${escapeHtml(x.label)}</span><span>${x.rank || '\u96e3\u6613\u5ea6\u672a\u8a2d\u5b9a'} \uff0f ${x.time.label}</span></div>`).join('')}</div></details>`:''}`;
+            const daily=document.getElementById(p+'PlanWorkloadDay'),warning=document.getElementById(p+'PlanWorkloadWarning'),limit=document.getElementById(p+'PlanWorkloadLimit');
+            const d=currentPlanDate?getScheduledDayWorkload(currentPlanDate):null;
+            if(daily)daily.textContent=d?`\u767b\u9332\u5f8c\u306e\u5f53\u65e5\u4e88\u5b9a\uff08\u5168\u6559\u6750\u306e\u672a\u5b8c\u4e86\uff0b\u4eca\u56de\u306e\u9078\u629e\uff09\uff1a${d.count}\u4ef6 \uff0f \u8a2d\u5b9a\u6e08\u307f\u6642\u9593 ${formatStudyMinutes(d.minutes)}${d.missing?` \uff0b \u6642\u9593\u672a\u8a2d\u5b9a ${d.missing}\u4ef6`:''}${d.unlimited?` \uff0b \u7121\u5236\u9650 ${d.unlimited}\u4ef6`:''}`:'\u4e88\u5b9a\u89e3\u9664\u30e2\u30fc\u30c9\u3067\u3059\u3002\u4e0a\u8a18\u306f\u89e3\u9664\u5bfe\u8c61\u306e\u60c5\u5831\u3067\u3059\u3002';
+            if(limit){limit.disabled=!currentPlanDate;if(document.activeElement!==limit)limit.value=planWorkloadLimits[currentPlanDate] || '';}
+            const msgs=[];
+            if(d && planWorkloadLimits[currentPlanDate] && d.minutes>planWorkloadLimits[currentPlanDate])msgs.push(`\u5f53\u65e5\u306e\u8a2d\u5b9a\u6e08\u307f\u6642\u9593\u304c\u4e0a\u9650\u3092 ${formatStudyMinutes(d.minutes-planWorkloadLimits[currentPlanDate])} \u8d85\u3048\u3066\u3044\u307e\u3059\u3002\u554f\u984c\u6570\u30fb\u65e5\u4ed8\u3092\u8abf\u6574\u3057\u3066\u304f\u3060\u3055\u3044\u3002`);
+            if(d && (d.missing || d.unlimited))msgs.push('\u672a\u8a2d\u5b9a\u30fb\u7121\u5236\u9650\u306e\u6642\u9593\u306f\u5408\u8a08\u306b\u542b\u3081\u3066\u3044\u307e\u305b\u3093\u3002\u8868\u793a\u6642\u9593\u3060\u3051\u3067\u4e88\u5b9a\u304c\u53ce\u307e\u308b\u3068\u306f\u9650\u308a\u307e\u305b\u3093\u3002');
+            if(warning){warning.textContent=msgs.join(' ');warning.hidden=!msgs.length;}
+        }
+
         function openPlanDateModal(type, defaultDate = "") {
             currentPlanType = type;
             // 呼び出し元に関係なく、学習予定日の初期値は必ず当日のローカル日付にする。
@@ -2967,6 +3180,8 @@
             weeklyPlanDates = weekly ? Array.from({length:rangeDays}, (_,i)=>addLocalDays(currentPlanDate,i)) : [];
             weeklyPlanAssignments = {};
             weeklyPlanDates.forEach(d => weeklyPlanAssignments[d] = []);
+            planWorkloadLimits = {};
+            seedSingleDayPlanSelection();
             closePlanDateModal();
             updatePlanModeUI();
             rerenderPlanTarget();
@@ -3014,8 +3229,9 @@
             box.classList.add('active');
             box.innerHTML = weeklyPlanDates.map(d => {
                 const [y,m,day]=d.split('-').map(Number); const dow=days[new Date(y,m-1,day).getDay()];
-                const count=(weeklyPlanAssignments[d]||[]).length;
-                return `<button type="button" class="weekly-plan-tab ${d===currentPlanDate?'active':''}" onclick="switchWeeklyPlanDate('${d}')">${m}/${day}(${dow})<span class="count">${count}問</span></button>`;
+                const sum=getSelectedStudyWorkload(weeklyPlanAssignments[d] || []);
+                const timeText=`${sum.minutes}分${sum.missing?' +未設定':''}${sum.unlimited?' +無制限':''}`;
+                return `<button type="button" class="weekly-plan-tab ${d===currentPlanDate?'active':''}" onclick="switchWeeklyPlanDate('${d}')">${m}/${day}(${dow})<span class="count">${sum.count}問</span><span class="workload-tab-time">${timeText}</span></button>`;
             }).join('') + `<span class="weekly-plan-help">日付を選択 → セルをタップ → オレンジ枠は他の日に選択済み → 最後に「予定登録」</span>`;
         }
 
@@ -3027,6 +3243,9 @@
 
         function cancelPlanMode() {
             isPlanMode = false; isWeeklyPlanMode = false;
+            planWorkloadLimits = {};
+            document.querySelectorAll(".plan-mode-header").forEach(x => x.classList.remove("active"));
+            renderPlanWorkloadSummary();
             document.querySelectorAll('.inline-plan-mode-controls').forEach(x => x.remove());
             selectedPlanCells = []; weeklyPlanDates=[]; weeklyPlanAssignments={};
             document.querySelectorAll('.weekly-plan-tabs').forEach(x => { x.classList.remove('active'); x.innerHTML=''; });
@@ -3055,6 +3274,7 @@
             const idx = selectedPlanCells.findIndex(item => samePlanCell(item,id1,id2));
             if (idx >= 0) { selectedPlanCells.splice(idx, 1); element.classList.remove("plan-selected"); }
             else { selectedPlanCells.push({ id1, id2 }); element.classList.add("plan-selected"); }
+            renderPlanWorkloadSummary();
         }
 
         function savePlanMode() {
@@ -4292,6 +4512,7 @@
         function showDetailScreen() { initTable(); switchScreen("detailScreen"); }
 
         function openBookDetail(bookId, keepReportHighlight = false) {
+            if(isPlanMode && (currentPlanType!=='book' || currentBookId!==bookId)) cancelPlanMode();
             if (!keepReportHighlight) clearReportHighlights();
             currentBookId = bookId;
             const book = store.books[bookId];
@@ -4323,6 +4544,8 @@
             const headerTitlesRow = document.getElementById("header-titles");
             const headerCountsRow = document.getElementById("header-counts");
             const tbody = document.getElementById("table-body");
+            const hasStudyMeta=Object.keys(book.data).some(k=>k.endsWith('_difficultyRank') || k.endsWith('_targetTime'));
+            document.getElementById("progress-table").style.minWidth=hasStudyMeta ? `${(book.sections || []).length*104}px` : '';
             headerTitlesRow.innerHTML = ""; headerCountsRow.innerHTML = ""; tbody.innerHTML = "";
 
             let maxQ = 0;
@@ -4392,7 +4615,7 @@
                         if (isPlanMode) {
                             const chosen = isWeeklyPlanMode
                                 ? (weeklyPlanAssignments[currentPlanDate] || []).some(x => samePlanCell(x, sec.id, qNum))
-                                : planDate === currentPlanDate;
+                                : selectedPlanCells.some(x => samePlanCell(x, sec.id, qNum));
                             if (chosen) {
                                 tdInput.classList.add("plan-selected");
                                 if (!selectedPlanCells.some(x => samePlanCell(x, sec.id, qNum))) selectedPlanCells.push({ id1: sec.id, id2: qNum });
@@ -4426,6 +4649,7 @@
             }
             updateStats(); applyStarFilter();
             applyReportHighlights();
+            renderPlanWorkloadSummary();
         }
 
         function renderQCellContent(td, secId, qNum) {
@@ -4501,8 +4725,9 @@
             }
 
             td.innerHTML = `
-                <div class="input-cell-display">
+                <div class="input-cell-display${buildBookStudyBadge(currentBookId,secId,qNum)?' has-study-meta':''}">
                     ${planBadge}
+                    ${buildBookStudyBadge(currentBookId,secId,qNum)}
                     <div class="cell-history-flow">${flowHtml}</div>
                     <div class="cell-subinfo"><span>${shortDate}</span><span class="cell-latest-status">${latestStatus}</span></div>
                 </div>`;
@@ -4941,6 +5166,8 @@
             document.getElementById("modalQNumInput").value = currentCustomNum;
             setTempDiff(tempDiff);
             document.getElementById("modalNoteInput").value = currentNote;
+            document.getElementById("bookDifficultyRankInput").value = normalizeStudyRank(book.data?.[`${secId}_${qNum}_difficultyRank`]);
+            document.getElementById("bookTargetTimeInput").value = book.data?.[`${secId}_${qNum}_targetTime`] ?? '';
             document.getElementById("diffModal").classList.add("active");
             
             // --- 【修正】カーソルをテキストボックスに合わせる ---
@@ -4964,6 +5191,18 @@
             if (!secId || !qNum) return;
             const book = store.books[currentBookId];
             if (book) {
+                const rankVal=normalizeStudyRank(document.getElementById("bookDifficultyRankInput").value);
+                const timeVal=document.getElementById("bookTargetTimeInput").value.trim();
+                const target=parseStudyTargetTime(timeVal);
+                if(timeVal && target.kind==='missing') {
+                    alert("目標時間は正の分数（例：25）、無制限、または空欄で入力してください。");
+                    document.getElementById("bookTargetTimeInput").focus(); return;
+                }
+                if(!book.data) book.data={};
+                if(rankVal) book.data[`${secId}_${qNum}_difficultyRank`]=rankVal;
+                else delete book.data[`${secId}_${qNum}_difficultyRank`];
+                if(timeVal) book.data[`${secId}_${qNum}_targetTime`]=target.kind==='known'?target.minutes:'無制限';
+                else delete book.data[`${secId}_${qNum}_targetTime`];
                 const customNumVal = document.getElementById("modalQNumInput").value.trim();
                 if (customNumVal === "") delete book.data[`${secId}_${qNum}_customNum`];
                 else book.data[`${secId}_${qNum}_customNum`] = customNumVal;
@@ -5126,7 +5365,7 @@
             if (userInput === "初期化する") {
                 const newData = {};
                 for (const key in book.data) {
-                    if (key.endsWith("_diff") || key.endsWith("_note") || key.endsWith("_customNum") || key.startsWith("sec_disabled_")) {
+                    if (key.endsWith("_diff") || key.endsWith("_difficultyRank") || key.endsWith("_targetTime") || key.endsWith("_note") || key.endsWith("_customNum") || key.startsWith("sec_disabled_")) {
                         newData[key] = book.data[key];
                     }
                 }
@@ -5915,6 +6154,7 @@
                 div.className = "pe-tab" + (currentPESubject === key ? " active" : "");
                 div.innerText = subj.title || key;
                 div.onclick = () => { 
+                    if(isPlanMode && currentPESubject!==key) cancelPlanMode();
                     currentPESubject = key; 
                     renderPETabs(); 
                     renderPETable(); 
@@ -6262,7 +6502,7 @@
                             if (isPlanMode) {
                                 const chosen = isWeeklyPlanMode
                                     ? (weeklyPlanAssignments[currentPlanDate] || []).some(x => samePlanCell(x, col.id, q.id))
-                                    : planDate === currentPlanDate;
+                                    : selectedPlanCells.some(x => samePlanCell(x, col.id, q.id));
                                 if (chosen) {
                                     isSelected = true;
                                     if (!selectedPlanCells.some(x => samePlanCell(x, col.id, q.id))) selectedPlanCells.push({ id1: col.id, id2: q.id });
@@ -6320,6 +6560,7 @@
                     tbody.innerHTML += rowHtml;
                 });
             }
+            renderPlanWorkloadSummary();
         }
 
         function onPECellClick(colId, qId, element) {
