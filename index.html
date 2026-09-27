@@ -1264,6 +1264,29 @@
 @media (max-width:700px) { .study-settings-grid { grid-template-columns:1fr; } .workload-total { font-size:.8rem; } }
 /* Keep rank/time badges readable rather than squeezing 18 columns into a portrait viewport. */
 #detailScreen .table-container, #pastExamScreen .table-container { min-height:0; }
+#detailScreen .table-container:has(#progress-table.fit-all-sections) { overflow-x:hidden; }
+#progress-table.fit-all-sections { width:100%; min-width:0 !important; table-layout:fixed; }
+#progress-table.fit-all-sections th,
+#progress-table.fit-all-sections td { min-width:0; width:auto; }
+#progress-table.fit-all-sections .header-cell-inner { min-width:0; padding-left:1px; padding-right:1px; }
+#progress-table.fit-all-sections .section-number { font-size:clamp(.52rem, .8vw, .72rem); }
+#progress-table.fit-all-sections .section-title { font-size:clamp(.5rem, .72vw, .65rem); letter-spacing:0; }
+#progress-table.fit-all-sections .q-cell { min-width:0; padding:3px 2px !important; border-left-width:2px; }
+#progress-table.fit-all-sections .q-cell-inner { min-width:0; align-items:stretch; }
+#progress-table.fit-all-sections .q-number-row { min-width:0; gap:1px; flex-wrap:wrap; }
+#progress-table.fit-all-sections .q-diff-stars { font-size:.48rem; }
+#progress-table.fit-all-sections .q-cell-note { font-size:.5rem; }
+#progress-table.fit-all-sections .input-cell-display { min-width:0; margin:1px; padding:3px 2px; }
+#progress-table.fit-all-sections .book-study-meta {
+    flex-direction:column; align-items:center; justify-content:center; gap:1px; min-width:0;
+}
+#progress-table.fit-all-sections .study-rank { padding:0 4px; font-size:.6rem; }
+#progress-table.fit-all-sections .study-target-time {
+    max-width:100%; overflow:hidden; text-overflow:ellipsis; font-size:clamp(.46rem, .68vw, .61rem);
+}
+#progress-table.fit-all-sections .study-target-prefix { display:none; }
+#progress-table.fit-all-sections .cell-history-flow { padding-left:0; font-size:.66rem; }
+#progress-table.fit-all-sections .cell-subinfo { padding-left:0; font-size:.5rem; gap:1px; flex-wrap:wrap; }
 #progress-table th.disabled-header { opacity:1; color:#94a3b8; }
 #progress-table th.disabled-header .header-cell-inner { opacity:.5; }
 #star-counts { white-space:nowrap; flex-shrink:0; }
@@ -3057,7 +3080,7 @@
         function buildBookStudyBadge(bookId,secId,qNum) {
             const meta=getBookStudyMetadata(bookId,secId,qNum);
             if(!meta.rank && meta.time.kind==='missing') return '';
-            return `<div class="book-study-meta"><span class="study-rank study-rank-${meta.rank || 'unknown'}" title="\u96e3\u6613\u5ea6\u30e9\u30f3\u30af">${meta.rank || '\u672a\u8a2d\u5b9a'}</span><span class="study-target-time" title="\u89e3\u7b54\u306e\u76ee\u6a19\u6642\u9593">\u76ee\u6a19 ${meta.time.label}</span></div>`;
+            return `<div class="book-study-meta"><span class="study-rank study-rank-${meta.rank || 'unknown'}" title="\u96e3\u6613\u5ea6\u30e9\u30f3\u30af">${meta.rank || '\u672a\u8a2d\u5b9a'}</span><span class="study-target-time" title="\u89e3\u7b54\u306e\u76ee\u6a19\u6642\u9593"><span class="study-target-prefix">\u76ee\u6a19 </span>${meta.time.label}</span></div>`;
         }
         function getPlanningStudyMetadata(id1,id2) {
             if(currentPlanType==='book') {
@@ -4644,7 +4667,10 @@
             const headerCountsRow = document.getElementById("header-counts");
             const tbody = document.getElementById("table-body");
             const hasStudyMeta=Object.keys(book.data).some(k=>k.endsWith('_difficultyRank') || k.endsWith('_targetTime'));
-            document.getElementById("progress-table").style.minWidth=hasStudyMeta ? `${(book.sections || []).length*104}px` : '';
+            const progressTable=document.getElementById("progress-table");
+            const fitAllSections=currentBookId==="book_std_math12ab";
+            progressTable.classList.toggle("fit-all-sections",fitAllSections);
+            progressTable.style.minWidth=!fitAllSections && hasStudyMeta ? `${(book.sections || []).length*104}px` : '';
             headerTitlesRow.innerHTML = ""; headerCountsRow.innerHTML = ""; tbody.innerHTML = "";
 
             let maxQ = 0;
