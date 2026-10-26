@@ -1897,6 +1897,11 @@
                     <button type="button" class="mark-opt-btn" data-val="×">×</button>
                 </div>
             </div>
+            <div class="form-group" id="modalScoreGroup" style="display:none;">
+                <label class="form-label" for="modalScoreInput">得点</label>
+                <input type="number" class="modal-input" id="modalScoreInput" min="0" max="100" step="1" inputmode="numeric" placeholder="0～100点">
+                <span class="form-help">試行ごとに得点を保存できます。新しい回を追加すると過去の得点も履歴に残ります。</span>
+            </div>
             <div class="form-group">
                 <label class="form-label" for="modalTime">解答時間</label>
                 <select class="modal-input" id="modalTime"></select>
@@ -2340,12 +2345,14 @@
         const commonTestBookIds = commonTestBookDefinitions.map(([id]) => `book_common_test_${id}`);
         const legacyCommonTestBookIds = [2026, 2025, 2024, 2023, 2022, 2021].map(year => `book_common_test_${year}`);
         commonTestBookDefinitions.forEach(([id, subjectName]) => {
+            const lastYear = id === "geography" ? 2019 : 2021;
+            const yearCount = 2026 - lastYear + 1;
             const sections = [
-                { id: 1, label: "", name: "本試", count: 6 },
-                { id: 2, label: "", name: "追試", count: 6 }
+                { id: 1, label: "", name: "本試", count: yearCount },
+                { id: 2, label: "", name: "追試", count: yearCount }
             ];
             const data = {};
-            for (let row = 1, year = 2026; year >= 2021; row++, year--) {
+            for (let row = 1, year = 2026; year >= lastYear; row++, year--) {
                 data[`1_${row}_customNum`] = `${year}年`;
                 data[`2_${row}_customNum`] = `${year}年`;
             }
@@ -2617,7 +2624,7 @@
                             && existingBook.sections.length === 2
                             && existingBook.sections[0]?.name === "本試"
                             && existingBook.sections[1]?.name === "追試"
-                            && existingBook.sections.every(section => section.count === 6);
+                            && existingBook.sections.every((section, index) => section.count === defaultBook.sections[index]?.count);
                         if (!hasTwoColumnLayout) {
                             const migratedData = {};
                             Object.entries(existingBook.data || {}).forEach(([key, value]) => {
@@ -4912,6 +4919,9 @@
                 let mColor = latest.mark === "〇" ? "#10b981" : (latest.mark === "×" ? "#e11d48" : "#9ca3af");
                 latestStatus += `<span style="color:${mColor}">${latest.mark}</span>`;
             }
+            if (isCommonTestBook() && latest.score !== undefined && latest.score !== "") {
+                latestStatus += `${latestStatus ? ' ' : ''}<span style="color:#0369a1;font-weight:900;">${latest.score}点</span>`;
+            }
             if (latest.time) latestStatus += `${latestStatus ? ' ' : ''}${latest.time}分`;
 
             let planBadge = "";
@@ -5217,6 +5227,11 @@
         // ----------------------------------------------------
         // 7. 問題集 モーダル関係
         // ----------------------------------------------------
+        function isCommonTestBook(bookId = currentBookId) {
+            const book = store.books?.[bookId];
+            return !!book && (book.subject === "共通テスト" || String(bookId || "").startsWith("book_common_test_"));
+        }
+
         function openModal(secId, qNum) {
             activeTarget = { secId, qNum };
             const book = store.books[currentBookId];
@@ -5240,6 +5255,7 @@
             }
 
             document.getElementById("modalTitle").innerText = `${qDispLabel} の記録`;
+            document.getElementById("modalScoreGroup").style.display = isCommonTestBook() ? "flex" : "none";
 
             const history = getHistoryArray(secId, qNum);
             const historyListEl = document.getElementById("modalHistoryList");
@@ -5250,9 +5266,10 @@
                     if(!h) return '';
                     const t = h.time ? `${h.time}分` : '';
                     const d = h.date || '';
+                    const s = h.score !== undefined && h.score !== '' ? `${h.score}点` : '';
                     return `
                         <div class="history-item" onclick="selectHistoryAttempt(${i})">
-                            <span><strong>${i + 1}回目:</strong> <span style="font-weight:bold; ${h.mark==='〇'?'color:#10b981':(h.mark==='×'?'color:#e11d48':'')}">${h.mark || 'ー'}</span></span>
+                            <span><strong>${i + 1}回目:</strong> <span style="font-weight:bold; ${h.mark==='〇'?'color:#10b981':(h.mark==='×'?'color:#e11d48':'')}">${h.mark || 'ー'}</span>${s ? ` ${s}` : ''}</span>
                             <span style="color:#6b7280;">${t} ${d}</span>
                         </div>
                     `;
@@ -5284,11 +5301,13 @@
             if (selectedIdx < history.length && history[selectedIdx]) {
                 const entry = history[selectedIdx];
                 setTempMark(entry.mark || "ー");
+                document.getElementById("modalScoreInput").value = entry.score ?? "";
                 document.getElementById("modalTime").value = entry.time || "";
                 document.getElementById("modalDate").value = entry.date || formatLocalDate(new Date());
                 deleteBtn.style.display = "block"; 
             } else {
                 setTempMark("ー");
+                document.getElementById("modalScoreInput").value = "";
                 document.getElementById("modalTime").value = "";
                 document.getElementById("modalDate").value = formatLocalDate(new Date());
                 deleteBtn.style.display = "none"; 
@@ -5422,12 +5441,23 @@
 
             const history = getHistoryArray(secId, qNum);
             const selectedIdx = parseInt(document.getElementById("modalAttempt").value, 10);
+            const commonTest = isCommonTestBook();
+            const scoreValue = commonTest ? document.getElementById("modalScoreInput").value.trim() : "";
+            if (commonTest && scoreValue !== "") {
+                const scoreNumber = Number(scoreValue);
+                if (!Number.isFinite(scoreNumber) || scoreNumber < 0 || scoreNumber > 100) {
+                    alert("得点は0～100点で入力してください。");
+                    document.getElementById("modalScoreInput").focus();
+                    return;
+                }
+            }
 
             const newEntry = {
                 mark: tempMark,
                 time: document.getElementById("modalTime").value,
                 date: document.getElementById("modalDate").value
             };
+            if (commonTest) newEntry.score = scoreValue;
 
             const book = store.books[currentBookId];
             if (selectedIdx < history.length) {
