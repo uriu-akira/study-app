@@ -1232,6 +1232,38 @@
 .q-toc-meta { display:inline-flex; align-items:center; gap:3px; font-size:.58rem; font-weight:800; white-space:nowrap; }
 .q-toc-difficulty { padding:1px 4px; border-radius:999px; background:#fff1f2; color:#be123c; border:1px solid #fecdd3; }
 .q-toc-words { color:#475569; }
+
+/* 問題集実績の日付を小さいセルでも読みやすくする */
+.cell-subinfo .cell-date {
+    color:#475569;
+    font-family:"Segoe UI", "Yu Gothic UI", "Meiryo UI", Meiryo, sans-serif;
+    font-size:.68rem;
+    font-weight:800;
+    line-height:1.15;
+    letter-spacing:.015em;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+}
+#progress-table.fit-all-sections .cell-subinfo .cell-date {
+    font-size:clamp(.58rem, .74vw, .68rem);
+}
+
+/* 現在の問題集で最も直近の実績日を強調する */
+.cell-subinfo .cell-date.cell-date-latest {
+    color:#7c2d12;
+    background:#fef3c7;
+    border:1px solid #f59e0b;
+    border-radius:4px;
+    padding:1px 4px;
+    font-size:.72rem;
+    font-weight:950;
+    line-height:1.2;
+    letter-spacing:.025em;
+    box-shadow:0 1px 2px rgba(180,83,9,.22);
+}
+#progress-table.fit-all-sections .cell-subinfo .cell-date.cell-date-latest {
+    font-size:clamp(.62rem, .8vw, .72rem);
+}
 </style>
 <style id="study-workload-styles">
 /* A-D rank/time metadata, separate from the pre-existing star field. */
@@ -3149,6 +3181,80 @@
                             data: { ...JSON.parse(JSON.stringify(unlimitedBookDefinition.data)), ...(existingUnlimitedBook.data || {}) }
                         }
                         : JSON.parse(JSON.stringify(unlimitedBookDefinition));
+
+                    // 地理総合＋地理探求（問題演習編）を地誌編と同じ10章×各1問へ統一する。
+                    const geographyExerciseBook = loadedBooks['book_1793912099697'];
+                    if (geographyExerciseBook && geographyExerciseBook.title === '地理総合＋地理探求（問題演習編）') {
+                        geographyExerciseBook.sections = [
+          {
+                    "id": 1,
+                    "label": "",
+                    "name": "第1章",
+                    "count": 1
+          },
+          {
+                    "id": 2,
+                    "label": "",
+                    "name": "第2章",
+                    "count": 1
+          },
+          {
+                    "id": 3,
+                    "label": "",
+                    "name": "第3章",
+                    "count": 1
+          },
+          {
+                    "id": 4,
+                    "label": "",
+                    "name": "第4章",
+                    "count": 1
+          },
+          {
+                    "id": 5,
+                    "label": "",
+                    "name": "第5章",
+                    "count": 1
+          },
+          {
+                    "id": 6,
+                    "label": "",
+                    "name": "第6章",
+                    "count": 1
+          },
+          {
+                    "id": 7,
+                    "label": "",
+                    "name": "第7章",
+                    "count": 1
+          },
+          {
+                    "id": 8,
+                    "label": "",
+                    "name": "第8章",
+                    "count": 1
+          },
+          {
+                    "id": 9,
+                    "label": "",
+                    "name": "第9章",
+                    "count": 1
+          },
+          {
+                    "id": 10,
+                    "label": "",
+                    "name": "第10章",
+                    "count": 1
+          }
+];
+                        if (!geographyExerciseBook.data || typeof geographyExerciseBook.data !== 'object') geographyExerciseBook.data = {};
+                        Object.keys(geographyExerciseBook.data).forEach(key => {
+                            if (/_customNum$/.test(key)) delete geographyExerciseBook.data[key];
+                        });
+                        for (let chapter = 1; chapter <= 10; chapter++) {
+                            geographyExerciseBook.data[`${chapter}_1_customNum`] = `第${chapter}講`;
+                        }
+                    }
                     store.books = loadedBooks;
                     store.pastExams = tempExams;
                     store.adHocTasks = Array.isArray(latestSave.data.adHocTasks) ? latestSave.data.adHocTasks : [];
@@ -5238,10 +5344,29 @@
             document.getElementById("reportModal").classList.add("active");
         }
 
+
+        let currentBookLatestHistoryDate = "";
+
+        function getBookLatestHistoryDate(book) {
+            let latestDate = "";
+            Object.entries(book?.data || {}).forEach(([key, value]) => {
+                if (key.endsWith('_history') && Array.isArray(value)) {
+                    value.forEach(entry => {
+                        const date = entry && typeof entry.date === 'string' ? entry.date : '';
+                        if (date && date > latestDate) latestDate = date;
+                    });
+                } else if (key.endsWith('_date') && typeof value === 'string' && value > latestDate) {
+                    latestDate = value;
+                }
+            });
+            return latestDate;
+        }
+
         function initTable() {
             const book = store.books[currentBookId];
             if (!book) return;
             if (!book.data) book.data = {};
+            currentBookLatestHistoryDate = getBookLatestHistoryDate(book);
             const headerTitlesRow = document.getElementById("header-titles");
             const headerCountsRow = document.getElementById("header-counts");
             const tbody = document.getElementById("table-body");
@@ -5446,7 +5571,7 @@
                     ${planBadge}
                     ${buildBookStudyBadge(currentBookId,secId,qNum)}
                     <div class="cell-history-flow">${flowHtml}</div>
-                    <div class="cell-subinfo"><span>${shortDate}</span><span class="cell-latest-status">${latestStatus}</span></div>
+                    <div class="cell-subinfo"><span class="cell-date${latest.date && latest.date === currentBookLatestHistoryDate ? ' cell-date-latest' : ''}" title="${latest.date && latest.date === currentBookLatestHistoryDate ? 'この問題集の最新実績日' : ''}">${shortDate}</span><span class="cell-latest-status">${latestStatus}</span></div>
                 </div>`;
         }
 
