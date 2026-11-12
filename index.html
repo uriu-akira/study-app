@@ -1264,6 +1264,32 @@
 #progress-table.fit-all-sections .cell-subinfo .cell-date.cell-date-latest {
     font-size:clamp(.62rem, .8vw, .72rem);
 }
+
+/* 完全攻略2冊は長いテーマ名を青・緑系で読みやすく表示する */
+.book-card.complete-math-card {
+    background:linear-gradient(145deg,#eff6ff 0%,#ecfeff 100%) !important;
+    border-color:#7dd3fc !important;
+}
+.book-card.complete-math-card .book-title {
+    color:#075985;
+    font-weight:900;
+}
+#progress-table.complete-math-table .q-cell {
+    background-color:#eaf4ff !important;
+    border-left-color:#0284c7;
+}
+#progress-table.complete-math-table .q-cell:hover {
+    background-color:#dbeafe !important;
+}
+#progress-table.complete-math-table .q-number-row {
+    color:#075985;
+    font-weight:900;
+}
+#progress-table.complete-math-table .q-cell-note {
+    color:#0f766e;
+    font-size:.68rem;
+    font-weight:800;
+}
 </style>
 <style id="study-workload-styles">
 /* A-D rank/time metadata, separate from the pre-existing star field. */
@@ -1931,6 +1957,7 @@
                 <div class="mark-options">
                     <button type="button" class="mark-opt-btn" data-val="ー">ー</button>
                     <button type="button" class="mark-opt-btn" data-val="〇">〇</button>
+                    <button type="button" class="mark-opt-btn" data-val="△">△</button>
                     <button type="button" class="mark-opt-btn" data-val="×">×</button>
                 </div>
             </div>
@@ -2852,6 +2879,217 @@
 };
         defaultBooks[unlimitedBookId] = unlimitedBookDefinition;
 
+
+        const completeMathBookDefinitions = [
+        {
+                "id": "book_highlevel_math3c_complete",
+                "title": "ハイレベル数学Ⅲ・Cの完全攻略［改訂版］",
+                "subject": "数学",
+                "bgColor": "#eff6ff",
+                "sections": [
+                        {
+                                "id": 1,
+                                "label": "",
+                                "name": "問題編",
+                                "count": 41
+                        }
+                ],
+                "data": {
+                        "1_1_customNum": "1",
+                        "1_1_note": "漸化式でできる数列の極限Ⅰ",
+                        "1_2_customNum": "2",
+                        "1_2_note": "漸化式でできる数列の極限Ⅱ",
+                        "1_3_customNum": "3",
+                        "1_3_note": "0/0の極限",
+                        "1_4_customNum": "4",
+                        "1_4_note": "∞/∞の極限",
+                        "1_5_customNum": "5",
+                        "1_5_note": "方程式の解の極限",
+                        "1_6_customNum": "6",
+                        "1_6_note": "共通接線",
+                        "1_7_customNum": "7",
+                        "1_7_note": "平均値の定理",
+                        "1_8_customNum": "8",
+                        "1_8_note": "関数の増減と不等式",
+                        "1_9_customNum": "9",
+                        "1_9_note": "関数の増減",
+                        "1_10_customNum": "10",
+                        "1_10_note": "最大・最小",
+                        "1_11_customNum": "11",
+                        "1_11_note": "定積分の計算",
+                        "1_12_customNum": "12",
+                        "1_12_note": "つぎはぎ関数の定積分と微分可能性",
+                        "1_13_customNum": "13",
+                        "1_13_note": "（指数関数）×（周期関数）の定積分",
+                        "1_14_customNum": "14",
+                        "1_14_note": "絶対値を含む関数の定積分",
+                        "1_15_customNum": "15",
+                        "1_15_note": "媒介変数表示曲線Ⅰ",
+                        "1_16_customNum": "16",
+                        "1_16_note": "媒介変数表示曲線Ⅱ",
+                        "1_17_customNum": "17",
+                        "1_17_note": "回転体の体積：回転軸をまたぐ",
+                        "1_18_customNum": "18",
+                        "1_18_note": "回転体の体積：y軸まわり",
+                        "1_19_customNum": "19",
+                        "1_19_note": "回転体の体積：空間領域",
+                        "1_20_customNum": "20",
+                        "1_20_note": "回転体の体積：線分が動いてできる",
+                        "1_21_customNum": "21",
+                        "1_21_note": "交わりの体積",
+                        "1_22_customNum": "22",
+                        "1_22_note": "回転体でない立体の体積",
+                        "1_23_customNum": "23",
+                        "1_23_note": "n乗を含む定積分",
+                        "1_24_customNum": "24",
+                        "1_24_note": "定積分の評価・極限",
+                        "1_25_customNum": "25",
+                        "1_25_note": "定積分を利用した無限和",
+                        "1_26_customNum": "26",
+                        "1_26_note": "連続性，定積分で定義された関数",
+                        "1_27_customNum": "27",
+                        "1_27_note": "和の極限",
+                        "1_28_customNum": "28",
+                        "1_28_note": "曲線の長さ",
+                        "1_29_customNum": "29",
+                        "1_29_note": "楕円の定義",
+                        "1_30_customNum": "30",
+                        "1_30_note": "円錐曲線",
+                        "1_31_customNum": "31",
+                        "1_31_note": "楕円の接線",
+                        "1_32_customNum": "32",
+                        "1_32_note": "楕円の極線と補助円",
+                        "1_33_customNum": "33",
+                        "1_33_note": "楕円",
+                        "1_34_customNum": "34",
+                        "1_34_note": "双曲線の性質",
+                        "1_35_customNum": "35",
+                        "1_35_note": "極方程式",
+                        "1_36_customNum": "36",
+                        "1_36_note": "回転",
+                        "1_37_customNum": "37",
+                        "1_37_note": "n乗根",
+                        "1_38_customNum": "38",
+                        "1_38_note": "複素数列，三角不等式",
+                        "1_39_customNum": "39",
+                        "1_39_note": "複素数平面の軌跡，変換",
+                        "1_40_customNum": "40",
+                        "1_40_note": "回転，複素数の図形への応用",
+                        "1_41_customNum": "41",
+                        "1_41_note": "積で閉じた集合"
+                }
+        },
+        {
+                "id": "book_highlevel_math1a2bc_complete",
+                "title": "ハイレベル数学Ⅰ・A・Ⅱ・B・C（ベクトル）の完全攻略［改訂版］",
+                "subject": "数学",
+                "bgColor": "#eff6ff",
+                "sections": [
+                        {
+                                "id": 1,
+                                "label": "",
+                                "name": "問題編",
+                                "count": 45
+                        }
+                ],
+                "data": {
+                        "1_1_customNum": "1",
+                        "1_1_note": "折れ線関数の最大・最小",
+                        "1_2_customNum": "2",
+                        "1_2_note": "不等式の変形：絶対値",
+                        "1_3_customNum": "3",
+                        "1_3_note": "整数：整除，直角三角形の内接円の半径",
+                        "1_4_customNum": "4",
+                        "1_4_note": "整数：不等式",
+                        "1_5_customNum": "5",
+                        "1_5_note": "共通解",
+                        "1_6_customNum": "6",
+                        "1_6_note": "有理数・無理数，2直線のなす角",
+                        "1_7_customNum": "7",
+                        "1_7_note": "整数係数のn次方程式の有理数解：3次方程式，有理数・無理数",
+                        "1_8_customNum": "8",
+                        "1_8_note": "部屋割り論法",
+                        "1_9_customNum": "9",
+                        "1_9_note": "場合の数：組分け問題",
+                        "1_10_customNum": "10",
+                        "1_10_note": "確率の最大・最小：離散変数関数の増減",
+                        "1_11_customNum": "11",
+                        "1_11_note": "確率：排反事象に分ける，選んで並べる",
+                        "1_12_customNum": "12",
+                        "1_12_note": "確率：余事象，包含排除原理",
+                        "1_13_customNum": "13",
+                        "1_13_note": "確率：状態推移，漸化式",
+                        "1_14_customNum": "14",
+                        "1_14_note": "条件付き確率：カードを取る確率",
+                        "1_15_customNum": "15",
+                        "1_15_note": "期待値，数列の和の計算",
+                        "1_16_customNum": "16",
+                        "1_16_note": "三角比の応用：三角形の面積，余弦定理",
+                        "1_17_customNum": "17",
+                        "1_17_note": "三角方程式，対数方程式",
+                        "1_18_customNum": "18",
+                        "1_18_note": "三角方程式：2次方程式の解の配置",
+                        "1_19_customNum": "19",
+                        "1_19_note": "三角関数：和積の公式，正弦定理，相加平均と相乗平均の関係",
+                        "1_20_customNum": "20",
+                        "1_20_note": "三角関数の定義：三角関数の次数下げ，傾きの関数",
+                        "1_21_customNum": "21",
+                        "1_21_note": "cos θのn倍角公式：チェビシェフ多項式",
+                        "1_22_customNum": "22",
+                        "1_22_note": "軌跡：円と直線，媒介変数消去",
+                        "1_23_customNum": "23",
+                        "1_23_note": "軌跡：極線",
+                        "1_24_customNum": "24",
+                        "1_24_note": "軌跡：媒介変数の存在条件，軌跡の追跡",
+                        "1_25_customNum": "25",
+                        "1_25_note": "領域と最大・最小：対称式",
+                        "1_26_customNum": "26",
+                        "1_26_note": "座標平面：座標設定，必要条件から十分性の確認",
+                        "1_27_customNum": "27",
+                        "1_27_note": "平面ベクトル：内積，角の二等分線",
+                        "1_28_customNum": "28",
+                        "1_28_note": "平面ベクトルの内積：内積式の表す図形",
+                        "1_29_customNum": "29",
+                        "1_29_note": "ベクトルの応用",
+                        "1_30_customNum": "30",
+                        "1_30_note": "空間ベクトル：直線の交点の位置ベクトル，分点比",
+                        "1_31_customNum": "31",
+                        "1_31_note": "空間座標：平面と直線の垂直，定点と円周上の動点の距離",
+                        "1_32_customNum": "32",
+                        "1_32_note": "空間ベクトル：四面体，内積",
+                        "1_33_customNum": "33",
+                        "1_33_note": "群数列",
+                        "1_34_customNum": "34",
+                        "1_34_note": "漸化式の応用：2円の位置関係，分数漸化式",
+                        "1_35_customNum": "35",
+                        "1_35_note": "連立漸化式：数列の剰余",
+                        "1_36_customNum": "36",
+                        "1_36_note": "数列：漸化式，帰納法",
+                        "1_37_customNum": "37",
+                        "1_37_note": "漸化式：n乗の和，整数部分",
+                        "1_38_customNum": "38",
+                        "1_38_note": "3次関数の最大・最小：2曲線が接する条件",
+                        "1_39_customNum": "39",
+                        "1_39_note": "3次関数のグラフの接線",
+                        "1_40_customNum": "40",
+                        "1_40_note": "放物線と円：3次方程式の実数解，通過範囲",
+                        "1_41_customNum": "41",
+                        "1_41_note": "絶対値関数の定積分",
+                        "1_42_customNum": "42",
+                        "1_42_note": "放物線と円：2次関数の最小値，領域の面積",
+                        "1_43_customNum": "43",
+                        "1_43_note": "不等式の証明：背理法",
+                        "1_44_customNum": "44",
+                        "1_44_note": "多変数関数の最大・最小：対称式で表された関数の最大・最小",
+                        "1_45_customNum": "45",
+                        "1_45_note": "3次方程式の解の範囲：媒介変数の存在条件"
+                }
+        }
+];
+        completeMathBookDefinitions.forEach(book => {
+            defaultBooks[book.id] = JSON.parse(JSON.stringify(book));
+        });
+
         const commonTestBookDefinitions = [
             ["japanese", "国語"],
             ["geography", "地理総合・地理探究"],
@@ -3182,6 +3420,21 @@
                         }
                         : JSON.parse(JSON.stringify(unlimitedBookDefinition));
 
+
+                    // 完全攻略2冊を既存データへ追加し、実績は保持する。
+                    completeMathBookDefinitions.forEach(defaultBook => {
+                        const existingBook = loadedBooks[defaultBook.id];
+                        loadedBooks[defaultBook.id] = existingBook
+                            ? {
+                                ...existingBook,
+                                title: defaultBook.title,
+                                subject: defaultBook.subject,
+                                bgColor: defaultBook.bgColor,
+                                sections: JSON.parse(JSON.stringify(defaultBook.sections)),
+                                data: { ...JSON.parse(JSON.stringify(defaultBook.data)), ...(existingBook.data || {}) }
+                            }
+                            : JSON.parse(JSON.stringify(defaultBook));
+                    });
                     // 地理総合＋地理探求（問題演習編）を地誌編と同じ10章×各1問へ統一する。
                     const geographyExerciseBook = loadedBooks['book_1793912099697'];
                     if (geographyExerciseBook && geographyExerciseBook.title === '地理総合＋地理探求（問題演習編）') {
@@ -3684,6 +3937,7 @@
 
                         const card = document.createElement("div");
                         card.className = "book-card" + (dashboardOrderEditMode ? " order-editing" : "");
+                        if (completeMathBookDefinitions.some(item => item.id === bId)) card.classList.add("complete-math-card");
                         card.style.backgroundColor = bookBgColor;
                         card.style.borderColor = meta.color;
                         card.innerHTML = `
@@ -5373,7 +5627,9 @@
             const hasStudyMeta=Object.keys(book.data).some(k=>k.endsWith('_difficultyRank') || k.endsWith('_targetTime'));
             const progressTable=document.getElementById("progress-table");
             const fitAllSections=currentBookId==="book_std_math12ab";
+            const isCompleteMathBook=completeMathBookDefinitions.some(item => item.id === currentBookId);
             progressTable.classList.toggle("fit-all-sections",fitAllSections);
+            progressTable.classList.toggle("complete-math-table",isCompleteMathBook);
             progressTable.style.minWidth=!fitAllSections && hasStudyMeta ? `${(book.sections || []).length*104}px` : '';
             headerTitlesRow.innerHTML = ""; headerCountsRow.innerHTML = ""; tbody.innerHTML = "";
 
